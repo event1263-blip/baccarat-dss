@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂量化終端 - 前瞻預判版</title>
+    <title>百家樂 - 全維度交叉比對版</title>
     <style>
         :root {
             --bg: #09090b; --card: #18181b; --border: #27272a;
@@ -31,24 +31,29 @@
         .hud-btn.undo { color: var(--warning); } .hud-btn.reset { color: var(--b-color); } .hud-btn.db { color: var(--p-color); }
 
         /* 🎯 精準決策面板 */
-        .oracle-box { text-align: center; padding: 10px 8px; border-radius: 12px; border: 2px solid var(--border); background: #000; position: relative; }
+        .oracle-box { text-align: center; padding: 12px 8px; border-radius: 12px; border: 2px solid var(--border); background: #000; position: relative; }
         .oracle-box.pass { border-color: #3f3f46; }
         .oracle-box.banker { border-color: var(--b-color); background: linear-gradient(180deg, rgba(239, 68, 68, 0.15) 0%, #000 100%); box-shadow: 0 0 15px rgba(239, 68, 68, 0.25); }
         .oracle-box.player { border-color: var(--p-color); background: linear-gradient(180deg, rgba(59, 130, 246, 0.15) 0%, #000 100%); box-shadow: 0 0 15px rgba(59, 130, 246, 0.25); }
+        .oracle-box.locked { border-color: var(--highlight); background: repeating-linear-gradient(45deg, rgba(234, 179, 8, 0.05), rgba(234, 179, 8, 0.05) 10px, rgba(0,0,0,0) 10px, rgba(0,0,0,0) 20px); }
         
-        /* 🔮 事前預判提示 (前瞻警示) */
         .trend-alert { font-size: 12px; font-weight: 900; margin-bottom: 6px; letter-spacing: 0.5px; padding: 4px; border-radius: 6px; }
         .alert-high { color: #fff; background: rgba(249, 115, 22, 0.3); border: 1px solid var(--warning); animation: pulse 1.5s infinite alternate;}
         .alert-safe { color: var(--text-muted); background: rgba(255,255,255,0.05); }
         .alert-info { color: #60a5fa; background: rgba(59, 130, 246, 0.1); }
         
-        .oracle-main { font-size: 26px; font-weight: 900; letter-spacing: 1px; margin-bottom: 6px; line-height: 1.1; }
+        .oracle-main { font-size: 24px; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; line-height: 1.1; }
         .oracle-box.banker .oracle-main { color: var(--b-color); text-shadow: 0 0 10px var(--b-color); }
         .oracle-box.player .oracle-main { color: var(--p-color); text-shadow: 0 0 10px var(--p-color); }
+        .oracle-box.locked .oracle-main { color: var(--highlight); }
         
-        /* 明確判斷標籤 */
-        .reason-badge { display: inline-flex; gap: 8px; justify-content: center; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--text-main); }
-        .str-high { color: var(--highlight); } .str-mid { color: #60a5fa; } .str-low { color: var(--text-muted); }
+        /* ⚔️ 三維度交叉比對標籤 */
+        .factor-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; }
+        .factor-badge { font-size: 10px; font-weight: 800; padding: 4px 6px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); }
+        .factor-badge.b { color: var(--b-color); border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.1); }
+        .factor-badge.p { color: var(--p-color); border-color: rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.1); }
+
+        .reason-sub { font-size: 11px; font-weight: 700; color: var(--text-muted); }
         
         /* 側注推薦區 */
         .sidebet-container { display: flex; justify-content: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
@@ -77,7 +82,6 @@
         .circle-hollow.B, .circle-hollow.R { border-color: var(--b-color); } 
         .circle-hollow.P, .circle-hollow.Blue { border-color: var(--p-color); }
         
-        /* 和局斜線 (完美修正版) */
         .tie-line { background: linear-gradient(to top right, transparent 45%, var(--t-color) 45%, var(--t-color) 55%, transparent 55%); }
         .tie-text { position: absolute; font-size: 9px; font-weight: 900; color: var(--t-color); z-index: 2; }
         
@@ -129,7 +133,6 @@
         .db-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .db-title { font-size: 18px; font-weight: 900; color: #fff; }
         .db-close { background: none; border: none; color: var(--text-muted); font-size: 30px; cursor: pointer; line-height: 1; }
-        
         .db-section { background: #000; border-radius: 12px; padding: 14px; margin-bottom: 14px; border: 1px solid #27272a; }
         .db-section h3 { font-size: 14px; font-weight: 800; color: var(--highlight); margin: 0 0 10px 0; }
         .db-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; font-weight: 700; }
@@ -155,14 +158,18 @@
                 <button class="hud-btn reset" onclick="resetShoe()">換靴</button>
             </div>
         </div>
-        <div id="oracleBox" class="oracle-box pass">
+        <div id="oracleBox" class="oracle-box locked">
             <div class="trend-alert alert-safe" id="trendAlert">📊 牌局資料收集中...</div>
             
-            <div class="oracle-main" id="oracleMain">等待輸入</div>
+            <div class="oracle-main" id="oracleMain">🔒 規律收集中</div>
             
-            <div class="oracle-sub">
-                <div class="reason-badge" id="reasonBadge">判斷方式與強度分析中...</div>
+            <div class="factor-container">
+                <div class="factor-badge" id="facEV">EV: --</div>
+                <div class="factor-badge" id="facML">歷史: --</div>
+                <div class="factor-badge" id="facRoad">五路: --</div>
             </div>
+            
+            <div class="reason-sub" id="reasonBadge">前 15 局規律未明，強制不預測</div>
 
             <div class="sidebet-container" id="sideBetContainer">
                 <div class="sidebet-pill" id="sbTie">和局 評估中</div>
@@ -238,7 +245,6 @@
     </div>
 
     <button class="fab-btn" onclick="toggleDBPanel()">⚙️</button>
-
     <div class="database-panel" id="dbPanel">
         <div class="db-header">
             <div class="db-title">大數據學習中心 (ML DB)</div>
@@ -271,7 +277,7 @@
         </div>
 
         <div class="db-section">
-            <h3>💾 資料庫檔案管理</h3>
+            <h3>💾 資料庫檔案管理 (支援 iPhone 原生分享)</h3>
             <div class="db-actions">
                 <button class="db-btn btn-export" onclick="exportDatabase()">📤 匯出大數據</button>
                 <button class="db-btn btn-import" onclick="document.getElementById('importFile').click()">📥 匯入大數據</button>
@@ -285,8 +291,8 @@
 /* =========================================================
    1) 核心狀態變數
 ========================================================= */
-const STATE_KEY = "baccarat_state_v11_precision";
-const DB_KEY = "baccarat_bigdata_v11_precision";
+const STATE_KEY = "baccarat_state_v12_cross";
+const DB_KEY = "baccarat_bigdata_v12_cross";
 
 let S = { totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, shoePerf: { recs: 0, hits: 0 }, lastRecSide: null };
 let backupState = null;
@@ -462,6 +468,7 @@ function submitData() {
     let winner = 'T', fP = pPts%10, fB = bPts%10;
     if(fP > fB) winner = 'P'; else if(fB > fP) winner = 'B';
     
+    // 如果上一局有產生明確預測 (不是 PASS) 才驗證勝率
     if (S.lastRecSide && S.lastRecSide !== 'PASS' && winner !== 'T') {
         let isHit = (S.lastRecSide === winner);
         S.shoePerf.recs++; BigData.acc.recs++;
@@ -477,67 +484,38 @@ function submitData() {
 }
 
 /* =========================================================
-   5) 決策 HUD (精準指揮、前瞻預警) 與 路單
+   5) 👑 全維度交叉比對決策引擎 (The 3-Factor Oracle)
 ========================================================= */
+// 模擬若下一把開 hyp，五路圖的紅藍燈走向
+function simulateAskRoad(hyp) {
+    let testArr = [...S.history, {w: hyp, bp:false, pp:false}];
+    let d = buildBigRoadAndDerived(testArr);
+    let eye = d.eye.length > 0 ? d.eye[d.eye.length-1].val : null;
+    let sm = d.small.length > 0 ? d.small[d.small.length-1].val : null;
+    let ro = d.roach.length > 0 ? d.roach[d.roach.length-1].val : null;
+    return [eye, sm, ro];
+}
+
 function recalcAndRender() {
+    let pureHist = S.history.map(x=>x.w).filter(x => x !== 'T');
+    
+    // UI 更新
+    document.getElementById('hdrRemain').innerText = S.totalCards;
+    document.getElementById('hdrRound').innerText = S.history.length;
+    updateKeypadCounts();
+
+    const obox = document.getElementById('oracleBox'), omain = document.getElementById('oracleMain');
+    const fEV = document.getElementById('facEV'), fML = document.getElementById('facML'), fRoad = document.getElementById('facRoad');
+    const badgeReason = document.getElementById('reasonBadge');
+    
+    // --- 因子 1：微觀物理 (EV) ---
     let decksRem = S.totalCards / 52; let tc = decksRem > 0 ? S.runningCount / decksRem : 0;
     let edgeShift = tc * 0.0005; let p_player = basePlayerProb + edgeShift; let p_banker = baseBankerProb - edgeShift;
     let evBanker = (p_banker * 0.95) - p_player; let evPlayer = p_player - p_banker;
+    let phySide = evBanker > 0.002 ? 'B' : (evPlayer > 0.002 ? 'P' : null); // 設定微小閥值過濾雜訊
 
-    let pureHist = S.history.map(x=>x.w).filter(x => x !== 'T');
-    let mlSide = null, tRate = 0, bpRate = 0, ppRate = 0;
-    let mlRate = 0;
-    
-    // --- 🔮 前瞻變路預警邏輯 ---
-    let breakMsg = "📊 牌局資料收集中...";
-    let alertClass = "alert-safe";
-    
-    if (pureHist.length >= 3) {
-        let last = pureHist[pureHist.length-1];
-        let streak = 1;
-        for(let i=pureHist.length-2; i>=0; i--) { if(pureHist[i]===last) streak++; else break; }
-
-        if (streak >= 3) {
-            let opp = last === 'B' ? 'P' : 'B';
-            let seq = pureHist.slice(-3).join(",");
-            let ptn = BigData.patterns[seq];
-            
-            if (ptn) {
-                let totalBP = ptn.B + ptn.P;
-                if(totalBP >= 5) {
-                    let breakRate = ptn[opp] / totalBP;
-                    if (breakRate >= 0.55) {
-                        breakMsg = `⚠️【斷龍高危】目前${last==='B'?'莊':'閒'}連${streak}！大數據斷龍機率: ${(breakRate*100).toFixed(1)}%`;
-                        alertClass = "alert-high";
-                    } else if (breakRate < 0.45) {
-                        breakMsg = `🛡️【長龍防禦】目前${last==='B'?'莊':'閒'}連${streak}。大數據斷龍機率僅 ${(breakRate*100).toFixed(1)}%，不建議逆勢。`;
-                        alertClass = "alert-safe";
-                    } else {
-                        breakMsg = `🔮【前瞻預測】目前${last==='B'?'莊':'閒'}連${streak}。大數據斷龍機率: ${(breakRate*100).toFixed(1)}%`;
-                        alertClass = "alert-safe";
-                    }
-                } else {
-                    breakMsg = `🔮【前瞻預測】目前${last==='B'?'莊':'閒'}連${streak}。(歷史樣本不足)`;
-                }
-            } else {
-                breakMsg = `🔮【前瞻預測】目前${last==='B'?'莊':'閒'}連${streak}。(未收錄此型態)`;
-            }
-        } else if (streak === 1 && pureHist.length >= 4) {
-            let isAlt = true;
-            for(let i=1; i<=3; i++) { if (pureHist[pureHist.length-i] === pureHist[pureHist.length-i-1]) { isAlt = false; break; } }
-            if (isAlt) { breakMsg = `🔄【變路預警】目前為密集單跳期，請注意規律反轉風險。`; alertClass = "alert-info"; }
-            else { breakMsg = `📊 觀察牌局走勢中...`; }
-        } else {
-            breakMsg = `📊 觀察牌局走勢中...`;
-        }
-    }
-
-    // 更新跑馬燈
-    const trendAlertEl = document.getElementById('trendAlert');
-    trendAlertEl.className = `trend-alert ${alertClass}`;
-    trendAlertEl.innerText = breakMsg;
-
-    // --- 大數據勝率計算 ---
+    // --- 因子 2：宏觀大數據 (ML N-Gram) ---
+    let mlSide = null, mlRate = 0, tRate = 0, bpRate = 0, ppRate = 0;
     if (pureHist.length >= 3) {
         let seq = pureHist.slice(-3).join(",");
         let ptn = BigData.patterns[seq];
@@ -551,47 +529,102 @@ function recalcAndRender() {
         }
     }
 
-    document.getElementById('hdrRemain').innerText = S.totalCards;
-    document.getElementById('hdrRound').innerText = S.history.length;
-    updateKeypadCounts();
+    // --- 因子 3：技術面下三路 (Roadmap Consensus) ---
+    let roadSide = null;
+    let askB = simulateAskRoad('B'); let askP = simulateAskRoad('P');
+    let bReds = askB.filter(x => x === 'R').length;
+    let pReds = askP.filter(x => x === 'R').length;
+    if (bReds >= 2 && pReds <= 1) roadSide = 'B';
+    else if (pReds >= 2 && bReds <= 1) roadSide = 'P';
 
-    const obox = document.getElementById('oracleBox'), omain = document.getElementById('oracleMain');
-    const badge = document.getElementById('reasonBadge');
+    // --- 更新因子標籤 ---
+    fEV.className = `factor-badge ${phySide ? phySide.toLowerCase() : ''}`; fEV.innerText = `EV: ${phySide==='B'?'莊':phySide==='P'?'閒':'--'}`;
+    fML.className = `factor-badge ${mlSide ? mlSide.toLowerCase() : ''}`; fML.innerText = `歷史: ${mlSide==='B'?'莊':mlSide==='P'?'閒':'--'}`;
+    fRoad.className = `factor-badge ${roadSide ? roadSide.toLowerCase() : ''}`; fRoad.innerText = `五路: ${roadSide==='B'?'莊':roadSide==='P'?'閒':'--'}`;
+
+    // --- 🔮 前瞻變路預警邏輯 ---
+    let breakMsg = "📊 牌局資料收集中...";
+    let alertClass = "alert-safe";
+    let currentStreakSide = null;
+    let currentStreakLength = 0;
     
-    let maxEV = Math.max(evBanker, evPlayer);
-    let phyLvl = 0, mlLvl = 0;
-    if (maxEV > 0.015) phyLvl=3; else if (maxEV > 0.005) phyLvl=2; else if (maxEV > 0) phyLvl=1;
-    if (mlRate >= 0.65) mlLvl=3; else if (mlRate >= 0.60) mlLvl=2; else if (mlRate >= 0.58) mlLvl=1;
+    if (pureHist.length >= 3) {
+        let last = pureHist[pureHist.length-1];
+        currentStreakSide = last;
+        currentStreakLength = 1;
+        for(let i=pureHist.length-2; i>=0; i--) { if(pureHist[i]===last) currentStreakLength++; else break; }
 
-    let phySide = evBanker > 0 ? 'B' : (evPlayer > 0 ? 'P' : null);
-    
-    let finalStr = Math.max(phyLvl, mlLvl);
-    let strClass = finalStr===3 ? "str-high" : finalStr===2 ? "str-mid" : "str-low";
-    let strText = finalStr===3 ? "強" : finalStr===2 ? "中" : "弱";
+        if (currentStreakLength >= 3) {
+            let opp = last === 'B' ? 'P' : 'B';
+            let seq = pureHist.slice(-3).join(",");
+            let ptn = BigData.patterns[seq];
+            if (ptn && (ptn.B + ptn.P) >= 5) {
+                let breakRate = ptn[opp] / (ptn.B + ptn.P);
+                if (breakRate >= 0.55) {
+                    breakMsg = `⚠️【斷龍高危】目前${last==='B'?'莊':'閒'}連${currentStreakLength}！大數據斷龍機率: ${(breakRate*100).toFixed(1)}%`;
+                    alertClass = "alert-high";
+                } else if (breakRate < 0.45) {
+                    breakMsg = `🛡️【長龍防禦】大數據斷龍機率僅 ${(breakRate*100).toFixed(1)}%，嚴禁逆勢。`;
+                    alertClass = "alert-safe";
+                } else {
+                    breakMsg = `🔮【前瞻預測】目前${last==='B'?'莊':'閒'}連${currentStreakLength}。斷龍機率: ${(breakRate*100).toFixed(1)}%`;
+                    alertClass = "alert-safe";
+                }
+            } else { breakMsg = `🔮 目前${last==='B'?'莊':'閒'}連${currentStreakLength} (無足夠歷史匹配)`; }
+        } else if (currentStreakLength === 1 && pureHist.length >= 4) {
+            let isAlt = true;
+            for(let i=1; i<=3; i++) { if (pureHist[pureHist.length-i] === pureHist[pureHist.length-i-1]) { isAlt = false; break; } }
+            if (isAlt) { breakMsg = `🔄【變路預警】目前為密集單跳期，注意規律反轉。`; alertClass = "alert-info"; }
+            else { breakMsg = `📊 觀察牌局走勢中...`; }
+        } else { breakMsg = `📊 觀察牌局走勢中...`; }
+    }
+    const trendAlertEl = document.getElementById('trendAlert');
+    trendAlertEl.className = `trend-alert ${alertClass}`; trendAlertEl.innerText = breakMsg;
 
-    if (phySide === 'B' && mlSide === 'B') { 
-        obox.className = "oracle-box banker"; omain.innerHTML = `🔥 押注莊家`; S.lastRecSide = 'B'; 
-        badge.innerHTML = `<span>判斷: 雙腦共振</span><span class="${strClass}">強度: ${strText}</span>`;
-    } else if (phySide === 'P' && mlSide === 'P') { 
-        obox.className = "oracle-box player"; omain.innerHTML = `🔥 押注閒家`; S.lastRecSide = 'P'; 
-        badge.innerHTML = `<span>判斷: 雙腦共振</span><span class="${strClass}">強度: ${strText}</span>`;
-    } else if (phySide === 'B') { 
-        obox.className = "oracle-box banker"; omain.innerHTML = `試探莊家`; S.lastRecSide = 'B'; 
-        badge.innerHTML = `<span>判斷: 物理計算</span><span class="${phyLvl===3?"str-high":phyLvl===2?"str-mid":"str-low"}">強度: ${phyLvl===3?"強":phyLvl===2?"中":"弱"}</span>`;
-    } else if (phySide === 'P') { 
-        obox.className = "oracle-box player"; omain.innerHTML = `試探閒家`; S.lastRecSide = 'P'; 
-        badge.innerHTML = `<span>判斷: 物理計算</span><span class="${phyLvl===3?"str-high":phyLvl===2?"str-mid":"str-low"}">強度: ${phyLvl===3?"強":phyLvl===2?"中":"弱"}</span>`;
-    } else if (mlSide === 'B') { 
-        obox.className = "oracle-box banker"; omain.innerHTML = `順勢押莊`; S.lastRecSide = 'B'; 
-        badge.innerHTML = `<span>判斷: 趨勢大數據</span><span class="${mlLvl===3?"str-high":mlLvl===2?"str-mid":"str-low"}">強度: ${mlLvl===3?"強":mlLvl===2?"中":"弱"}</span>`;
-    } else if (mlSide === 'P') { 
-        obox.className = "oracle-box player"; omain.innerHTML = `順勢押閒`; S.lastRecSide = 'P'; 
-        badge.innerHTML = `<span>判斷: 趨勢大數據</span><span class="${mlLvl===3?"str-high":mlLvl===2?"str-mid":"str-low"}">強度: ${mlLvl===3?"強":mlLvl===2?"中":"弱"}</span>`;
-    } else { 
-        obox.className = "oracle-box pass"; omain.innerHTML = `🛡️ 觀望`; S.lastRecSide = 'PASS'; 
-        badge.innerHTML = `<span style="color:var(--text-muted)">無明顯優勢訊號</span>`;
+    // --- 🎯 鐵血紀律：前 15 局鎖定預測 ---
+    if (S.history.length < 15) {
+        obox.className = "oracle-box locked";
+        omain.innerHTML = `🔒 規律收集中 (${S.history.length}/15)`;
+        badgeReason.innerText = `前 15 局規律未明，強制不預測`;
+        S.lastRecSide = 'PASS';
+    } 
+    else {
+        // --- 綜合交叉比對決策 ---
+        let bCount = (phySide==='B'?1:0) + (mlSide==='B'?1:0) + (roadSide==='B'?1:0);
+        let pCount = (phySide==='P'?1:0) + (mlSide==='P'?1:0) + (roadSide==='P'?1:0);
+
+        let decision = 'PASS';
+        let rsn = "無明顯交叉優勢訊號";
+
+        if (bCount === 3) { decision = 'B'; rsn = "三重共振：所有維度一致指莊"; }
+        else if (pCount === 3) { decision = 'P'; rsn = "三重共振：所有維度一致指閒"; }
+        else if (bCount === 2) { decision = 'B'; rsn = "雙重共振：多數維度偏莊"; }
+        else if (pCount === 2) { decision = 'P'; rsn = "雙重共振：多數維度偏閒"; }
+        
+        // 🐉 長龍防禦介入：如果系統決定逆勢斷龍，但目前處於 4 連勝以上的長龍，強制阻斷
+        if (currentStreakLength >= 4) {
+            if (currentStreakSide === 'B' && decision === 'P') { decision = 'PASS'; rsn = "🛑 防禦：莊長龍中，拒絕逆勢接刀"; }
+            if (currentStreakSide === 'P' && decision === 'B') { decision = 'PASS'; rsn = "🛑 防禦：閒長龍中，拒絕逆勢接刀"; }
+        }
+
+        S.lastRecSide = decision;
+
+        if (decision === 'B') {
+            obox.className = "oracle-box banker";
+            omain.innerHTML = bCount === 3 ? `🔥 完美共振：重注莊家` : `📈 交叉比對：推薦莊家`;
+            badgeReason.innerText = rsn;
+        } else if (decision === 'P') {
+            obox.className = "oracle-box player";
+            omain.innerHTML = pCount === 3 ? `🔥 完美共振：重注閒家` : `📈 交叉比對：推薦閒家`;
+            badgeReason.innerText = rsn;
+        } else {
+            obox.className = "oracle-box pass";
+            omain.innerHTML = `🛡️ 分歧觀望`;
+            badgeReason.innerText = rsn;
+        }
     }
 
+    // 側注推薦
     let sbTie = document.getElementById('sbTie'); let sbBP = document.getElementById('sbBP'); let sbPP = document.getElementById('sbPP');
     sbTie.className = tRate > 0.14 ? "sidebet-pill active" : "sidebet-pill"; sbTie.innerText = `和局 ${(tRate*100).toFixed(0)}%`;
     sbBP.className = bpRate > 0.11 ? "sidebet-pill active" : "sidebet-pill"; sbBP.innerText = `莊對 ${(bpRate*100).toFixed(0)}%`;
