@@ -1,480 +1,1526 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂決策系統 - 巨眼指揮版</title>
-    <style>
-        /* --- 系統級設計變數 --- */
-        :root {
-            --bg-color: #0d0d12;
-            --card-bg: #1c1c1e;
-            --card-border: #2c2c2e;
-            --text-main: #f2f2f7;
-            --text-muted: #8e8e93;
-            --banker-red: #ff3b30;
-            --player-blue: #0a84ff;
-            --tie-green: #32d74b;
-            --highlight: #ffd60a;
-            --warning: #ff9f0a;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>百家樂決策系統 - 巨眼指揮版（嚴謹模擬）</title>
 
-        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 8px 6px; user-select: none; }
-        .module-card { background: var(--card-bg); border-radius: 16px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--card-border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  <style>
+    :root {
+      --bg-color: #0d0d12;
+      --card-bg: #1c1c1e;
+      --card-border: #2c2c2e;
+      --text-main: #f2f2f7;
+      --text-muted: #8e8e93;
+      --banker-red: #ff3b30;
+      --player-blue: #0a84ff;
+      --tie-green: #32d74b;
+      --highlight: #ffd60a;
+      --warning: #ff9f0a;
+      --danger: #ff3b30; /* ✅ 修正：原本未定義導致庫存低不變紅 */
+    }
 
-        /* --- 頂部導航 --- */
-        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding: 0 4px; }
-        .shoe-info { font-size: 13px; font-weight: 600; color: var(--text-muted); display: flex; gap: 10px; }
-        .shoe-info span { color: var(--text-main); font-variant-numeric: tabular-nums; }
-        .action-btns { display: flex; gap: 6px; }
-        .btn-icon { background: #2c2c2e; color: var(--text-main); border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-icon:active { transform: scale(0.92); background: #3c3c3e; }
-        .btn-undo { color: var(--warning); }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 8px 6px;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    .module-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 8px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
 
-        /* --- 🐉 長龍雷達 --- */
-        .dragon-radar { background: rgba(255, 159, 10, 0.15); border: 1px solid rgba(255, 159, 10, 0.4); border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; justify-content: space-between; align-items: center; display: none; }
-        .dragon-radar.active { display: flex; animation: radar-pulse 1.5s infinite alternate; }
-        @keyframes radar-pulse { from { box-shadow: 0 0 5px rgba(255, 159, 10, 0.2); } to { box-shadow: 0 0 20px rgba(255, 159, 10, 0.6); } }
-        .dragon-text { font-size: 13px; font-weight: 800; color: var(--warning); }
-        .dragon-count { font-size: 15px; font-weight: 900; background: var(--warning); color: #000; padding: 2px 10px; border-radius: 12px; }
+    /* --- 頂部導航 --- */
+    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding: 0 4px; gap:10px; }
+    .shoe-info { font-size: 13px; font-weight: 700; color: var(--text-muted); display: flex; gap: 10px; flex-wrap:wrap; align-items:center; }
+    .shoe-info span { color: var(--text-main); font-variant-numeric: tabular-nums; font-weight:900; }
+    .action-btns { display: flex; gap: 6px; flex-wrap:wrap; justify-content:flex-end; }
+    .btn-icon {
+      background: #2c2c2e; color: var(--text-main);
+      border: none; border-radius: 10px;
+      padding: 8px 12px; font-size: 13px; font-weight: 900;
+      cursor: pointer; transition: 0.15s;
+      box-shadow: 0 2px 0 #111;
+    }
+    .btn-icon:active { transform: translateY(2px); box-shadow:none; background:#3c3c3e; }
+    .btn-undo { color: var(--warning); }
 
-        /* --- 🎯 巨眼決策面板 (The Giant Oracle) --- */
-        .oracle-panel { 
-            text-align: center; padding: 20px 10px; border-radius: 16px; margin-bottom: 12px; 
-            background: #111; border: 2px solid #333; transition: all 0.2s ease-in-out; 
-            display: flex; flex-direction: column; justify-content: center; min-height: 80px;
-        }
-        /* 決策文字巨大化 */
-        .oracle-title { font-size: 30px; font-weight: 900; margin-bottom: 6px; letter-spacing: 1px; line-height: 1.1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .oracle-subtitle { font-size: 14px; font-weight: 600; color: #aaa; }
-        
-        /* 觀望狀態：刻意壓暗，降低干擾 */
-        .oracle-panel.pass { border-color: #444; opacity: 0.8; }
-        
-        /* 莊家訊號：狂暴紅光 */
-        .oracle-panel.banker { 
-            background: linear-gradient(180deg, rgba(255,59,48,0.2) 0%, rgba(20,0,0,1) 100%); 
-            border-color: var(--banker-red); 
-            animation: alert-banker 1.2s infinite alternate;
-        }
-        .oracle-panel.banker .oracle-title { color: #fff; text-shadow: 0 0 15px var(--banker-red), 0 0 30px var(--banker-red); }
-        .oracle-panel.banker .oracle-subtitle { color: #ffcccc; }
-        
-        /* 閒家訊號：狂暴藍光 */
-        .oracle-panel.player { 
-            background: linear-gradient(180deg, rgba(10,132,255,0.2) 0%, rgba(0,5,20,1) 100%); 
-            border-color: var(--player-blue); 
-            animation: alert-player 1.2s infinite alternate;
-        }
-        .oracle-panel.player .oracle-title { color: #fff; text-shadow: 0 0 15px var(--player-blue), 0 0 30px var(--player-blue); }
-        .oracle-panel.player .oracle-subtitle { color: #cce0ff; }
+    /* --- 🐉 長龍雷達 --- */
+    .dragon-radar {
+      background: rgba(255, 159, 10, 0.15);
+      border: 1px solid rgba(255, 159, 10, 0.4);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      justify-content: space-between;
+      align-items: center;
+      display: none;
+    }
+    .dragon-radar.active { display: flex; animation: radar-pulse 1.2s infinite alternate; }
+    @keyframes radar-pulse {
+      from { box-shadow: 0 0 8px rgba(255, 159, 10, 0.25); }
+      to   { box-shadow: 0 0 22px rgba(255, 159, 10, 0.60); }
+    }
+    .dragon-text { font-size: 13px; font-weight: 1000; color: var(--warning); }
+    .dragon-count { font-size: 15px; font-weight: 1200; background: var(--warning); color: #000; padding: 3px 10px; border-radius: 999px; }
 
-        /* 呼吸燈動畫 */
-        @keyframes alert-banker { 
-            0% { box-shadow: 0 0 10px rgba(255,59,48,0.3); transform: scale(1); } 
-            100% { box-shadow: 0 0 35px rgba(255,59,48,0.8), inset 0 0 20px rgba(255,59,48,0.4); transform: scale(1.02); } 
-        }
-        @keyframes alert-player { 
-            0% { box-shadow: 0 0 10px rgba(10,132,255,0.3); transform: scale(1); } 
-            100% { box-shadow: 0 0 35px rgba(10,132,255,0.8), inset 0 0 20px rgba(10,132,255,0.4); transform: scale(1.02); } 
-        }
+    /* --- 🎯 巨眼決策面板 --- */
+    .oracle-panel {
+      text-align: center;
+      padding: 20px 10px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      background: #111;
+      border: 2px solid #333;
+      transition: all 0.2s ease-in-out;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 86px;
+    }
+    .oracle-title {
+      font-size: 32px;
+      font-weight: 1000;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+      line-height: 1.05;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .oracle-subtitle { font-size: 14px; font-weight: 800; color: #aaa; }
 
-        /* --- 數據儀表板 --- */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;}
-        .dash-box { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; border: 1px solid #2c2c2e; }
-        .dash-header { font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; }
-        
-        .ev-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .ev-label { font-size: 13px; font-weight: bold; }
-        .ev-label.b { color: var(--banker-red); } .ev-label.p { color: var(--player-blue); }
-        .ev-val { font-size: 14px; font-weight: bold; font-variant-numeric: tabular-nums; }
-        
-        /* 變路推演 UI */
-        .trend-dots { display: flex; gap: 4px; }
-        .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); }
-        .dot.r { background: var(--banker-red); box-shadow: inset 0 1px 3px rgba(255,255,255,0.3); } 
-        .dot.b { background: var(--player-blue); box-shadow: inset 0 1px 3px rgba(255,255,255,0.3); } 
-        .dot.e { background: #333; }
-        .break-trend-alert { font-size: 10px; font-weight: bold; color: var(--warning); margin-top: 6px; text-align: center; background: rgba(255,159,10,0.1); padding: 4px; border-radius: 4px; }
+    .oracle-panel.pass { border-color: #444; opacity: 0.85; }
+    .oracle-panel.banker {
+      background: linear-gradient(180deg, rgba(255,59,48,0.22) 0%, rgba(20,0,0,1) 100%);
+      border-color: var(--banker-red);
+      animation: alert-banker 1.05s infinite alternate;
+    }
+    .oracle-panel.banker .oracle-title { color:#fff; text-shadow: 0 0 18px var(--banker-red), 0 0 34px var(--banker-red); }
+    .oracle-panel.banker .oracle-subtitle { color:#ffd2d2; }
 
-        /* --- 🃏 實體手牌輸入區 --- */
-        .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .input-header span { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-        .toggle-guide { font-size: 12px; font-weight: bold; color: #fff; background: rgba(10,132,255,0.3); padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; gap: 4px; }
-        
-        .table-layout { display: flex; gap: 8px; }
-        .table-side { flex: 1; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 8px; border: 1px solid #2a2a2c; }
-        .side-label { text-align: center; font-size: 12px; font-weight: 800; margin-bottom: 8px; padding: 4px 0; border-radius: 6px; }
-        .side-label.p { background: rgba(10,132,255,0.2); color: var(--player-blue); }
-        .side-label.b { background: rgba(255,59,48,0.2); color: var(--banker-red); }
-        
-        .cards-row { display: flex; justify-content: space-between; gap: 6px; }
-        .playing-card { flex: 1; aspect-ratio: 2/3; background: #2c2c2e; border-radius: 8px; border: 1px solid #555; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; color: #fff; cursor: pointer; transition: all 0.2s; }
-        .playing-card.active { background: #3a3a3c; border-color: var(--highlight); transform: translateY(-4px); box-shadow: 0 6px 12px rgba(255, 214, 10, 0.4); color: var(--highlight); border-width: 2px; }
-        .playing-card.filled { background: #e5e5ea; color: #000; border-color: #fff; }
-        .playing-card.disabled { background: #18181a !important; border-color: #222; opacity: 0.3; pointer-events: none; }
+    .oracle-panel.player {
+      background: linear-gradient(180deg, rgba(10,132,255,0.22) 0%, rgba(0,5,20,1) 100%);
+      border-color: var(--player-blue);
+      animation: alert-player 1.05s infinite alternate;
+    }
+    .oracle-panel.player .oracle-title { color:#fff; text-shadow: 0 0 18px var(--player-blue), 0 0 34px var(--player-blue); }
+    .oracle-panel.player .oracle-subtitle { color:#d6e7ff; }
 
-        /* --- ⌨️ 鍵盤 --- */
-        .keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
-        .key { background: #2c2c2e; border-radius: 10px; padding: 10px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 3px 0 #111; transition: 0.1s; }
-        .key:active { transform: translateY(3px); box-shadow: 0 0 0 #111; background: #444; }
-        .key-val { font-size: 22px; font-weight: 900; color: #fff; line-height: 1; }
-        .key-count { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 4px; }
-        .key-count.low { color: var(--danger); }
-        .key.action-clear { background: rgba(255,159,10,0.15); color: var(--warning); border: 1px solid rgba(255,159,10,0.3); grid-column: span 2; flex-direction: row; font-size: 16px; font-weight: 800; gap: 6px;}
+    @keyframes alert-banker {
+      0% { box-shadow: 0 0 12px rgba(255,59,48,0.32); transform: scale(1); }
+      100% { box-shadow: 0 0 38px rgba(255,59,48,0.80), inset 0 0 22px rgba(255,59,48,0.45); transform: scale(1.02); }
+    }
+    @keyframes alert-player {
+      0% { box-shadow: 0 0 12px rgba(10,132,255,0.32); transform: scale(1); }
+      100% { box-shadow: 0 0 38px rgba(10,132,255,0.85), inset 0 0 22px rgba(10,132,255,0.45); transform: scale(1.02); }
+    }
 
-        .submit-btn { width: 100%; padding: 18px; background: #2c2c2e; color: #666; font-size: 18px; font-weight: 900; border: none; border-radius: 12px; margin-top: 16px; transition: all 0.3s ease; letter-spacing: 1px;}
-        .submit-btn.ready { background: var(--tie-green); color: #000; box-shadow: 0 0 20px rgba(50,215,75,0.5); cursor: pointer; }
-        .submit-btn.ready:active { transform: scale(0.97); box-shadow: 0 0 10px rgba(50,215,75,0.5); }
-        .submit-btn:disabled { pointer-events: none; }
+    /* --- 儀表板 --- */
+    .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .dash-box { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 10px; border: 1px solid #2c2c2e; }
+    .dash-header { font-size: 11px; color: var(--text-muted); font-weight: 1000; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .ev-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .ev-label { font-size: 13px; font-weight: 1000; }
+    .ev-label.b { color: var(--banker-red); }
+    .ev-label.p { color: var(--player-blue); }
+    .ev-val { font-size: 14px; font-weight: 1000; font-variant-numeric: tabular-nums; }
 
-        /* --- 📊 歷史路單 --- */
-        .road-container { width: 100%; overflow-x: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 4px; box-sizing: border-box; }
-        .road-grid { display: flex; min-width: max-content; }
-        .road-col { display: flex; flex-direction: column; }
-        .cell-lg { width: 16px; height: 16px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; position: relative; }
-        .cell-sm { width: 8px; height: 8px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; position: relative; }
-        .circle-hollow { width: 12px; height: 12px; border-radius: 50%; border: 2px solid transparent; box-sizing: border-box; }
-        .circle-hollow.B, .circle-hollow.R { border-color: var(--banker-red); } .circle-hollow.P, .circle-hollow.Blue { border-color: var(--player-blue); }
-        .tie-line { background: linear-gradient(to top right, transparent 45%, var(--tie-green) 45%, var(--tie-green) 55%, transparent 55%); }
-        .circle-solid { width: 6px; height: 6px; border-radius: 50%; }
-        .circle-solid.R { background-color: var(--banker-red); } .circle-solid.Blue { background-color: var(--player-blue); }
-        .slash { width: 8px; height: 8px; }
-        .slash.R { background: linear-gradient(to bottom left, transparent 40%, var(--banker-red) 40%, var(--banker-red) 60%, transparent 60%); }
-        .slash.Blue { background: linear-gradient(to bottom left, transparent 40%, var(--player-blue) 40%, var(--player-blue) 60%, transparent 60%); }
-        .derived-roads-wrapper { display: flex; gap: 4px; margin-top: 4px; }
-        .derived-col { flex: 1; min-width: 0; }
-    </style>
+    .stat-line { font-size: 12px; color: var(--text-muted); font-weight: 900; margin-top: 6px; line-height: 1.35; }
+    .stat-line b { color: var(--text-main); }
+
+    /* 技術面 dots + 變路 */
+    .trend-dots { display: flex; gap: 4px; }
+    .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); }
+    .dot.r { background: var(--banker-red); }
+    .dot.b { background: var(--player-blue); }
+    .dot.e { background: #333; }
+    .break-trend-alert {
+      font-size: 11px; font-weight: 1000; color: var(--warning);
+      margin-top: 8px; text-align: center;
+      background: rgba(255,159,10,0.12);
+      padding: 6px 8px; border-radius: 10px;
+      border: 1px solid rgba(255,159,10,0.25);
+      display:none;
+    }
+
+    /* ✅ 下注 Opt-in 區 */
+    .bet-panel {
+      margin-top: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+    .bet-row { display:flex; justify-content:space-between; align-items:center; font-variant-numeric:tabular-nums; }
+    .bet-row .k { color: var(--text-muted); font-weight: 900; font-size: 12px; }
+    .bet-row .v { font-weight: 1100; font-size: 14px; }
+    .v.b { color: var(--banker-red); }
+    .v.p { color: var(--player-blue); }
+    .v.g { color: var(--tie-green); }
+    .arm-btn {
+      width:100%;
+      padding: 14px 12px;
+      border-radius: 14px;
+      border: none;
+      font-size: 16px;
+      font-weight: 1200;
+      background: #2c2c2e;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #111;
+      transition: 0.12s;
+    }
+    .arm-btn:active { transform: translateY(3px); box-shadow:none; background:#3c3c3e; }
+    .arm-btn.armed { background: rgba(50,215,75,0.85); color:#000; }
+    .arm-btn.locked { background: #1f1f22; color:#666; cursor:not-allowed; box-shadow:none; }
+
+    details.settings { margin-top:10px; }
+    details.settings > summary {
+      cursor:pointer;
+      list-style:none;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      font-weight: 1100;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    details.settings > summary::-webkit-details-marker { display:none; }
+    .set-grid { margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .field { background: rgba(0,0,0,0.28); border:1px solid rgba(255,255,255,0.08); border-radius: 12px; padding:10px; }
+    .field label { display:block; font-size:11px; color:var(--text-muted); font-weight:1000; margin-bottom:8px; text-transform:uppercase; }
+    .field select, .field input {
+      width:100%;
+      padding:10px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:#111;
+      color:var(--text-main);
+      font-weight:1000;
+      outline:none;
+    }
+    .field small { display:block; margin-top:8px; color:var(--text-muted); font-size:11px; line-height:1.35; font-weight:800; }
+
+    /* --- 輸入區 --- */
+    .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .input-header span { font-size: 12px; font-weight: 800; color: var(--text-muted); }
+    .toggle-guide { font-size: 12px; font-weight: 1000; color: #fff; background: rgba(10,132,255,0.3); padding: 6px 10px; border-radius: 10px; display: flex; align-items: center; gap: 6px; }
+    .toggle-guide input { transform: scale(1.1); }
+
+    .table-layout { display: flex; gap: 8px; }
+    .table-side { flex: 1; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 8px; border: 1px solid #2a2a2c; }
+    .side-label { text-align: center; font-size: 12px; font-weight: 1100; margin-bottom: 8px; padding: 6px 0; border-radius: 10px; letter-spacing:0.8px; }
+    .side-label.p { background: rgba(10,132,255,0.2); color: var(--player-blue); }
+    .side-label.b { background: rgba(255,59,48,0.2); color: var(--banker-red); }
+
+    .cards-row { display: flex; justify-content: space-between; gap: 6px; }
+    .playing-card {
+      flex: 1; aspect-ratio: 2/3;
+      background: #2c2c2e;
+      border-radius: 10px;
+      border: 1px solid #555;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 1200;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .playing-card.active {
+      background: #3a3a3c;
+      border-color: var(--highlight);
+      transform: translateY(-4px);
+      box-shadow: 0 6px 12px rgba(255, 214, 10, 0.40);
+      color: var(--highlight);
+      border-width: 2px;
+    }
+    .playing-card.filled { background: #e5e5ea; color: #000; border-color: #fff; }
+    .playing-card.disabled { background: #18181a !important; border-color: #222; opacity: 0.28; pointer-events: none; }
+
+    /* --- 鍵盤 --- */
+    .keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+    .key {
+      background: #2c2c2e;
+      border-radius: 12px;
+      padding: 10px 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #111;
+      transition: 0.1s;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .key:active { transform: translateY(3px); box-shadow:none; background:#444; }
+    .key-val { font-size: 22px; font-weight: 1200; color: #fff; line-height: 1; }
+    .key-count { font-size: 11px; font-weight: 1100; color: var(--text-muted); margin-top: 6px; font-variant-numeric:tabular-nums; }
+    .key-count.low { color: var(--danger); }
+
+    .key.action-clear {
+      background: rgba(255,159,10,0.15);
+      color: var(--warning);
+      border: 1px solid rgba(255,159,10,0.3);
+      grid-column: span 2;
+      flex-direction: row;
+      font-size: 16px;
+      font-weight: 1100;
+      gap: 6px;
+      align-items:center;
+      justify-content:center;
+    }
+    .key.action-back {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-main);
+      border: 1px solid rgba(255,255,255,0.12);
+      grid-column: span 3;
+      flex-direction: row;
+      font-size: 16px;
+      font-weight: 1100;
+      gap: 6px;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* 提交按鈕 */
+    .submit-btn {
+      width: 100%;
+      padding: 18px;
+      background: #2c2c2e;
+      color: #666;
+      font-size: 18px;
+      font-weight: 1200;
+      border: none;
+      border-radius: 14px;
+      margin-top: 16px;
+      transition: all 0.2s ease;
+      letter-spacing: 1px;
+      box-shadow: 0 3px 0 #111;
+      cursor: not-allowed;
+    }
+    .submit-btn.ready {
+      background: var(--tie-green);
+      color: #000;
+      box-shadow: 0 0 22px rgba(50,215,75,0.45);
+      cursor: pointer;
+      animation: pulse 1.2s infinite alternate;
+    }
+    .submit-btn.ready:active { transform: scale(0.985); }
+    @keyframes pulse { from{transform:scale(1)} to{transform:scale(1.01)} }
+
+    /* --- 路單 --- */
+    .road-container { width: 100%; overflow-x: auto; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 4px; box-sizing: border-box; }
+    .road-grid { display: flex; min-width: max-content; background:#fff; border-radius:10px; padding:3px; }
+    .road-col { display: flex; flex-direction: column; }
+    .cell-lg { width: 16px; height: 16px; border: 1px solid #f0f0f0; display:flex; align-items:center; justify-content:center; position:relative; }
+    .cell-sm { width: 8px; height: 8px; border: 1px solid #f0f0f0; display:flex; align-items:center; justify-content:center; position:relative; }
+
+    .circle-hollow { width: 12px; height: 12px; border-radius: 50%; border: 2px solid transparent; box-sizing: border-box; }
+    .circle-hollow.B, .circle-hollow.R { border-color: var(--banker-red); }
+    .circle-hollow.P, .circle-hollow.Blue { border-color: var(--player-blue); }
+    .tie-line { background: linear-gradient(to top right, transparent 45%, var(--tie-green) 45%, var(--tie-green) 55%, transparent 55%); }
+    .tie-text { position:absolute; font-size:8px; font-weight:1200; color: var(--tie-green); } /* ✅ 修正：原版缺 tie-text */
+    .circle-solid { width: 6px; height: 6px; border-radius: 50%; }
+    .circle-solid.R { background-color: var(--banker-red); }
+    .circle-solid.Blue { background-color: var(--player-blue); }
+    .slash { width: 8px; height: 8px; }
+    .slash.R { background: linear-gradient(to bottom left, transparent 40%, var(--banker-red) 40%, var(--banker-red) 60%, transparent 60%); }
+    .slash.Blue { background: linear-gradient(to bottom left, transparent 40%, var(--player-blue) 40%, var(--player-blue) 60%, transparent 60%); }
+    .derived-roads-wrapper { display: flex; gap: 6px; margin-top: 8px; }
+    .derived-col { flex: 1; min-width: 0; }
+
+    .note {
+      margin-top:10px;
+      color: var(--text-muted);
+      font-size: 11px;
+      line-height: 1.4;
+      font-weight: 800;
+    }
+    .note b { color: var(--text-main); }
+
+  </style>
 </head>
 <body>
 
-    <div class="top-nav">
-        <div class="shoe-info">剩餘 <span id="totalCards">416</span> 牌 ｜ 第 <span id="roundCount">0</span> 局</div>
-        <div class="action-btns">
-            <button class="btn-icon btn-undo" onclick="undoLastRound()">↩ 撤銷</button>
-            <button class="btn-icon" onclick="resetSystem()">換靴</button>
-        </div>
+  <div class="top-nav">
+    <div class="shoe-info">
+      剩餘 <span id="totalCards">416</span> 牌 ｜ 第 <span id="roundCount">0</span> 局 ｜ 下注：<span id="armedFlag">否</span>
+    </div>
+    <div class="action-btns">
+      <button class="btn-icon btn-undo" onclick="undoLastRound()">↩ 撤銷</button>
+      <button class="btn-icon" onclick="resetSystem()">換靴</button>
+    </div>
+  </div>
+
+  <div id="dragonRadar" class="dragon-radar">
+    <div class="dragon-text" id="dragonText">動能過熱</div>
+    <div class="dragon-count" id="dragonCount">連 0</div>
+  </div>
+
+  <div id="decisionPanel" class="oracle-panel pass">
+    <div class="oracle-title" id="mainSignal">觀望</div>
+    <div class="oracle-subtitle" id="subSignal">等待輸入 / 計算中…</div>
+  </div>
+
+  <div class="dashboard">
+    <div class="dash-box">
+      <div class="dash-header">
+        <span>條件機率 / EV</span>
+        <span id="simInfo" style="color:var(--highlight);font-weight:1100;">SIM: --</span>
+      </div>
+      <div class="ev-row"><span class="ev-label b">莊 P(B)</span><span class="ev-val" id="bankerOdds">--</span></div>
+      <div class="ev-row"><span class="ev-label p">閒 P(P)</span><span class="ev-val" id="playerOdds">--</span></div>
+      <div class="ev-row"><span class="ev-label" style="color:var(--tie-green)">和 P(T)</span><span class="ev-val" id="tieOdds">--</span></div>
+
+      <div class="ev-row"><span class="ev-label b">莊 EV</span><span class="ev-val" id="evBanker">--</span></div>
+      <div class="ev-row"><span class="ev-label p">閒 EV</span><span class="ev-val" id="evPlayer">--</span></div>
+
+      <div class="stat-line" id="evExplain">
+        EV(莊)=<b>(1-抽水)</b>·P(B) − P(P) ｜ EV(閒)=P(P) − P(B)
+      </div>
     </div>
 
-    <div id="dragonRadar" class="dragon-radar">
-        <div class="dragon-text" id="dragonText">動能過熱：莊長龍持續中</div>
-        <div class="dragon-count" id="dragonCount">連 5</div>
+    <div class="dash-box">
+      <div class="dash-header">技術面（問路 / 下三路）</div>
+
+      <div class="ev-row">
+        <span class="ev-label b">若開莊</span>
+        <div class="trend-dots" id="askB-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div>
+      </div>
+
+      <div class="ev-row">
+        <span class="ev-label p">若開閒</span>
+        <div class="trend-dots" id="askP-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div>
+      </div>
+
+      <div id="breakAlert" class="break-trend-alert"></div>
+
+      <div class="bet-panel">
+        <div class="bet-row"><div class="k">模式</div><div class="v" id="modeText">勝率模式</div></div>
+        <div class="bet-row"><div class="k">建議</div><div class="v" id="suggestText">觀望</div></div>
+        <div class="bet-row"><div class="k">下一局注碼</div><div class="v" id="betAmount">100</div></div>
+        <div class="bet-row"><div class="k">下注命中率</div><div class="v" id="hitRate">--</div></div>
+        <button id="armBtn" class="arm-btn" onclick="toggleArm()">💰 決定下注下一局</button>
+      </div>
+
+      <details class="settings">
+        <summary>⚙️ 設定 <span style="color:var(--text-muted);font-weight:900;">展開/收合</span></summary>
+        <div class="set-grid">
+          <div class="field">
+            <label>策略模式</label>
+            <select id="setMode" onchange="applySettings()">
+              <option value="winrate" selected>勝率模式（不保證獲利）</option>
+              <option value="ev">EV 模式（只在 EV>0 才出手）</option>
+              <option value="display">只顯示（永遠觀望）</option>
+            </select>
+            <small>勝率模式：以 P(B)/P(P)（不含和局）選邊，配合過濾器。</small>
+          </div>
+
+          <div class="field">
+            <label>問路門檻</label>
+            <select id="setTrendGate" onchange="applySettings()">
+              <option value="off">關閉</option>
+              <option value="2" selected>≥2紅</option>
+              <option value="3">3紅</option>
+            </select>
+            <small>問路屬描述性訊號，只做你自己的“出手規則”。</small>
+          </div>
+
+          <div class="field">
+            <label>長龍防護</label>
+            <select id="setDragonGuard" onchange="applySettings()">
+              <option value="on" selected>開啟（連4起警示）</option>
+              <option value="off">關閉</option>
+            </select>
+            <small>只做風險提示/防逆勢，非“預測斷龍”。</small>
+          </div>
+
+          <div class="field">
+            <label>SIM 次數</label>
+            <select id="setTrials" onchange="applySettings()">
+              <option value="6000">6000（快）</option>
+              <option value="12000" selected>12000（建議）</option>
+              <option value="20000">20000（穩）</option>
+            </select>
+            <small>無放回模擬：依剩餘牌庫+標準補牌規則估 P(B/P/T)。</small>
+          </div>
+
+          <div class="field">
+            <label>莊抽水（commission）</label>
+            <input id="setCommission" type="number" min="0" max="0.1" step="0.005" value="0.05" onchange="applySettings()" />
+            <small>常見 5%（0.05）。免佣桌請自行調整。</small>
+          </div>
+
+          <div class="field">
+            <label>注碼模式</label>
+            <select id="setBetMode" onchange="applySettings()">
+              <option value="martingale" selected>馬丁 100/200/400/800</option>
+              <option value="flat">固定注碼</option>
+            </select>
+            <small>只做風險管理與統計，不宣稱提升勝率。</small>
+          </div>
+
+          <div class="field">
+            <label>固定注碼</label>
+            <input id="setFlatBet" type="number" min="1" step="1" value="100" onchange="applySettings()" />
+            <small>僅固定注碼模式生效。</small>
+          </div>
+
+          <div class="field">
+            <label>補牌防呆</label>
+            <select id="setAutoGuide" onchange="applySettings()">
+              <option value="on" selected>開啟（嚴格合法才可送出）</option>
+              <option value="off">關閉（手動覆寫）</option>
+            </select>
+            <small>關閉後僅檢查莊閒至少各 2 張。</small>
+          </div>
+        </div>
+      </details>
+
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="input-header">
+      <span>依序發牌（P1 → B1 → P2 → B2 → P3 → B3）</span>
+      <label class="toggle-guide">
+        <input type="checkbox" id="autoGuideToggle" checked onchange="evaluateDrawRules()">
+        防呆
+      </label>
     </div>
 
-    <div id="decisionPanel" class="oracle-panel pass">
-        <div class="oracle-title" id="mainSignal">等待數據</div>
-        <div class="oracle-subtitle" id="subSignal">請點擊鍵盤輸入牌面</div>
+    <div class="table-layout">
+      <div class="table-side">
+        <div class="side-label p">PLAYER 閒</div>
+        <div class="cards-row">
+          <div class="playing-card active" id="slot-p1" onclick="setActiveSlot('p1')" data-rank=""></div>
+          <div class="playing-card" id="slot-p2" onclick="setActiveSlot('p2')" data-rank=""></div>
+          <div class="playing-card disabled" id="slot-p3" onclick="setActiveSlot('p3')" data-rank=""></div>
+        </div>
+      </div>
+
+      <div class="table-side">
+        <div class="side-label b">BANKER 莊</div>
+        <div class="cards-row">
+          <div class="playing-card" id="slot-b1" onclick="setActiveSlot('b1')" data-rank=""></div>
+          <div class="playing-card" id="slot-b2" onclick="setActiveSlot('b2')" data-rank=""></div>
+          <div class="playing-card disabled" id="slot-b3" onclick="setActiveSlot('b3')" data-rank=""></div>
+        </div>
+      </div>
     </div>
 
-    <div class="dashboard">
-        <div class="dash-box">
-            <div class="dash-header"><span>基本面 (EV)</span> <span id="trueCount" style="color:var(--highlight)">TC: 0.0</span></div>
-            <div class="ev-row"><span class="ev-label b">莊 Banker</span> <span class="ev-val" id="evBanker" style="color:var(--text-muted)">-1.06%</span></div>
-            <div class="ev-row"><span class="ev-label p">閒 Player</span> <span class="ev-val" id="evPlayer" style="color:var(--text-muted)">-1.24%</span></div>
-        </div>
-        <div class="dash-box">
-            <div class="dash-header">技術面 (下三路)</div>
-            <div class="ev-row">
-                <span class="ev-label b">若開莊</span>
-                <div class="trend-dots" id="askB-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div>
-            </div>
-            <div class="ev-row">
-                <span class="ev-label p">若開閒</span>
-                <div class="trend-dots" id="askP-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div>
-            </div>
-            <div id="breakAlert" class="break-trend-alert" style="display:none;"></div>
-        </div>
+    <div class="keypad" id="keypad"></div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitData()" disabled>輸入需符合法定規則</button>
+
+    <div class="note">
+      ✅ 本版本把「機率/EV」改為 <b>無放回 Monte Carlo 模擬</b>（依剩餘牌庫與補牌規則），不再使用任意線性偏移。<br/>
+      ⚠️ 問路/路單只作你自己的「出手規則」，不保證預測力。
     </div>
+  </div>
 
-    <div class="module-card">
-        <div class="input-header">
-            <span>依序發牌</span>
-            <label class="toggle-guide"><input type="checkbox" id="autoGuideToggle" checked onchange="evaluateDrawRules()">防呆</label>
-        </div>
-        <div class="table-layout">
-            <div class="table-side">
-                <div class="side-label p">PLAYER 閒</div>
-                <div class="cards-row">
-                    <div class="playing-card active" id="slot-p1" onclick="setActiveSlot('p1')" data-val=""></div>
-                    <div class="playing-card" id="slot-p2" onclick="setActiveSlot('p2')" data-val=""></div>
-                    <div class="playing-card disabled" id="slot-p3" onclick="setActiveSlot('p3')" data-val=""></div>
-                </div>
-            </div>
-            <div class="table-side">
-                <div class="side-label b">BANKER 莊</div>
-                <div class="cards-row">
-                    <div class="playing-card" id="slot-b1" onclick="setActiveSlot('b1')" data-val=""></div>
-                    <div class="playing-card" id="slot-b2" onclick="setActiveSlot('b2')" data-val=""></div>
-                    <div class="playing-card disabled" id="slot-b3" onclick="setActiveSlot('b3')" data-val=""></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="keypad">
-            <div class="key" onclick="inputKey('1')"><div class="key-val">A</div><div class="key-count" id="kcnt-1">32</div></div>
-            <div class="key" onclick="inputKey('2')"><div class="key-val">2</div><div class="key-count" id="kcnt-2">32</div></div>
-            <div class="key" onclick="inputKey('3')"><div class="key-val">3</div><div class="key-count" id="kcnt-3">32</div></div>
-            <div class="key" onclick="inputKey('4')"><div class="key-val">4</div><div class="key-count" id="kcnt-4">32</div></div>
-            <div class="key" onclick="inputKey('5')"><div class="key-val">5</div><div class="key-count" id="kcnt-5">32</div></div>
-            
-            <div class="key" onclick="inputKey('6')"><div class="key-val">6</div><div class="key-count" id="kcnt-6">32</div></div>
-            <div class="key" onclick="inputKey('7')"><div class="key-val">7</div><div class="key-count" id="kcnt-7">32</div></div>
-            <div class="key" onclick="inputKey('8')"><div class="key-val">8</div><div class="key-count" id="kcnt-8">32</div></div>
-            <div class="key" onclick="inputKey('9')"><div class="key-val">9</div><div class="key-count" id="kcnt-9">32</div></div>
-            <div class="key" onclick="inputKey('10')"><div class="key-val">10</div><div class="key-count" id="kcnt-10">32</div></div>
-            
-            <div class="key" onclick="inputKey('11')"><div class="key-val">J</div><div class="key-count" id="kcnt-11">32</div></div>
-            <div class="key" onclick="inputKey('12')"><div class="key-val">Q</div><div class="key-count" id="kcnt-12">32</div></div>
-            <div class="key" onclick="inputKey('13')"><div class="key-val">K</div><div class="key-count" id="kcnt-13">32</div></div>
-            <div class="key action-clear" onclick="clearAllSlots()"><span>⌫</span> 清空</div>
-        </div>
-
-        <button class="submit-btn" id="submitBtn" onclick="submitData()" disabled>輸入需符合法定規則</button>
+  <div class="module-card" style="padding: 8px;">
+    <div class="road-container"><div class="road-grid" id="grid-big"></div></div>
+    <div class="derived-roads-wrapper">
+      <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-eye"></div></div></div>
+      <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-small"></div></div></div>
+      <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-roach"></div></div></div>
     </div>
+  </div>
 
-    <div class="module-card" style="padding: 8px;">
-        <div class="road-container"><div class="road-grid" id="grid-big"></div></div>
-        <div class="derived-roads-wrapper">
-            <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-eye"></div></div></div>
-            <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-small"></div></div></div>
-            <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-roach"></div></div></div>
-        </div>
-    </div>
+<script>
+/* =========================
+   A) 參數 / 狀態（含 localStorage）
+========================= */
+const STORE_KEY = "baccarat_giant_strict_mc_v1";
 
-    <script>
-        // === 核心資料庫 ===
-        let totalCards = 416;
-        let deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32};
-        const countWeights = {1:1, 2:1, 3:2, 4:2, 5:1, 6:-1, 7:-2, 8:-2, 9:-2, 10:0, 11:0, 12:0, 13:0};
-        let runningCount = 0;
-        const baseBankerProb = 0.458597; const basePlayerProb = 0.446247; 
-        let historyLog = []; let backupState = null;
-        const slotOrder = ['p1', 'b1', 'p2', 'b2', 'p3', 'b3']; 
-        let currentSlotIdx = 0;
+const DEFAULTS = {
+  decks: 8,
+  commission: 0.05,
+  mode: "winrate",          // winrate | ev | display
+  trendGate: "2",           // off | 2 | 3
+  dragonGuard: "on",        // on | off
+  trials: 12000,
+  betMode: "martingale",    // martingale | flat
+  flatBet: 100,
+  autoGuide: "on",
 
-        function updateKeypadCounts() {
-            for(let i=1; i<=13; i++) {
-                let el = document.getElementById(`kcnt-${i}`);
-                if(el) { el.innerText = deck[i]; el.className = deck[i] < 10 ? "key-count low" : "key-count"; }
+  // runtime state
+  rankCounts: null,         // {1..13:count}
+  history: [],              // ['B','P','T']
+  armed: false,             // Opt-in bet
+  plannedSide: "PASS",      // 'B'|'P'|'PASS'
+  step: 1,                  // martingale step 1..4
+  stats: { placed:0, win:0, loss:0, push:0 }, // only when armed
+};
+
+let S = loadState() || initState();
+let backupState = null;
+
+function initCounts(decks=8){
+  const c = {};
+  for(let r=1;r<=13;r++) c[r] = 4*decks;
+  return c;
+}
+function initState(){
+  const st = structuredClone(DEFAULTS);
+  st.rankCounts = initCounts(st.decks);
+  return st;
+}
+function saveState(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){}
+}
+function loadState(){
+  try{
+    const t = localStorage.getItem(STORE_KEY);
+    if(!t) return null;
+    const obj = JSON.parse(t);
+    // minimal validation
+    if(!obj.rankCounts || !obj.history) return null;
+    return Object.assign(structuredClone(DEFAULTS), obj);
+  }catch(e){ return null; }
+}
+function snapshot(){
+  backupState = structuredClone(S);
+}
+
+/* =========================
+   B) DOM refs
+========================= */
+const $ = (id)=>document.getElementById(id);
+
+const ui = {
+  totalCards: $("totalCards"),
+  roundCount: $("roundCount"),
+  armedFlag: $("armedFlag"),
+  simInfo: $("simInfo"),
+
+  bankerOdds: $("bankerOdds"),
+  playerOdds: $("playerOdds"),
+  tieOdds: $("tieOdds"),
+  evBanker: $("evBanker"),
+  evPlayer: $("evPlayer"),
+
+  dragonRadar: $("dragonRadar"),
+  dragonText: $("dragonText"),
+  dragonCount: $("dragonCount"),
+
+  decisionPanel: $("decisionPanel"),
+  mainSignal: $("mainSignal"),
+  subSignal: $("subSignal"),
+
+  askB: $("askB-dots"),
+  askP: $("askP-dots"),
+  breakAlert: $("breakAlert"),
+
+  modeText: $("modeText"),
+  suggestText: $("suggestText"),
+  betAmount: $("betAmount"),
+  hitRate: $("hitRate"),
+  armBtn: $("armBtn"),
+
+  autoGuideToggle: $("autoGuideToggle"),
+  submitBtn: $("submitBtn"),
+
+  keypad: $("keypad"),
+
+  // settings
+  setMode: $("setMode"),
+  setTrendGate: $("setTrendGate"),
+  setDragonGuard: $("setDragonGuard"),
+  setTrials: $("setTrials"),
+  setCommission: $("setCommission"),
+  setBetMode: $("setBetMode"),
+  setFlatBet: $("setFlatBet"),
+  setAutoGuide: $("setAutoGuide"),
+
+  gridBig: $("grid-big"),
+  gridEye: $("grid-eye"),
+  gridSmall: $("grid-small"),
+  gridRoach: $("grid-roach"),
+};
+
+/* =========================
+   C) UI：鍵盤（含退格）
+========================= */
+const slotOrder = ["p1","b1","p2","b2","p3","b3"];
+let currentSlotIdx = 0;
+
+function rankToDisplay(n){
+  n = parseInt(n,10);
+  if (n===1) return "A";
+  if (n===11) return "J";
+  if (n===12) return "Q";
+  if (n===13) return "K";
+  return String(n);
+}
+function baccaratValFromRank(n){
+  n = parseInt(n,10);
+  return (n>=10)?0:n;
+}
+function getSlotRank(id){
+  return $(`slot-${id}`).dataset.rank || "";
+}
+function setSlotRank(id, rank){
+  const el = $(`slot-${id}`);
+  el.dataset.rank = rank ? String(rank) : "";
+  el.textContent = rank ? rankToDisplay(rank) : "";
+  el.classList.toggle("filled", !!rank);
+}
+function clearAllSlots(){
+  slotOrder.forEach(id=>{
+    const el = $(`slot-${id}`);
+    el.dataset.rank = "";
+    el.textContent = "";
+    el.classList.remove("filled");
+  });
+  currentSlotIdx = 0;
+  setActiveSlot("p1");
+  evaluateDrawRules();
+  updateKeypadCounts();
+}
+function backspace(){
+  for(let i=slotOrder.length-1;i>=0;i--){
+    const id = slotOrder[i];
+    if(getSlotRank(id)){
+      setSlotRank(id, "");
+      currentSlotIdx = i;
+      setActiveSlot(id);
+      evaluateDrawRules();
+      updateKeypadCounts();
+      return;
+    }
+  }
+}
+
+function pendingCounts(){
+  const p = {};
+  for(let r=1;r<=13;r++) p[r]=0;
+  slotOrder.forEach(id=>{
+    const rk = getSlotRank(id);
+    if(rk) p[parseInt(rk,10)]++;
+  });
+  return p;
+}
+
+function buildKeypad(){
+  const keys = [
+    {v:"1",  t:"A"},
+    {v:"2",  t:"2"},
+    {v:"3",  t:"3"},
+    {v:"4",  t:"4"},
+    {v:"5",  t:"5"},
+    {v:"6",  t:"6"},
+    {v:"7",  t:"7"},
+    {v:"8",  t:"8"},
+    {v:"9",  t:"9"},
+    {v:"10", t:"10"},
+    {v:"11", t:"J"},
+    {v:"12", t:"Q"},
+    {v:"13", t:"K"},
+  ];
+
+  ui.keypad.innerHTML = "";
+  keys.forEach(k=>{
+    const btn = document.createElement("div");
+    btn.className = "key";
+    btn.innerHTML = `<div class="key-val">${k.t}</div><div class="key-count" id="kcnt-${k.v}">--</div>`;
+    btn.onclick = ()=> inputKey(k.v);
+    ui.keypad.appendChild(btn);
+  });
+
+  const back = document.createElement("div");
+  back.className = "key action-back";
+  back.innerHTML = `<span>⌫</span> 退格`;
+  back.onclick = ()=> backspace();
+  ui.keypad.appendChild(back);
+
+  const clr = document.createElement("div");
+  clr.className = "key action-clear";
+  clr.innerHTML = `<span>🗑️</span> 清空`;
+  clr.onclick = ()=> clearAllSlots();
+  ui.keypad.appendChild(clr);
+}
+
+function updateKeypadCounts(){
+  const pend = pendingCounts();
+  for(let r=1;r<=13;r++){
+    const el = $(`kcnt-${r}`);
+    if(!el) continue;
+    const remain = (S.rankCounts[r]||0) - (pend[r]||0);  // ✅ 修正：扣掉本局已輸入同牌
+    el.textContent = String(remain);
+    el.className = "key-count" + (remain < 10 ? " low" : "");
+  }
+}
+
+/* =========================
+   D) 補牌防呆（嚴格 Tableau）
+========================= */
+function getBaccaratValFromSlot(id){
+  const rk = getSlotRank(id);
+  if(!rk) return null;
+  return baccaratValFromRank(rk);
+}
+
+function setActiveSlot(slotId){
+  const el = $(`slot-${slotId}`);
+  if(el.classList.contains("disabled")) return;
+  document.querySelectorAll(".playing-card").forEach(x=>x.classList.remove("active"));
+  el.classList.add("active");
+  currentSlotIdx = slotOrder.indexOf(slotId);
+}
+
+function evaluateDrawRules(){
+  const strict = (S.autoGuide === "on") && ui.autoGuideToggle.checked;
+
+  const p3El = $("slot-p3");
+  const b3El = $("slot-b3");
+  const btn  = ui.submitBtn;
+
+  if(!strict){
+    p3El.classList.remove("disabled");
+    b3El.classList.remove("disabled");
+    // manual: require at least p1,p2,b1,b2
+    const ok = !!getSlotRank("p1") && !!getSlotRank("p2") && !!getSlotRank("b1") && !!getSlotRank("b2");
+    if(ok){
+      btn.disabled = false;
+      btn.className = "submit-btn ready";
+      btn.textContent = "送出結算（手動覆寫模式）";
+    }else{
+      btn.disabled = true;
+      btn.className = "submit-btn";
+      btn.textContent = "至少輸入莊閒各 2 張";
+    }
+    return;
+  }
+
+  const p1 = getBaccaratValFromSlot("p1");
+  const p2 = getBaccaratValFromSlot("p2");
+  const b1 = getBaccaratValFromSlot("b1");
+  const b2 = getBaccaratValFromSlot("b2");
+
+  if(p1===null || p2===null || b1===null || b2===null){
+    p3El.classList.add("disabled");
+    b3El.classList.add("disabled");
+    btn.disabled = true;
+    btn.className = "submit-btn";
+    btn.textContent = "等待完成前四張牌...";
+    return;
+  }
+
+  const pTotal = (p1+p2)%10;
+  const bTotal = (b1+b2)%10;
+  const isNatural = (pTotal>=8 || bTotal>=8);
+
+  let needP3 = false;
+  let needB3 = false;
+
+  const p3Val = getBaccaratValFromSlot("p3");
+  const b3Val = getBaccaratValFromSlot("b3");
+
+  if(!isNatural){
+    if(pTotal<=5) needP3 = true;
+
+    if(!needP3){
+      if(bTotal<=5) needB3 = true;
+    }else{
+      // banker depends on p3
+      if(p3Val!==null){
+        if (bTotal <= 2) needB3 = true;
+        else if (bTotal === 3 && p3Val !== 8) needB3 = true;
+        else if (bTotal === 4 && p3Val >= 2 && p3Val <= 7) needB3 = true;
+        else if (bTotal === 5 && p3Val >= 4 && p3Val <= 7) needB3 = true;
+        else if (bTotal === 6 && (p3Val === 6 || p3Val === 7)) needB3 = true;
+      }
+    }
+  }
+
+  // lock/unlock
+  if(isNatural){
+    p3El.classList.add("disabled");
+    b3El.classList.add("disabled");
+  }else{
+    if(needP3) p3El.classList.remove("disabled"); else p3El.classList.add("disabled");
+    // banker third lock until player third present when required
+    if(needP3 && p3Val===null){
+      b3El.classList.add("disabled");
+    }else{
+      if(needB3) b3El.classList.remove("disabled"); else b3El.classList.add("disabled");
+    }
+  }
+
+  // validate
+  let valid = true;
+  let msg = "✓ 牌局合法，點擊送出結算";
+
+  if(isNatural && (p3Val!==null || b3Val!==null)) { valid=false; msg="錯誤：天牌不可補牌"; }
+  if(valid && needP3 && p3Val===null)            { valid=false; msg="錯誤：閒家必須補牌"; }
+  if(valid && !needP3 && p3Val!==null)           { valid=false; msg="錯誤：閒家不可補牌"; }
+
+  if(valid && needP3 && p3Val!==null){
+    if(needB3 && b3Val===null)                   { valid=false; msg="錯誤：莊家必須補牌"; }
+    if(!needB3 && b3Val!==null)                  { valid=false; msg="錯誤：莊家不可補牌"; }
+  }
+  if(valid && !needP3){
+    if(needB3 && b3Val===null)                   { valid=false; msg="錯誤：莊家必須補牌"; }
+    if(!needB3 && b3Val!==null)                  { valid=false; msg="錯誤：莊家不可補牌"; }
+  }
+
+  if(totalRemaining() < 6){
+    valid = false;
+    msg = "靴底不足（請換靴）";
+  }
+
+  btn.disabled = !valid;
+  btn.className = valid ? "submit-btn ready" : "submit-btn";
+  btn.textContent = valid ? msg : msg;
+}
+
+function inputKey(val){
+  // ✅ 修正：庫存檢查需扣掉本局已輸入
+  const pend = pendingCounts();
+  const remain = (S.rankCounts[parseInt(val,10)]||0) - (pend[parseInt(val,10)]||0);
+  if(remain <= 0){
+    alert(`庫存異常！牌面 ${rankToDisplay(val)} 已無可用張數（含本局已輸入）。`);
+    return;
+  }
+
+  // skip disabled slots
+  while(currentSlotIdx < slotOrder.length && $(`slot-${slotOrder[currentSlotIdx]}`).classList.contains("disabled")){
+    currentSlotIdx++;
+  }
+  if(currentSlotIdx >= slotOrder.length) return;
+
+  const id = slotOrder[currentSlotIdx];
+  const el = $(`slot-${id}`);
+
+  el.textContent = rankToDisplay(val);
+  el.dataset.rank = val;
+  el.classList.add("filled");
+
+  evaluateDrawRules();
+  updateKeypadCounts();
+
+  currentSlotIdx++;
+  while(currentSlotIdx < slotOrder.length && $(`slot-${slotOrder[currentSlotIdx]}`).classList.contains("disabled")){
+    currentSlotIdx++;
+  }
+  if(currentSlotIdx < slotOrder.length){
+    setActiveSlot(slotOrder[currentSlotIdx]);
+  }else{
+    document.querySelectorAll(".playing-card").forEach(x=>x.classList.remove("active"));
+  }
+}
+
+/* =========================
+   E) 勝負判定 + 扣牌
+========================= */
+function cardsConsumed(){
+  const arr = [];
+  ["p1","p2","p3","b1","b2","b3"].forEach(id=>{
+    const rk = getSlotRank(id);
+    if(rk) arr.push(parseInt(rk,10));
+  });
+  return arr;
+}
+function computeWinner(){
+  let pSum=0, bSum=0;
+  ["p1","p2","p3"].forEach(id=>{
+    const rk = getSlotRank(id);
+    if(rk) pSum += baccaratValFromRank(rk);
+  });
+  ["b1","b2","b3"].forEach(id=>{
+    const rk = getSlotRank(id);
+    if(rk) bSum += baccaratValFromRank(rk);
+  });
+  const pF = pSum % 10;
+  const bF = bSum % 10;
+  if(pF>bF) return "P";
+  if(bF>pF) return "B";
+  return "T";
+}
+function totalRemaining(){
+  let t=0;
+  for(let r=1;r<=13;r++) t += (S.rankCounts[r]||0);
+  return t;
+}
+
+/* =========================
+   F) Monte Carlo：無放回抽牌 + 標準補牌規則
+========================= */
+function drawRankFromCounts(counts, total){
+  const x = Math.floor(Math.random()*total);
+  let acc=0;
+  for(let r=1;r<=13;r++){
+    acc += counts[r];
+    if(x < acc){
+      counts[r]--;
+      return r;
+    }
+  }
+  counts[13]--;
+  return 13;
+}
+
+function simulateOneHand(countsBase){
+  const counts = new Array(14).fill(0);
+  let total=0;
+  for(let r=1;r<=13;r++){ counts[r]=countsBase[r]; total+=counts[r]; }
+
+  const p1 = drawRankFromCounts(counts,total--);
+  const b1 = drawRankFromCounts(counts,total--);
+  const p2 = drawRankFromCounts(counts,total--);
+  const b2 = drawRankFromCounts(counts,total--);
+
+  const pT = (baccaratValFromRank(p1)+baccaratValFromRank(p2))%10;
+  const bT = (baccaratValFromRank(b1)+baccaratValFromRank(b2))%10;
+
+  if(pT>=8 || bT>=8){
+    if(pT>bT) return "P";
+    if(bT>pT) return "B";
+    return "T";
+  }
+
+  let p3=null, b3=null;
+
+  if(pT<=5){
+    p3 = drawRankFromCounts(counts,total--);
+  }
+
+  // banker rule
+  if(p3===null){
+    if(bT<=5) b3 = drawRankFromCounts(counts,total--);
+  }else{
+    const p3v = baccaratValFromRank(p3);
+    let needB3=false;
+    if (bT <= 2) needB3 = true;
+    else if (bT === 3 && p3v !== 8) needB3 = true;
+    else if (bT === 4 && p3v >= 2 && p3v <= 7) needB3 = true;
+    else if (bT === 5 && p3v >= 4 && p3v <= 7) needB3 = true;
+    else if (bT === 6 && (p3v === 6 || p3v === 7)) needB3 = true;
+
+    if(needB3) b3 = drawRankFromCounts(counts,total--);
+  }
+
+  const pF = (baccaratValFromRank(p1)+baccaratValFromRank(p2)+(p3?baccaratValFromRank(p3):0))%10;
+  const bF = (baccaratValFromRank(b1)+baccaratValFromRank(b2)+(b3?baccaratValFromRank(b3):0))%10;
+
+  if(pF>bF) return "P";
+  if(bF>pF) return "B";
+  return "T";
+}
+
+function simulateProbs(trials){
+  const base = new Array(14).fill(0);
+  for(let r=1;r<=13;r++) base[r]=S.rankCounts[r];
+
+  let B=0,P=0,T=0;
+  for(let i=0;i<trials;i++){
+    const w = simulateOneHand(base);
+    if(w==="B") B++; else if(w==="P") P++; else T++;
+  }
+  return {pB:B/trials, pP:P/trials, pT:T/trials};
+}
+
+/* =========================
+   G) 路單 + 問路（沿用你既有生成）
+========================= */
+function genericMatrixMapper(arr, supportTie) {
+  let gridMap = {};
+  let lastRes = null;
+  let sc = 0, cc = 0, cr = 0, mc = 0;
+  let lastCrd = null;
+  let pendingTies = 0;
+
+  for (let i = 0; i < arr.length; i++) {
+    let res = arr[i];
+
+    if (supportTie && res === 'T') {
+      if (lastCrd && gridMap[lastCrd]) gridMap[lastCrd].tie++;
+      else pendingTies++;
+      continue;
+    }
+
+    if (res === lastRes) {
+      let nr = cr + 1;
+      if (nr <= 5 && !gridMap[`${cc},${nr}`]) cr = nr;
+      else cc++;
+    } else {
+      if (lastRes !== null) { sc++; while (gridMap[`${sc},0`]) sc++; }
+      cc = sc; cr = 0;
+    }
+
+    lastCrd = `${cc},${cr}`;
+    gridMap[lastCrd] = { val: res, tie: pendingTies };
+    pendingTies = 0;
+    lastRes = res;
+    if (cc > mc) mc = cc;
+  }
+  return { grid: gridMap, maxCol: mc };
+}
+
+function generateDerivedArrays(hist) {
+  let pHist = hist.filter(x => x !== 'T');
+  let pCols = [];
+  let cCol = [];
+  let lRes = null;
+
+  for (let r of pHist) {
+    if (r === lRes) cCol.push(r);
+    else { if (cCol.length > 0) pCols.push(cCol); cCol = [r]; lRes = r; }
+  }
+  if (cCol.length > 0) pCols.push(cCol);
+
+  let eye = [], sm = [], roach = [];
+  for (let c = 0; c < pCols.length; c++) {
+    for (let r = 0; r < pCols[c].length; r++) {
+
+      if (c >= 1) {
+        if (r === 0 && c >= 2) eye.push(pCols[c - 1].length === pCols[c - 2].length ? 'R' : 'Blue');
+        else if (r > 0) eye.push((pCols[c - 1] && pCols[c - 1].length > r) ? 'R' : 'Blue');
+      }
+
+      if (c >= 2) {
+        if (r === 0 && c >= 3) sm.push(pCols[c - 1].length === pCols[c - 3].length ? 'R' : 'Blue');
+        else if (r > 0) sm.push((pCols[c - 2] && pCols[c - 2].length > r) ? 'R' : 'Blue');
+      }
+
+      if (c >= 3) {
+        if (r === 0 && c >= 4) roach.push(pCols[c - 1].length === pCols[c - 4].length ? 'R' : 'Blue');
+        else if (r > 0) roach.push((pCols[c - 3] && pCols[c - 3].length > r) ? 'R' : 'Blue');
+      }
+    }
+  }
+  return { eye, small: sm, roach };
+}
+
+function renderGrid(domId, gridMap, maxCol, type) {
+  const container = $(domId);
+  container.innerHTML = '';
+  const isSm = (type === 'small' || type === 'roach');
+  const cols = Math.max(isSm ? 24 : 16, maxCol + 1);
+
+  for (let c = 0; c < cols; c++) {
+    let colDiv = document.createElement('div');
+    colDiv.className = 'road-col';
+
+    for (let r = 0; r < 6; r++) {
+      let cell = document.createElement('div');
+      cell.className = isSm ? 'cell-sm' : 'cell-lg';
+
+      if (gridMap[`${c},${r}`]) {
+        let data = gridMap[`${c},${r}`];
+        let item = document.createElement('div');
+
+        if (type === 'big' || type === 'eye') {
+          item.className = `circle-hollow ${data.val}`;
+          if (type === 'big' && data.tie > 0) {
+            item.classList.add('tie-line');
+            if (data.tie > 1) {
+              let txt = document.createElement('span');
+              txt.className = 'tie-text';
+              txt.innerText = data.tie;
+              item.appendChild(txt);
             }
-        }
+          }
+        } else if (type === 'small') item.className = `circle-solid ${data.val}`;
+        else if (type === 'roach') item.className = `slash ${data.val}`;
 
-        // === 補牌防呆 ===
-        function getBaccaratVal(id) { let v = document.getElementById(`slot-${id}`).dataset.val; if (!v) return null; let num = parseInt(v); return num >= 10 ? 0 : num; }
+        cell.appendChild(item);
+      }
 
-        function evaluateDrawRules() {
-            const autoGuide = document.getElementById('autoGuideToggle').checked;
-            const p3El = document.getElementById('slot-p3'), b3El = document.getElementById('slot-b3'), submitBtn = document.getElementById('submitBtn');
-            
-            if (!autoGuide) { p3El.classList.remove('disabled'); b3El.classList.remove('disabled'); submitBtn.classList.remove('ready'); return; }
+      colDiv.appendChild(cell);
+    }
+    container.appendChild(colDiv);
+  }
 
-            let p1 = getBaccaratVal('p1'), p2 = getBaccaratVal('p2'), b1 = getBaccaratVal('b1'), b2 = getBaccaratVal('b2');
-            if (p1 === null || p2 === null || b1 === null || b2 === null) { p3El.classList.add('disabled'); b3El.classList.add('disabled'); submitBtn.className="submit-btn"; submitBtn.disabled=true; submitBtn.innerText="等待完成前四張牌..."; return; }
+  container.parentElement.scrollLeft = container.parentElement.scrollWidth;
+}
 
-            let pTotal = (p1 + p2) % 10; let bTotal = (b1 + b2) % 10;
-            let isNatural = (pTotal >= 8 || bTotal >= 8);
-            let expectedP3 = false; let expectedB3 = false;
+function renderAllRoads() {
+  let bigMap = genericMatrixMapper(S.history, true);
+  let derived = generateDerivedArrays(S.history);
 
-            if (!isNatural) {
-                if (pTotal <= 5) expectedP3 = true;
-                if (!expectedP3) { if (bTotal <= 5) expectedB3 = true; } 
-                else {
-                    if (p3El.dataset.val) { 
-                        let p3 = getBaccaratVal('p3');
-                        if (bTotal <= 2) expectedB3 = true;
-                        else if (bTotal === 3 && p3 !== 8) expectedB3 = true;
-                        else if (bTotal === 4 && p3 >= 2 && p3 <= 7) expectedB3 = true;
-                        else if (bTotal === 5 && p3 >= 4 && p3 <= 7) expectedB3 = true;
-                        else if (bTotal === 6 && (p3 === 6 || p3 === 7)) expectedB3 = true;
-                    }
-                }
-            }
+  renderGrid('grid-big', bigMap.grid, bigMap.maxCol, 'big');
 
-            let valid = true; let msg = "牌局合法，點擊送出結算";
-            let p3Val = p3El.dataset.val ? getBaccaratVal('p3') : null;
-            let b3Val = b3El.dataset.val ? getBaccaratVal('b3') : null;
+  const eyeMap = genericMatrixMapper(derived.eye, false);
+  const smMap  = genericMatrixMapper(derived.small, false);
+  const roMap  = genericMatrixMapper(derived.roach, false);
 
-            if (isNatural && (p3Val !== null || b3Val !== null)) valid = false;
-            if (expectedP3 && p3Val === null) valid = false;
-            if (!expectedP3 && p3Val !== null) valid = false;
-            if (valid && expectedP3 && p3Val !== null) { if (expectedB3 && b3Val === null) valid = false; if (!expectedB3 && b3Val !== null) valid = false; } 
-            else if (valid && !expectedP3) { if (expectedB3 && b3Val === null) valid = false; if (!expectedB3 && b3Val !== null) valid = false; }
+  renderGrid('grid-eye', eyeMap.grid, eyeMap.maxCol, 'eye');
+  renderGrid('grid-small', smMap.grid, smMap.maxCol, 'small');
+  renderGrid('grid-roach', roMap.grid, roMap.maxCol, 'roach');
+}
 
-            if (expectedP3) p3El.classList.remove('disabled'); else p3El.classList.add('disabled');
-            if (expectedP3 && p3Val === null) b3El.classList.add('disabled'); 
-            else { if (expectedB3) b3El.classList.remove('disabled'); else b3El.classList.add('disabled'); }
+/* =========================
+   H) 決策引擎（勝率/EV + 過濾器）
+========================= */
+function streakInfo(){
+  const pure = S.history.filter(x=>x!=="T");
+  if(pure.length===0) return {side:null, len:0};
+  const side = pure[pure.length-1];
+  let len=0;
+  for(let i=pure.length-1;i>=0;i--){
+    if(pure[i]===side) len++;
+    else break;
+  }
+  return {side, len};
+}
 
-            if (valid) { submitBtn.className = "submit-btn ready"; submitBtn.disabled = false; submitBtn.innerText = msg; } 
-            else { submitBtn.className = "submit-btn"; submitBtn.disabled = true; submitBtn.innerText = "需符合法定發牌規則"; }
-        }
+function updateAskDots(askB, askP){
+  function setDots(el, arr){
+    el.innerHTML = "";
+    arr.forEach(x=>{
+      const d = document.createElement("div");
+      d.className = "dot " + (x==="R"?"r":x==="Blue"?"b":"e");
+      el.appendChild(d);
+    });
+  }
+  setDots(ui.askB, askB);
+  setDots(ui.askP, askP);
+}
 
-        function setActiveSlot(slotId) {
-            let el = document.getElementById(`slot-${slotId}`); if (el.classList.contains('disabled')) return; 
-            document.querySelectorAll('.playing-card').forEach(e => e.classList.remove('active')); 
-            el.classList.add('active'); currentSlotIdx = slotOrder.indexOf(slotId);
-        }
+function getLast3(arrObj){
+  // last colors of eye/small/roach after appending hypothetical result
+  const last = (a)=>a.length ? a[a.length-1] : null;
+  return [ last(arrObj.eye), last(arrObj.small), last(arrObj.roach) ];
+}
 
-        function inputKey(val) {
-            if (deck[val] <= 0) { alert(`庫存異常！牌面 ${val} 已耗盡。`); return; }
-            while (currentSlotIdx < slotOrder.length && document.getElementById(`slot-${slotOrder[currentSlotIdx]}`).classList.contains('disabled')) { currentSlotIdx++; }
-            if (currentSlotIdx >= slotOrder.length) return; 
+function decide(probs){
+  // EV
+  const com = S.commission;
+  const evB = (probs.pB * (1-com)) - probs.pP;
+  const evP = probs.pP - probs.pB;
 
-            const activeId = slotOrder[currentSlotIdx]; const el = document.getElementById(`slot-${activeId}`);
-            let dVal = val; if (val==='1') dVal='A'; if (val==='11') dVal='J'; if (val==='12') dVal='Q'; if (val==='13') dVal='K';
-            el.innerText = dVal; el.dataset.val = val; el.classList.add('filled');
-            
-            evaluateDrawRules();
-            currentSlotIdx++;
-            while (currentSlotIdx < slotOrder.length && document.getElementById(`slot-${slotOrder[currentSlotIdx]}`).classList.contains('disabled')) { currentSlotIdx++; }
-            if (currentSlotIdx < slotOrder.length) { setActiveSlot(slotOrder[currentSlotIdx]); } 
-            else { document.querySelectorAll('.playing-card').forEach(e => e.classList.remove('active')); }
-        }
+  // Winrate (exclude ties)
+  const denom = Math.max(1e-9, probs.pB + probs.pP);
+  const winB = probs.pB / denom;
+  const winP = probs.pP / denom;
 
-        function clearAllSlots() { slotOrder.forEach(id => { const el = document.getElementById(`slot-${id}`); el.innerText = ''; el.dataset.val = ''; el.classList.remove('filled'); }); currentSlotIdx = 0; evaluateDrawRules(); setActiveSlot('p1'); }
+  // ask-road
+  const dB = generateDerivedArrays([...S.history, "B"]);
+  const dP = generateDerivedArrays([...S.history, "P"]);
+  const askB = getLast3(dB);
+  const askP = getLast3(dP);
 
-        function saveState() { backupState = { totalCards, deck: Object.assign({}, deck), runningCount, historyLog: [...historyLog] }; }
+  const bRed = askB.filter(x=>x==="R").length;
+  const pRed = askP.filter(x=>x==="R").length;
 
-        function undoLastRound() {
-            if (!backupState) return;
-            totalCards = backupState.totalCards; deck = Object.assign({}, backupState.deck);
-            runningCount = backupState.runningCount; historyLog = [...backupState.historyLog];
-            recalcAndRender(); backupState = null; clearAllSlots();
-        }
+  updateAskDots(askB, askP);
 
-        function resetSystem() {
-            if(confirm("重置整靴牌？")) {
-                totalCards = 416; deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32};
-                runningCount = 0; historyLog = []; backupState = null; recalcAndRender(); clearAllSlots();
-            }
-        }
+  // break alert
+  const s = streakInfo();
+  ui.breakAlert.style.display = "none";
+  if(s.side && s.len>=3){
+    ui.breakAlert.style.display = "block";
+    const breakSide = (s.side==="B") ? "P" : "B";
+    const breakAsk = (breakSide==="B") ? askB : askP;
+    const blues = breakAsk.filter(x=>x==="Blue").length;
+    ui.breakAlert.textContent = blues>=2
+      ? "變路沙盤：若下一把反向（斷龍）→ 下三路偏藍（結構轉折）"
+      : "變路沙盤：若下一把反向（斷龍）→ 下三路未明顯轉藍（動能仍在）";
+  }
 
-        function submitData() {
-            const btn = document.getElementById('submitBtn');
-            if (btn.disabled) return;
-            
-            let pRaw = [], bRaw = [], pPts = 0, bPts = 0; let cardsConsumed = []; 
-            ['p1', 'p2', 'p3'].forEach(id => { let v = document.getElementById(`slot-${id}`).dataset.val; if(v) { let rv = parseInt(v); pRaw.push(rv); cardsConsumed.push(rv); pPts += (rv >= 10 ? 0 : rv); } });
-            ['b1', 'b2', 'b3'].forEach(id => { let v = document.getElementById(`slot-${id}`).dataset.val; if(v) { let rv = parseInt(v); bRaw.push(rv); cardsConsumed.push(rv); bPts += (rv >= 10 ? 0 : rv); } });
-            
-            btn.disabled = true; btn.innerText = "資料演算中...";
-            saveState();
+  // dragon radar
+  if(S.dragonGuard==="on" && s.side && s.len>=4){
+    ui.dragonRadar.className = "dragon-radar active";
+    ui.dragonText.textContent = `⚠️ 動能過熱：${s.side==="B"?"莊":"閒"}長龍持續中（避免逆勢）`;
+    ui.dragonCount.textContent = `連 ${s.len}`;
+  }else{
+    ui.dragonRadar.className = "dragon-radar";
+  }
 
-            let fP = pPts % 10, fB = bPts % 10, winner = 'T';
-            if (fP > fB) winner = 'P'; else if (fB > fP) winner = 'B';
-            historyLog.push(winner); 
+  // mode
+  ui.modeText.textContent =
+    (S.mode==="winrate") ? "勝率模式" :
+    (S.mode==="ev") ? "EV 模式" : "只顯示";
 
-            cardsConsumed.forEach(val => { deck[val]--; totalCards--; runningCount += countWeights[val]; });
+  // choose baseSide
+  if(S.mode==="display"){
+    return { state:"PASS", main:"觀望", sub:"只顯示模式" };
+  }
 
-            clearAllSlots(); recalcAndRender();
-            setTimeout(() => { if(totalCards >= 6) { btn.disabled = true; btn.innerText = "等待完成前四張牌..."; } }, 300);
-        }
+  let baseSide = "B";
+  if(S.mode==="ev"){
+    if(Math.max(evB, evP) <= 0){
+      return { state:"PASS", main:"觀望", sub:"EV ≤ 0（依設定不出手）" };
+    }
+    baseSide = (evB >= evP) ? "B" : "P";
+  }else{
+    baseSide = (winB >= winP) ? "B" : "P";
+  }
 
-        // === 動能監控與決策引擎 ===
-        function recalcAndRender() {
-            let decksRemaining = totalCards / 52;
-            let trueCount = decksRemaining > 0 ? (runningCount / decksRemaining) : 0;
-            let edgeShift = trueCount * 0.0005; 
-            let p_player = basePlayerProb + edgeShift;
-            let p_banker = baseBankerProb - edgeShift;
+  // trend gate
+  const gate = S.trendGate;
+  if(gate !== "off"){
+    const need = parseInt(gate,10);
+    if(baseSide==="B" && bRed < need) return { state:"PASS", main:"觀望", sub:`問路未達門檻（莊需≥${need}紅）` };
+    if(baseSide==="P" && pRed < need) return { state:"PASS", main:"觀望", sub:`問路未達門檻（閒需≥${need}紅）` };
+  }
 
-            let evBanker = (p_banker * 0.95) - p_player;
-            let evPlayer = p_player - p_banker;
+  // dragon guard: block contrarian when long streak
+  if(S.dragonGuard==="on" && s.side && s.len>=4){
+    if(baseSide !== s.side){
+      return { state:"PASS", main:"觀望", sub:`長龍過熱（連${s.len}）｜避免逆勢接刀` };
+    }
+  }
 
-            document.getElementById('totalCards').innerText = totalCards;
-            document.getElementById('roundCount').innerText = historyLog.length;
-            document.getElementById('trueCount').innerText = `TC: ${trueCount.toFixed(1)}`;
-            
-            let evB_el = document.getElementById('evBanker'); evB_el.innerText = (evBanker * 100).toFixed(2) + "%"; evB_el.style.color = evBanker > 0 ? "var(--tie-green)" : "var(--text-muted)";
-            let evP_el = document.getElementById('evPlayer'); evP_el.innerText = (evPlayer * 100).toFixed(2) + "%"; evP_el.style.color = evPlayer > 0 ? "var(--tie-green)" : "var(--text-muted)";
-            
-            let pureRounds = historyLog.filter(x => x !== 'T');
-            let currentStreakSide = null;
-            let streakLength = 0;
-            
-            if (pureRounds.length > 0) {
-                currentStreakSide = pureRounds[pureRounds.length - 1];
-                for (let i = pureRounds.length - 1; i >= 0; i--) {
-                    if (pureRounds[i] === currentStreakSide) streakLength++;
-                    else break;
-                }
-            }
+  // final
+  if(baseSide==="B"){
+    return { state:"B", main:"🔥 押莊", sub:(S.mode==="ev" ? "EV>0 且過濾器達標" : "勝率優先 且過濾器達標") };
+  }else{
+    return { state:"P", main:"🔥 押閒", sub:(S.mode==="ev" ? "EV>0 且過濾器達標" : "勝率優先 且過濾器達標") };
+  }
+}
 
-            const radar = document.getElementById('dragonRadar');
-            const breakAlert = document.getElementById('breakAlert');
-            
-            if (streakLength >= 4) {
-                radar.className = "dragon-radar active";
-                let sideName = currentStreakSide === 'B' ? '莊' : '閒';
-                document.getElementById('dragonText').innerText = `⚠️ 動能過熱：${sideName}長龍持續中`;
-                document.getElementById('dragonCount').innerText = `連 ${streakLength}`;
-            } else {
-                radar.className = "dragon-radar";
-            }
+/* =========================
+   I) 下注 Opt-in + 統計
+========================= */
+function currentBet(){
+  if(S.betMode==="flat") return Math.max(1, parseInt(S.flatBet,10)||100);
+  const steps = [0,100,200,400,800];
+  return steps[Math.max(1, Math.min(4, S.step))];
+}
 
-            const simulateAsk = (hyp) => { let testArr = [...historyLog, hyp]; let d = generateDerivedArrays(testArr); return [d.eye.pop(), d.small.pop(), d.roach.pop()]; };
-            let askB = simulateAsk('B'); let askP = simulateAsk('P');
-            let bRedCount = askB.filter(x => x === 'R').length; let pRedCount = askP.filter(x => x === 'R').length;
+function updateHitRate(){
+  const nonPush = Math.max(1, S.stats.win + S.stats.loss);
+  if(S.stats.placed<=0){ ui.hitRate.textContent="--"; return; }
+  ui.hitRate.textContent = ((S.stats.win/nonPush)*100).toFixed(1) + "%（不含和局）";
+}
 
-            const updateDots = (id, resArray) => {
-                const container = document.getElementById(id); container.innerHTML = '';
-                resArray.forEach(res => { let dot = document.createElement('div'); dot.className = `dot ${res === 'R' ? 'r' : (res === 'Blue' ? 'b' : 'e')}`; container.appendChild(dot); });
-            };
-            updateDots('askB-dots', askB); updateDots('askP-dots', askP);
+function toggleArm(){
+  // if PASS, lock
+  if(ui.suggestText.dataset.state === "PASS" || S.mode==="display"){
+    return;
+  }
+  S.armed = !S.armed;
+  S.plannedSide = S.armed ? ui.suggestText.dataset.state : "PASS";
+  saveState();
+  refreshBetPanel();
+}
 
-            // 變路推演
-            if (streakLength >= 3) {
-                breakAlert.style.display = "block";
-                let breakSide = currentStreakSide === 'B' ? 'P' : 'B';
-                let breakAsk = breakSide === 'B' ? askB : askP;
-                let breakBlues = breakAsk.filter(x => x === 'Blue').length;
-                if (breakBlues >= 2) {
-                    breakAlert.innerText = `💡 沙盤推演：若下把斷龍，下三路將轉藍 (破裂)`;
-                } else {
-                    breakAlert.innerText = `💡 沙盤推演：若下把斷龍，下三路依然偏紅 (動能未散)`;
-                }
-            } else {
-                breakAlert.style.display = "none";
-            }
+function settleBet(winner){
+  if(!S.armed) return;
 
-            // 🎯 The Giant Oracle 決策輸出
-            const dp = document.getElementById('decisionPanel');
-            const mainSig = document.getElementById('mainSignal');
-            const subSig = document.getElementById('subSignal');
+  const side = S.plannedSide; // B/P
+  const amt = currentBet();
+  const com = S.commission;
 
-            let isFundamentalB = evBanker > 0; let isFundamentalP = evPlayer > 0;
-            let isTechnicalB = bRedCount >= 2; let isTechnicalP = pRedCount >= 2;
+  S.stats.placed++;
 
-            let blockBetB = (currentStreakSide === 'P' && streakLength >= 4);
-            let blockBetP = (currentStreakSide === 'B' && streakLength >= 4);
+  if(winner==="T"){
+    S.stats.push++;
+  }else if(winner===side){
+    S.stats.win++;
+    if(S.betMode==="martingale") S.step = 1;
+  }else{
+    S.stats.loss++;
+    if(S.betMode==="martingale"){
+      S.step++;
+      if(S.step>4) S.step = 1;
+    }
+  }
 
-            if (blockBetB && isFundamentalB) {
-                dp.className = "oracle-panel pass"; mainSig.innerText = "🛑 迴避逆勢接刀"; subSig.innerText = "機率偏莊，但閒家嚴重過熱，強制觀望";
-            } else if (blockBetP && isFundamentalP) {
-                dp.className = "oracle-panel pass"; mainSig.innerText = "🛑 迴避逆勢接刀"; subSig.innerText = "機率偏閒，但莊家嚴重過熱，強制觀望";
-            } else if (isFundamentalB && isTechnicalB) {
-                dp.className = "oracle-panel banker"; mainSig.innerText = "🔥 押注莊家"; subSig.innerText = "數學期望值為正 ＋ 趨勢圖形強烈支持";
-            } else if (isFundamentalP && isTechnicalP) {
-                dp.className = "oracle-panel player"; mainSig.innerText = "🔥 押注閒家"; subSig.innerText = "數學期望值為正 ＋ 趨勢圖形強烈支持";
-            } else if (isTechnicalB && !isFundamentalP) {
-                dp.className = "oracle-panel banker"; mainSig.innerText = "📈 順勢押莊家"; subSig.innerText = "EV為負 (注意風險)，但技術圖形強烈支持";
-            } else if (isTechnicalP && !isFundamentalB) {
-                dp.className = "oracle-panel player"; mainSig.innerText = "📈 順勢押閒家"; subSig.innerText = "EV為負 (注意風險)，但技術圖形強烈支持";
-            } else {
-                dp.className = "oracle-panel pass"; mainSig.innerText = "🛡️ 鎖定觀望"; subSig.innerText = "無數學優勢，且圖形無明顯動能方向";
-            }
+  // reset arm
+  S.armed = false;
+  S.plannedSide = "PASS";
+}
 
-            updateKeypadCounts(); renderAllRoads();
-        }
+function refreshBetPanel(){
+  ui.armedFlag.textContent = S.armed ? "是" : "否";
+  ui.betAmount.textContent = String(currentBet());
 
-        function renderAllRoads() {
-            let bigMap = genericMatrixMapper(historyLog, true); let derived = generateDerivedArrays(historyLog);
-            renderGrid('grid-big', bigMap.grid, bigMap.maxCol, 'big'); renderGrid('grid-eye', genericMatrixMapper(derived.eye, false).grid, genericMatrixMapper(derived.eye, false).maxCol, 'eye'); renderGrid('grid-small', genericMatrixMapper(derived.small, false).grid, genericMatrixMapper(derived.small, false).maxCol, 'small'); renderGrid('grid-roach', genericMatrixMapper(derived.roach, false).grid, genericMatrixMapper(derived.roach, false).maxCol, 'roach');
-        }
-        function genericMatrixMapper(arr, supportTie) { let gridMap = {}; let lastRes = null; let sc = 0, cc = 0, cr = 0, mc = 0; let lastCrd = null; let pendingTies = 0; for (let i = 0; i < arr.length; i++) { let res = arr[i]; if (supportTie && res === 'T') { if (lastCrd && gridMap[lastCrd]) gridMap[lastCrd].tie++; else pendingTies++; continue; } if (res === lastRes) { let nr = cr + 1; if (nr <= 5 && !gridMap[`${cc},${nr}`]) cr = nr; else cc++; } else { if (lastRes !== null) { sc++; while (gridMap[`${sc},0`]) sc++; } cc = sc; cr = 0; } lastCrd = `${cc},${cr}`; gridMap[lastCrd] = { val: res, tie: pendingTies }; pendingTies = 0; lastRes = res; if (cc > mc) mc = cc; } return { grid: gridMap, maxCol: mc }; }
-        function generateDerivedArrays(hist) { let pHist = hist.filter(x => x !== 'T'); let pCols = []; let cCol = []; let lRes = null; for(let r of pHist) { if (r === lRes) cCol.push(r); else { if(cCol.length>0) pCols.push(cCol); cCol = [r]; lRes = r; } } if(cCol.length>0) pCols.push(cCol); let eye = [], sm = [], roach = []; for (let c = 0; c < pCols.length; c++) { for (let r = 0; r < pCols[c].length; r++) { if (c >= 1) { if (r === 0 && c >= 2) eye.push(pCols[c-1].length === pCols[c-2].length ? 'R' : 'Blue'); else if (r > 0) eye.push((pCols[c-1] && pCols[c-1].length > r) ? 'R' : ((pCols[c-1] && pCols[c-1].length === r) ? 'Blue' : 'R')); } if (c >= 2) { if (r === 0 && c >= 3) sm.push(pCols[c-1].length === pCols[c-3].length ? 'R' : 'Blue'); else if (r > 0) sm.push((pCols[c-2] && pCols[c-2].length > r) ? 'R' : ((pCols[c-2] && pCols[c-2].length === r) ? 'Blue' : 'R')); } if (c >= 3) { if (r === 0 && c >= 4) roach.push(pCols[c-1].length === pCols[c-4].length ? 'R' : 'Blue'); else if (r > 0) roach.push((pCols[c-3] && pCols[c-3].length > r) ? 'R' : ((pCols[c-3] && pCols[c-3].length === r) ? 'Blue' : 'R')); } } } return { eye, small: sm, roach }; }
-        function renderGrid(domId, gridMap, maxCol, type) { const container = document.getElementById(domId); container.innerHTML = ''; const isSm = (type === 'small' || type === 'roach'); const cols = Math.max(isSm ? 24 : 16, maxCol + 1); for (let c = 0; c < cols; c++) { let colDiv = document.createElement('div'); colDiv.className = 'road-col'; for (let r = 0; r < 6; r++) { let cell = document.createElement('div'); cell.className = isSm ? 'cell-sm' : 'cell-lg'; if (gridMap[`${c},${r}`]) { let data = gridMap[`${c},${r}`]; let item = document.createElement('div'); if (type === 'big' || type === 'eye') { item.className = `circle-hollow ${data.val}`; if(data.tie > 0) { item.classList.add('tie-line'); if(data.tie > 1) { let txt = document.createElement('span'); txt.className = 'tie-text'; txt.innerText = data.tie; item.appendChild(txt); } } } else if (type === 'small') { item.className = `circle-solid ${data.val}`; } else if (type === 'roach') { item.className = `slash ${data.val}`; } cell.appendChild(item); } colDiv.appendChild(cell); } container.appendChild(colDiv); } container.parentElement.scrollLeft = container.parentElement.scrollWidth; }
-        
-        recalcAndRender(); evaluateDrawRules(); setActiveSlot('p1');
-    </script>
+  updateHitRate();
+
+  if(ui.suggestText.dataset.state === "PASS" || S.mode==="display"){
+    ui.armBtn.className = "arm-btn locked";
+    ui.armBtn.textContent = "🔒 本局不建議（不可授權）";
+    return;
+  }
+
+  ui.armBtn.className = "arm-btn" + (S.armed ? " armed" : "");
+  ui.armBtn.textContent = S.armed ? "✅ 已授權（再按取消）" : "💰 決定下注下一局";
+}
+
+/* =========================
+   J) 主流程：送出、撤銷、換靴
+========================= */
+function submitData(){
+  if(ui.submitBtn.disabled) return;
+
+  // 最終庫存檢查
+  const pend = pendingCounts();
+  for(let r=1;r<=13;r++){
+    if(pend[r] > (S.rankCounts[r]||0)){
+      alert(`庫存異常：${rankToDisplay(r)} 不足，拒絕寫入。`);
+      return;
+    }
+  }
+
+  snapshot();
+
+  const winner = computeWinner();
+
+  // settle bet (only if armed)
+  settleBet(winner);
+
+  // write history
+  S.history.push(winner);
+
+  // deduct deck
+  const consumed = cardsConsumed();
+  consumed.forEach(r=>{
+    S.rankCounts[r]--;
+  });
+
+  // clear
+  clearAllSlots();
+
+  // save + recalc
+  saveState();
+  recalcAndRender();
+}
+
+function undoLastRound(){
+  if(!backupState){
+    alert("目前沒有可撤銷的上一局。");
+    return;
+  }
+  S = structuredClone(backupState);
+  backupState = null;
+  saveState();
+  clearAllSlots();
+  recalcAndRender();
+}
+
+function resetSystem(){
+  if(!confirm("確定換靴？（重置牌庫與路單；下注統計不清除）")) return;
+  snapshot();
+  S.rankCounts = initCounts(S.decks);
+  S.history = [];
+  S.armed = false;
+  S.plannedSide = "PASS";
+  S.step = 1;
+  saveState();
+  clearAllSlots();
+  recalcAndRender();
+}
+
+/* =========================
+   K) 設定套用
+========================= */
+function applySettings(){
+  S.mode = ui.setMode.value;
+  S.trendGate = ui.setTrendGate.value;
+  S.dragonGuard = ui.setDragonGuard.value;
+  S.trials = parseInt(ui.setTrials.value,10) || 12000;
+
+  let com = parseFloat(ui.setCommission.value);
+  if(Number.isFinite(com) && com>=0 && com<=0.1) S.commission = com;
+  else S.commission = 0.05;
+
+  S.betMode = ui.setBetMode.value;
+  S.flatBet = parseInt(ui.setFlatBet.value,10) || 100;
+  S.autoGuide = ui.setAutoGuide.value;
+
+  ui.autoGuideToggle.checked = (S.autoGuide==="on");
+
+  // display mode -> disarm
+  if(S.mode==="display"){
+    S.armed = false;
+    S.plannedSide = "PASS";
+  }
+
+  saveState();
+  recalcAndRender();
+}
+
+/* =========================
+   L) 核心：重算與渲染
+========================= */
+function fmtPct(x){ return (x*100).toFixed(2) + "%"; }
+
+function recalcAndRender(){
+  const total = totalRemaining();
+  ui.totalCards.textContent = String(total);
+  ui.roundCount.textContent = String(S.history.length);
+  ui.simInfo.textContent = `SIM: ${S.trials}`;
+
+  // probabilities via Monte Carlo
+  const probs = simulateProbs(S.trials);
+
+  ui.bankerOdds.textContent = fmtPct(probs.pB);
+  ui.playerOdds.textContent = fmtPct(probs.pP);
+  ui.tieOdds.textContent = fmtPct(probs.pT);
+
+  // EV
+  const evB = (probs.pB * (1-S.commission)) - probs.pP;
+  const evP = probs.pP - probs.pB;
+
+  ui.evBanker.textContent = (evB*100).toFixed(2) + "%";
+  ui.evPlayer.textContent = (evP*100).toFixed(2) + "%";
+  ui.evBanker.style.color = (evB>0) ? "var(--tie-green)" : "var(--text-muted)";
+  ui.evPlayer.style.color = (evP>0) ? "var(--tie-green)" : "var(--text-muted)";
+
+  // decision
+  const d = decide(probs);
+
+  // store suggested state in DOM for arm button
+  ui.suggestText.dataset.state = d.state;
+
+  if(d.state==="B"){
+    ui.decisionPanel.className = "oracle-panel banker";
+    ui.mainSignal.textContent = d.main;
+  }else if(d.state==="P"){
+    ui.decisionPanel.className = "oracle-panel player";
+    ui.mainSignal.textContent = d.main;
+  }else{
+    ui.decisionPanel.className = "oracle-panel pass";
+    ui.mainSignal.textContent = d.main;
+  }
+  ui.subSignal.textContent = d.sub;
+
+  ui.suggestText.textContent = (d.state==="B") ? "押莊" : (d.state==="P") ? "押閒" : "觀望";
+  ui.suggestText.className = "v " + (d.state==="B"?"b":d.state==="P"?"p":"");
+
+  // bet panel
+  refreshBetPanel();
+
+  // roads
+  renderAllRoads();
+
+  // keypad counts + submit validity
+  updateKeypadCounts();
+  evaluateDrawRules();
+}
+
+/* =========================
+   M) 初始化
+========================= */
+function syncSettingsUI(){
+  ui.setMode.value = S.mode;
+  ui.setTrendGate.value = S.trendGate;
+  ui.setDragonGuard.value = S.dragonGuard;
+  ui.setTrials.value = String(S.trials);
+  ui.setCommission.value = String(S.commission);
+  ui.setBetMode.value = S.betMode;
+  ui.setFlatBet.value = String(S.flatBet);
+  ui.setAutoGuide.value = S.autoGuide;
+  ui.autoGuideToggle.checked = (S.autoGuide==="on");
+}
+
+buildKeypad();
+syncSettingsUI();
+setActiveSlot("p1");
+recalcAndRender();
+
+</script>
 </body>
 </html>
