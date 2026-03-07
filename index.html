@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂 - 自動尋參最佳化版</title>
+    <title>百家樂 - 數據最佳化版</title>
     <style>
         :root {
             --bg: #09090b; --card: #18181b; --border: #27272a;
@@ -247,8 +247,8 @@
         </div>
 
         <div class="db-section" style="border-color: var(--highlight);">
-            <h3>⚙️ 動態參數控制 (手動/自動尋參)</h3>
-            <div style="font-size:10px; color:#888; margin-bottom:8px;">* 提高閥值可增加預測準確率，但會過濾掉多數出手機會。</div>
+            <h3>⚙️ 演算法動態參數控制台</h3>
+            <div style="font-size:10px; color:#888; margin-bottom:8px;">* 調高閥值可增加預測準確率，但會過濾掉多數出手機會。</div>
             <div class="param-control">
                 <span class="param-label">主預測進場閥值 (預設 0.58)</span>
                 <input type="number" id="cfgMainThreshold" class="param-input" step="0.01" min="0.51" max="0.99" onchange="saveConfig()">
@@ -257,7 +257,7 @@
                 <span class="param-label">側注進場閥值 (預設 0.14)</span>
                 <input type="number" id="cfgSideThreshold" class="param-input" step="0.01" min="0.05" max="0.50" onchange="saveConfig()">
             </div>
-            <button class="db-btn btn-auto" onclick="autoTuneThreshold()">🤖 自動尋參 (智能優化至 80% 勝率)</button>
+            <button class="db-btn btn-auto" onclick="autoTuneThreshold()">🤖 自動尋找全局最高勝率參數</button>
         </div>
         
         <div class="db-section" style="border-color: var(--p-color);">
@@ -285,9 +285,6 @@
                 <div class="db-stat-item"><span>全局莊對</span><span id="dbGlobalBPHits" style="color:var(--b-color)">0 / 0 (0.0%)</span></div>
                 <div class="db-stat-item"><span>全局閒對</span><span id="dbGlobalPPHits" style="color:var(--p-color)">0 / 0 (0.0%)</span></div>
             </div>
-            <div id="learningStatus" class="learning-status active">
-                🟢 學習引擎運行中 (收集數據以優化模型)
-            </div>
         </div>
 
         <div class="db-section">
@@ -305,9 +302,9 @@
 /* =========================================================
    1) 核心狀態變數與動態參數
 ========================================================= */
-const STATE_KEY = "baccarat_state_v19_bayes";
-const DB_KEY = "baccarat_bigdata_v19_bayes";
-const CFG_KEY = "baccarat_config_v19_bayes";
+const STATE_KEY = "baccarat_state_v20_pro";
+const DB_KEY = "baccarat_bigdata_v20_pro";
+const CFG_KEY = "baccarat_config_v20_pro";
 
 let Config = { mainThreshold: 0.58, sideThreshold: 0.14 };
 try { let c = localStorage.getItem(CFG_KEY); if (c) Config = Object.assign(Config, JSON.parse(c)); } catch(e){}
@@ -345,7 +342,7 @@ function saveConfig() {
     saveDatabase(); recalcAndRender();
 }
 
-// 🤖 自動最佳化參數以達到 80% 勝率
+// 🤖 自動最佳化：尋找全局最高勝率點
 function autoTuneThreshold() {
     if (Object.keys(BigData.patterns).length === 0) {
         alert("⚠️ 資料庫為空，無法進行最佳化尋參。請先輸入牌局或匯入大數據。");
@@ -353,28 +350,35 @@ function autoTuneThreshold() {
     }
     
     let bestThresh = 0.51;
-    let found = false;
+    let bestWinRate = 0;
+    let bestRecs = 0;
     let originalThresh = Config.mainThreshold;
     
-    // 從 51% 掃描到 95% 閥值
-    for (let t = 0.51; t <= 0.95; t += 0.01) {
+    // 迴圈掃描：從 51% 掃描到 85% 閥值
+    for (let t = 0.51; t <= 0.85; t += 0.01) {
         Config.mainThreshold = t;
-        let res = recalcDBStats(BigData); // 測試這個閥值的表現
-        if (parseFloat(res.simWinRate) >= 80.0 && BigData.acc.recs > 0) {
+        let res = recalcDBStats(BigData);
+        let wr = parseFloat(res.simWinRate);
+        
+        // 必須保證該閥值下，至少有 5% 的局數能發出預測，否則視為過度擬合 (Overfitting)
+        let minReq = Math.max(10, Math.floor(BigData.totalHands * 0.05));
+        
+        if (BigData.acc.recs >= minReq && wr >= bestWinRate) {
+            bestWinRate = wr;
             bestThresh = t;
-            found = true;
-            break; // 找到最低能滿足 80% 的閥值就停止
+            bestRecs = BigData.acc.recs;
         }
     }
     
-    if (found) {
+    if (bestWinRate > 0) {
+        Config.mainThreshold = bestThresh;
         document.getElementById('cfgMainThreshold').value = bestThresh.toFixed(2);
         saveConfig(); 
-        alert(`✅ 自動最佳化完成！\n已將主預測閥值調升至 ${(bestThresh*100).toFixed(0)}%，歷史回測勝率達標 80% 以上。\n(注意：高準確率意味著出手機會將大幅減少)`);
+        alert(`✅ 自動最佳化完成！\n\n系統已掃描資料庫，找到具備足夠樣本的【全局最高勝率點】。\n已自動將主預測閥值設定為 ${(bestThresh*100).toFixed(0)}%。\n預期勝率: ${bestWinRate}%\n觸發預測次數: ${bestRecs} 次`);
     } else {
-        Config.mainThreshold = originalThresh; // 還原
+        Config.mainThreshold = originalThresh; 
         recalcDBStats(BigData);
-        alert(`⚠️ 最佳化失敗。此資料庫雜訊過多，即使將閥值調至極限，亦無法達到 80% 勝率。建議繼續收集新數據。`);
+        alert(`⚠️ 最佳化失敗。此資料庫雜訊過多，無法找到穩定的獲利點。已還原參數。`);
     }
 }
 
@@ -401,7 +405,6 @@ function loadDatabase() {
         let db = localStorage.getItem(DB_KEY); 
         if (db) {
             let parsed = JSON.parse(db);
-            // 防錯：如果讀到舊版沒有 acc 紀錄，自動補齊
             if(!parsed.acc) parsed.acc = {recs:0, hits:0, tieRecs:0, tieHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0};
             BigData = parsed;
         } 
@@ -409,7 +412,6 @@ function loadDatabase() {
 }
 function saveDatabase() { localStorage.setItem(DB_KEY, JSON.stringify(BigData)); updateDBUI(); }
 
-function isModelFrozen() { return (BigData.acc.recs >= 50 && (BigData.acc.hits / BigData.acc.recs) >= 0.80); }
 
 // 🔄 核心修復：深度沙盤回測 (支援舊格式安全讀取)
 function recalcDBStats(db) {
@@ -431,10 +433,12 @@ function recalcDBStats(db) {
             else if (pRate >= Config.mainThreshold) { validPatterns++; db.acc.recs += tBP; db.acc.hits += pC; }
         }
         
-        // Bayesian Smoothing 貝氏平滑化防噪
-        let smoothT = (tC + 1.9) / (tHands + 20);
-        let smoothBP = (bpC + 1.5) / (tHands + 20);
-        let smoothPP = (ppC + 1.5) / (tHands + 20);
+        // 🧪 Bayesian Smoothing 貝氏平滑化防噪
+        // 和局基準機率 9.5% -> 假設 10 次發生 0.95 次
+        let smoothT = (tC + 0.95) / (tHands + 10);
+        // 對子基準機率 7.4% -> 假設 10 次發生 0.74 次
+        let smoothBP = (bpC + 0.74) / (tHands + 10);
+        let smoothPP = (ppC + 0.74) / (tHands + 10);
         
         if (smoothT >= Config.sideThreshold) { db.acc.tieRecs += tHands; db.acc.tieHits += tC; }
         if (smoothBP >= Config.sideThreshold) { db.acc.bpRecs += tHands; db.acc.bpHits += bpC; }
@@ -445,7 +449,6 @@ function recalcDBStats(db) {
 
 function updateBigData(rd) {
     if (BigData.totalHands >= 50000) return; 
-    if (isModelFrozen()) return; 
 
     BigData.totalHands++; BigData.stats[rd.w]++;
     if (rd.bp) BigData.stats.BP++; if (rd.pp) BigData.stats.PP++;
@@ -460,6 +463,8 @@ function updateBigData(rd) {
         BigData.patterns[seq][rd.w]++;
         if (rd.bp) BigData.patterns[seq].BP++; if (rd.pp) BigData.patterns[seq].PP++;
     }
+    // 更新後自動重新沙盤回測
+    recalcDBStats(BigData);
     saveDatabase();
 }
 
@@ -486,7 +491,7 @@ function importDatabase(evt) {
             let imp = JSON.parse(e.target.result); 
             if(imp.patterns) { 
                 let evalResult = recalcDBStats(imp);
-                let confirmMsg = `✅ 數據庫讀取成功！\n\n🔍 【大數據深度沙盤回測】\n- 總收錄: ${imp.totalHands} 局\n- 當前進場閥值: ${(Config.mainThreshold*100).toFixed(0)}%\n- 該數據包理論勝率: ${evalResult.simWinRate}%\n\n確定套用嗎？\n(若勝率不夠高，匯入後可使用「自動尋參」功能)`;
+                let confirmMsg = `✅ 數據庫讀取成功！\n\n🔍 【大數據深度沙盤回測】\n- 總收錄: ${imp.totalHands} 局\n- 當前進場閥值: ${(Config.mainThreshold*100).toFixed(0)}%\n- 觸發預測: ${evalResult.validPatterns} 種型態\n- 理論勝率: ${evalResult.simWinRate}%\n\n確定套用嗎？\n(若勝率不夠高，匯入後可使用「自動尋參」功能)`;
                 if(confirm(confirmMsg)) {
                     BigData = imp; 
                     saveDatabase(); recalcAndRender();
@@ -514,10 +519,6 @@ function updateDBUI() {
     document.getElementById('dbGlobalTieHits').innerText = formatRate(BigData.acc.tieHits, BigData.acc.tieRecs);
     document.getElementById('dbGlobalBPHits').innerText = formatRate(BigData.acc.bpHits, BigData.acc.bpRecs);
     document.getElementById('dbGlobalPPHits').innerText = formatRate(BigData.acc.ppHits, BigData.acc.ppRecs);
-
-    let statusEl = document.getElementById('learningStatus');
-    if (isModelFrozen()) { statusEl.className = "learning-status frozen"; statusEl.innerText = "🔮 勝率達標 80%：模型已鎖定保護，暫停寫入新數據"; } 
-    else { statusEl.className = "learning-status active"; statusEl.innerText = "🟢 學習引擎運行中 (收集數據以優化模型)"; }
 }
 function toggleDBPanel() { dbPanelOpen = !dbPanelOpen; document.getElementById('dbPanel').className = dbPanelOpen ? "database-panel open" : "database-panel"; updateDBUI(); }
 
@@ -606,14 +607,14 @@ function submitData() {
     // 結算主推薦勝率 (忽略和局)
     if (S.lastRecSide && S.lastRecSide !== 'PASS' && winner !== 'T') {
         let isHit = (S.lastRecSide === winner);
-        S.shoePerf.recs++; BigData.acc.recs++;
-        if (isHit) { S.shoePerf.hits++; BigData.acc.hits++; }
+        S.shoePerf.recs++; 
+        if (isHit) S.shoePerf.hits++;
     }
     
     // 結算側注推薦勝率
-    if (S.lastSideBets.tie) { S.shoePerf.tieRecs++; BigData.acc.tieRecs++; if (winner === 'T') { S.shoePerf.tieHits++; BigData.acc.tieHits++; } }
-    if (S.lastSideBets.bp) { S.shoePerf.bpRecs++; BigData.acc.bpRecs++; if (isBPair) { S.shoePerf.bpHits++; BigData.acc.bpHits++; } }
-    if (S.lastSideBets.pp) { S.shoePerf.ppRecs++; BigData.acc.ppRecs++; if (isPPair) { S.shoePerf.ppHits++; BigData.acc.ppHits++; } }
+    if (S.lastSideBets.tie) { S.shoePerf.tieRecs++; if (winner === 'T') S.shoePerf.tieHits++; }
+    if (S.lastSideBets.bp) { S.shoePerf.bpRecs++; if (isBPair) S.shoePerf.bpHits++; }
+    if (S.lastSideBets.pp) { S.shoePerf.ppRecs++; if (isPPair) S.shoePerf.ppHits++; }
 
     let roundData = { w: winner, bp: isBPair, pp: isPPair };
     S.history.push(roundData);
@@ -634,6 +635,7 @@ function recalcAndRender() {
     let pureHist = S.history.map(x=>x.w).filter(x => x !== 'T');
     let mlSide = null, finalTRate = 0, finalBPRate = 0, finalPPRate = 0;
     
+    // --- 🔮 貝氏平滑化側注計算 ---
     if (S.history.length > 0) {
         let seq = "";
         if (S.history[S.history.length-1].w === 'T') { if (pureHist.length >= 3) seq = pureHist.slice(-3).join(","); }
@@ -647,9 +649,9 @@ function recalcAndRender() {
                 let bR = (ptn.B||0)/tBP, pR = (ptn.P||0)/tBP; 
                 if (bR >= Config.mainThreshold) { mlSide = "B"; } else if (pR >= Config.mainThreshold) { mlSide = "P"; } 
             }
-            finalTRate = ((ptn.T||0) + 1.9) / (tHands + 20);
-            finalBPRate = ((ptn.BP||0) + 1.5) / (tHands + 20);
-            finalPPRate = ((ptn.PP||0) + 1.5) / (tHands + 20);
+            finalTRate = ((ptn.T||0) + 0.95) / (tHands + 10);
+            finalBPRate = ((ptn.BP||0) + 0.74) / (tHands + 10);
+            finalPPRate = ((ptn.PP||0) + 0.74) / (tHands + 10);
         }
     }
 
