@@ -397,13 +397,13 @@
     .road-grid{
       display:flex;
       min-width:max-content;
-      background:#fff;
+      background:#f7f7f8;
       border-radius: 16px;
       padding:6px;
     }
     .road-col{ display:flex; flex-direction:column; }
-    .cell-lg{ width:16px; height:16px; border:1px solid #f0f0f0; display:flex; align-items:center; justify-content:center; position:relative; }
-    .cell-sm{ width:8px; height:8px; border:1px solid #f0f0f0; display:flex; align-items:center; justify-content:center; position:relative; }
+    .cell-lg{ width:16px; height:16px; border:1px solid #d0d0d0; background:#fff; display:flex; align-items:center; justify-content:center; position:relative; }
+    .cell-sm{ width:8px; height:8px; border:1px solid #d0d0d0; background:#fff; display:flex; align-items:center; justify-content:center; position:relative; }
     .circle-hollow{ width:12px; height:12px; border-radius:50%; border:2px solid transparent; box-sizing:border-box; }
     .circle-hollow.B{ border-color: var(--b); }
     .circle-hollow.P{ border-color: var(--p); }
@@ -475,6 +475,8 @@
           <div class="row"><span class="k">P(B)</span><span class="v b" id="hudPB">--</span></div>
           <div class="row"><span class="k">P(P)</span><span class="v p" id="hudPP">--</span></div>
           <div class="row"><span class="k">P(T)</span><span class="v g" id="hudPT">--</span></div>
+          <div class="row"><span class="k">P(B Pair)</span><span class="v b" id="hudBPair">--</span></div>
+          <div class="row"><span class="k">P(P Pair)</span><span class="v p" id="hudPPair">--</span></div>
         </div>
         <div class="detail-box">
           <div class="h">EV / Learning</div>
@@ -531,7 +533,19 @@
         </div>
       </div>
 
-      <div class="ctrl">
+            <div class="ctrl">
+        <h3>資料匯出/匯入</h3>
+        <div class="line">
+          <button class="btn" onclick="exportAll()">匯出整檔</button>
+          <button class="btn" onclick="triggerImport()">匯入整檔</button>
+        </div>
+        <div class="line">
+          <div style="font-size:12px;font-weight:1100;color:var(--muted);">目前靴號</div>
+          <div id="shoeInfo" style="font-size:12px;font-weight:1100;">—</div>
+        </div>
+      </div>
+
+<div class="ctrl">
         <h3>績效監控</h3>
         <div class="line">
           <div style="font-size:12px;font-weight:1100;color:var(--muted);">上局結果</div>
@@ -553,6 +567,8 @@
       學習模型只會「降低低把握情境的出手」或調整強弱分級；不保證勝率單調上升。
     </div>
   </div>
+
+  <input id="importFile" type="file" accept="application/json" style="display:none" />
 
   <!-- Input -->
   <div class="module-card">
@@ -587,7 +603,8 @@
 
   <!-- Roads -->
   <div class="module-card">
-    <div class="roads-title"><span>珠盤路</span><span>（含和局）</span></div>
+    <div class="roads-toolbar"><div class="roads-status" id="roadsStatus">路單：初始化</div><button class="btn" onclick="safeRenderAllRoads()">重畫路單</button></div>
+<div class="roads-title"><span>珠盤路</span><span>（含和局）</span></div>
     <div class="road-container"><div class="road-grid" id="grid-bead"></div></div>
 
     <div style="height:10px"></div>
@@ -620,6 +637,9 @@ const STORE_KEY = "baccarat_dss_v3_allfix";
 const DEFAULTS = {
   decks: 8,
   commission: 0.05,
+  createdAt: null,
+  shoes: [],
+  activeShoeId: null,
   trials: 12000,
   rankCounts: null,    // 1..13
   history: [],         // 'B','P','T'
@@ -634,13 +654,15 @@ const DEFAULTS = {
     enabled: true,
     minSamples: 12,
     minAcc: 0.53,
+    global: { B:{a:1,b:1,n:0}, P:{a:1,b:1,n:0} }, // 全域後驗（避免情境分桶過度保守）
     buckets: {}        // key -> {B:{a,b,n}, P:{a,b,n}}
   },
   log: [],             // last ~2000 records
-  cache: {}            // deckHash -> {trials, pB,pP,pT}
+  cache: {}            // deckHash -> {trials, pB,pP,pT,pBPair,pPPair,pBothPair}
 };
 
 let S = loadState() || initState();
+S = ensureShoeStructure(S);
 let backupState = null;
 
 /* ===== Utils ===== */
@@ -652,9 +674,16 @@ function initCounts(decks=8){
 }
 function initState(){
   const st = deepClone(DEFAULTS);
+  st.createdAt = nowISO();
   st.rankCounts = initCounts(st.decks);
+
+  // 每副牌（shoe）管理：初始化第一副
+  st.shoes = [{ shoeId: 1, startedAt: st.createdAt, endedAt: null, rounds: [] }];
+  st.activeShoeId = 1;
+
   return st;
 }
+
 function saveState(){
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){}
 }
@@ -664,9 +693,55 @@ function loadState(){
     if(!t) return null;
     const obj = JSON.parse(t);
     if(!obj.rankCounts || !obj.history || !obj.learn) return null;
-    return Object.assign(deepClone(DEFAULTS), obj);
+    const st = Object.assign(deepClone(DEFAULTS), obj);
+    return ensureShoeStructure(st);
   }catch(e){ return null; }
 }
+
+function ensureShoeStructure(st){
+  if(!st) return st;
+  if(!st.createdAt) st.createdAt = nowISO();
+
+  if(!Array.isArray(st.shoes) || st.shoes.length === 0){
+    st.shoes = [{ shoeId: 1, startedAt: st.createdAt, endedAt: null, rounds: [] }];
+    st.activeShoeId = 1;
+  }
+  if(!st.activeShoeId){
+    st.activeShoeId = st.shoes[st.shoes.length - 1].shoeId;
+  }
+  st.shoes.forEach(sh=>{
+    if(!Array.isArray(sh.rounds)) sh.rounds = [];
+    if(!("endedAt" in sh)) sh.endedAt = null;
+    if(!("startedAt" in sh)) sh.startedAt = st.createdAt;
+  });
+  // learning 全域桶補齊（相容舊版本匯入）
+  if(st.learn){
+    if(!st.learn.global){
+      st.learn.global = { B:{a:1,b:1,n:0}, P:{a:1,b:1,n:0} };
+    }else{
+      ["B","P"].forEach(side=>{
+        if(!st.learn.global[side]) st.learn.global[side] = {a:1,b:1,n:0};
+        if(typeof st.learn.global[side].a !== "number") st.learn.global[side].a = 1;
+        if(typeof st.learn.global[side].b !== "number") st.learn.global[side].b = 1;
+        if(typeof st.learn.global[side].n !== "number") st.learn.global[side].n = 0;
+      });
+    }
+  }
+
+  return st;
+}
+
+function getActiveShoe(){
+  ensureShoeStructure(S);
+  let shoe = S.shoes.find(x => x.shoeId === S.activeShoeId);
+  if(!shoe){
+    shoe = S.shoes[S.shoes.length - 1];
+    S.activeShoeId = shoe.shoeId;
+  }
+  return shoe;
+}
+
+
 function snapshot(){ backupState = deepClone(S); }
 function totalRemaining(){
   let t=0; for(let r=1;r<=13;r++) t += (S.rankCounts[r]||0);
@@ -705,6 +780,8 @@ const ui = {
   hudPB: $("hudPB"),
   hudPP: $("hudPP"),
   hudPT: $("hudPT"),
+  hudBPair: $("hudBPair"),
+  hudPPair: $("hudPPair"),
   hudEVB: $("hudEVB"),
   hudEVP: $("hudEVP"),
   hudCtx: $("hudCtx"),
@@ -723,6 +800,9 @@ const ui = {
   lastPerf: $("lastPerf"),
   rollPerf: $("rollPerf"),
   allPerf: $("allPerf"),
+
+  shoeInfo: $("shoeInfo"),
+  importFile: $("importFile"),
 
   autoGuideToggle: $("autoGuideToggle"),
   submitBtn: $("submitBtn"),
@@ -1009,24 +1089,30 @@ function drawRankFromCounts(counts,total,rand){
   counts[13]--; return 13;
 }
 function simulateOneHand(countsBase, rand){
-  // countsBase: Array(14) or object 1..13
+  // Return bitmask:
+  // low 2 bits: 0=Player, 1=Banker, 2=Tie
+  // bit 2 (4): Player Pair (P1==P2)
+  // bit 3 (8): Banker Pair (B1==B2)
   const counts=new Array(14).fill(0);
   let total=0;
   for(let r=1;r<=13;r++){ counts[r]=countsBase[r]; total+=counts[r]; }
 
-  // order doesn't change math; we always simulate correct dealing
   const p1=drawRankFromCounts(counts,total--,rand);
   const b1=drawRankFromCounts(counts,total--,rand);
   const p2=drawRankFromCounts(counts,total--,rand);
   const b2=drawRankFromCounts(counts,total--,rand);
 
+  let mask=0;
+  if(p1===p2) mask |= 4;
+  if(b1===b2) mask |= 8;
+
   const pT=(baccaratValFromRank(p1)+baccaratValFromRank(p2))%10;
   const bT=(baccaratValFromRank(b1)+baccaratValFromRank(b2))%10;
 
   if(pT>=8 || bT>=8){
-    if(pT>bT) return "P";
-    if(bT>pT) return "B";
-    return "T";
+    if(pT>bT) return mask | 0;
+    if(bT>pT) return mask | 1;
+    return mask | 2;
   }
 
   let p3=null,b3=null;
@@ -1048,10 +1134,11 @@ function simulateOneHand(countsBase, rand){
   const pF=(baccaratValFromRank(p1)+baccaratValFromRank(p2)+(p3?baccaratValFromRank(p3):0))%10;
   const bF=(baccaratValFromRank(b1)+baccaratValFromRank(b2)+(b3?baccaratValFromRank(b3):0))%10;
 
-  if(pF>bF) return "P";
-  if(bF>pF) return "B";
-  return "T";
+  if(pF>bF) return mask | 0;
+  if(bF>pF) return mask | 1;
+  return mask | 2;
 }
+
 function simulateProbs(trials){
   const seed = hashCounts(S.rankCounts, trials);
   const deckHash = String(seed);
@@ -1064,14 +1151,29 @@ function simulateProbs(trials){
 
   const rand = mulberry32(seed);
   let B=0,P=0,T=0;
+  let bPair=0,pPair=0,bothPair=0;
+
   for(let i=0;i<trials;i++){
-    const w=simulateOneHand(base, rand);
-    if(w==="B") B++; else if(w==="P") P++; else T++;
+    const m = simulateOneHand(base, rand);
+    const w = m & 3;
+    if(w===1) B++; else if(w===0) P++; else T++;
+
+    const pp = (m & 4) !== 0;
+    const bp = (m & 8) !== 0;
+    if(pp) pPair++;
+    if(bp) bPair++;
+    if(pp && bp) bothPair++;
   }
-  const res = { deckHash, trials, pB:B/trials, pP:P/trials, pT:T/trials };
+
+  const res = {
+    deckHash, trials,
+    pB: B/trials, pP: P/trials, pT: T/trials,
+    pBPair: bPair/trials, pPPair: pPair/trials, pBothPair: bothPair/trials
+  };
   S.cache[deckHash] = res;
   return res;
 }
+
 
 /* =========================================================
    7) Road engines (珠盤 / 大路 / 大眼 / 小路 / 蟑螂)
@@ -1282,6 +1384,18 @@ function renderRoadGrid(domId, gridMap, maxCol, type){
   container.parentElement.scrollLeft = container.parentElement.scrollWidth;
 }
 
+function safeRenderAllRoads(){
+  try{
+    safeRenderAllRoads();
+    const rs=document.getElementById('roadsStatus');
+    if(rs) rs.textContent='路單：OK（已渲染）';
+  }catch(e){
+    const rs=document.getElementById('roadsStatus');
+    if(rs) rs.textContent='路單：渲染失敗（建議按換靴或清除本機資料）';
+    console.error(e);
+  }
+}
+
 function renderAllRoads(){
   const bead = buildBeadPlate(S.history);
   renderRoadGrid("grid-bead", bead.grid, bead.maxCol, "bead");
@@ -1368,6 +1482,18 @@ function updateLearning(side, key, correct){
   b.n += 1;
   if(correct) b.a += 1;
   else b.b += 1;
+
+  // 全域桶：避免情境分桶造成「過度觀望」
+  if(!S.learn.global){
+    S.learn.global = { B:{a:1,b:1,n:0}, P:{a:1,b:1,n:0} };
+  }
+  if(!S.learn.global[side]){
+    S.learn.global[side] = {a:1,b:1,n:0};
+  }
+  const g = S.learn.global[side];
+  g.n += 1;
+  if(correct) g.a += 1;
+  else g.b += 1;
 }
 function bestPosterior(side, pB, pP){
   const keys = makeKeys(side, pB, pP);
@@ -1403,90 +1529,117 @@ function trueCountApprox(){
 }
 
 function decide(probs){
-  const pB=probs.pB, pP=probs.pP, pT=probs.pT;
-  const evB = (pB*(1-S.commission)) - pP;
+  const pB = probs.pB, pP = probs.pP, pT = probs.pT;
+  const pBPair = probs.pBPair ?? 0;
+  const pPPair = probs.pPPair ?? 0;
+  const pBothPair = probs.pBothPair ?? 0;
+
+  const evB = (pB * (1 - S.commission)) - pP;
   const evP = pP - pB;
 
-  // Trend score (問路紅數差)
-  const askB = askVectorIf("B");
-  const askP = askVectorIf("P");
-  const bRed = countRed(askB);
-  const pRed = countRed(askP);
+  // 技術面（僅作濾網/監控，不混入機率）
+  const vecB = askVectorIf("B");
+  const vecP = askVectorIf("P");
+  const bRed = countRed(vecB);
+  const pRed = countRed(vecP);
   const trendScore = (bRed - pRed); // -3..3
 
-  // Base side selection
-  let baseSide="PASS";
-  let reason="";
+  // 機率偏移（去除 Tie 後的 B/P 差）
+  const denom = Math.max(1e-9, (pB + pP));
+  const probScore = (pB - pP) / denom; // 約 -1..1
 
-  if(Math.max(evB, evP) > 0){
-    baseSide = (evB>=evP) ? "B" : "P";
-    reason = "EV為正";
+  // 綜合偏向分數（僅用來分級，不做「必勝」宣稱）
+  const score = probScore + (trendScore * 0.01);
+  const scoreAbs = Math.abs(score);
+
+  // 三段分級（強/中 可打；弱 不打）
+  const lvl = scoreAbs >= 0.020 ? "strong" : (scoreAbs >= 0.006 ? "medium" : "weak");
+  const lvlLabel = (lvl === "strong") ? "強" : (lvl === "medium" ? "中" : "弱");
+
+  // 偏向方向：若 EV 有正值 => 以 EV 為主；否則以綜合分數方向為主
+  const hasPosEV = Math.max(evB, evP) > 0;
+  const biasSide = hasPosEV ? (evB >= evP ? "B" : "P") : (score >= 0 ? "B" : "P");
+
+  // 先決定「候選方向」
+  const allowTrend = ui.optAllowTrend.checked;
+  let candidate = "PASS";
+  if(hasPosEV){
+    candidate = (evB >= evP) ? "B" : "P";
   }else{
-    if(ui.optAllowTrend.checked){
-      // combine trendScore with tiny probability advantage
-      // (pB-pP) alone always leans B, so let trend swing it.
-      const probScore = (pB - pP); // small
-      const score = (trendScore * 0.01) + probScore; // trend dominates sign
-      baseSide = (score >= 0) ? "B" : "P";
-      reason = "負EV順勢（偏向）";
+    candidate = allowTrend ? biasSide : "PASS";
+  }
+
+  // 預設回傳欄位（即便 PASS 也要完整，避免 UI 不一致）
+  let key = null;
+  let ctxMean = null;
+  let ctxN = 0;
+  let ctxMode = null; // "bucket" | "global"
+  let side = "PASS";
+  let reason = "";
+
+  // PASS：EV≤0 且未允許順勢
+  if(candidate === "PASS"){
+    reason = "PASS：EV≤0（未啟用負EV順勢）";
+    return {side, strength:lvl, biasSide, biasLvl:lvl, pB, pP, pT, pBPair, pPPair, pBothPair, evB, evP, key, ctxMean, ctxN, ctxMode, reason};
+  }
+
+  // 弱：一律不打（你指定的規則）
+  if(lvl === "weak"){
+    reason = "PASS：偏向強度=弱（規則：弱不打）";
+    return {side, strength:lvl, biasSide, biasLvl:lvl, pB, pP, pT, pBPair, pPPair, pBothPair, evB, evP, key, ctxMean, ctxN, ctxMode, reason};
+  }
+
+  // 學習濾網（避免追隨雜訊；但不保證勝率單調上升）
+  key = makeContextKey(candidate, pB, pP);
+  ctxMean = posteriorMean(candidate, key);
+  ctxN = bucketN(candidate, key);
+  ctxMode = "bucket";
+
+  if(ui.optLearn.checked){
+    const minN = parseInt(ui.minSamples.value || "0", 10);
+    const minAcc = parseFloat(ui.minAcc.value || "0.5");
+
+    // 若情境樣本不足：改用「全域桶」判斷（你原先遇到的 12 局仍不出手，就是因為分桶過細）
+    if(ctxN < minN){
+      const g = (S.learn.global && S.learn.global[candidate]) ? S.learn.global[candidate] : {a:1,b:1,n:0};
+      const gMean = g.a / (g.a + g.b);
+      const gN = g.n;
+
+      ctxMean = gMean;
+      ctxN = gN;
+      ctxMode = "global";
+
+      if(gN < minN){
+        reason = `PASS：全域樣本不足（n=${gN} < ${minN}）`;
+        return {side, strength:lvl, biasSide, biasLvl:lvl, pB, pP, pT, pBPair, pPPair, pBothPair, evB, evP, key, ctxMean, ctxN, ctxMode, reason};
+      }
+      if(gMean < minAcc){
+        reason = `PASS：全域命中不足（${(gMean*100).toFixed(1)}% < ${(minAcc*100).toFixed(1)}%）`;
+        return {side, strength:lvl, biasSide, biasLvl:lvl, pB, pP, pT, pBPair, pPPair, pBothPair, evB, evP, key, ctxMean, ctxN, ctxMode, reason};
+      }
+      // 全域門檻過了 -> 允許出手（但標註來源）
+      // 下面會進到最終出手
     }else{
-      baseSide = "PASS";
-      reason = "EV≤0（未啟用負EV順勢）";
+      if(ctxMean < minAcc){
+        reason = `PASS：情境命中不足（${(ctxMean*100).toFixed(1)}% < ${(minAcc*100).toFixed(1)}%）`;
+        return {side, strength:lvl, biasSide, biasLvl:lvl, pB, pP, pT, pBPair, pPPair, pBothPair, evB, evP, key, ctxMean, ctxN, ctxMode, reason};
+      }
     }
   }
 
-  // Learning (backoff)
-  let ctx = null;
-  if(baseSide==="B" || baseSide==="P"){
-    ctx = bestPosterior(baseSide, pB, pP);
+  // 最終出手
+  side = candidate;
+  const src = (ctxMode === "global") ? "全域" : "情境";
+  if(hasPosEV){
+    reason = `出手：EV為正 ＋ 偏向${lvlLabel} ＋ ${src}命中 ${(ctxMean*100).toFixed(1)}% (n=${ctxN})`;
+  }else{
+    reason = `順勢（負EV）：偏向${lvlLabel} ＋ ${src}命中 ${(ctxMean*100).toFixed(1)}% (n=${ctxN})`;
   }
 
-  // Strength grading (strong/medium/weak)
-  // Use: EV magnitude + trendScore + learning mean
-  const bestEV = Math.max(evB, evP);
-  let strength = "weak";
-  if(bestEV > 0.005) strength = "strong";
-  else if(bestEV > 0.001) strength = "medium";
-  else {
-    // EV not positive or tiny: use trend & learning
-    const ts = Math.abs(trendScore);
-    if(ts >= 2) strength = "medium";
-    if(ts === 3) strength = "strong";
-  }
-  if(ctx && !ctx.weak){
-    if(ctx.mean >= 0.62 && ctx.n >= parseInt(ui.minSamples.value||"0",10)) strength = "strong";
-    else if(ctx.mean >= 0.57 && ctx.n >= parseInt(ui.minSamples.value||"0",10)) strength = (strength==="weak"?"medium":strength);
-  }
-
-  // Strict mode gating
-  if((baseSide==="B"||baseSide==="P") && ui.optLearn.checked && ui.optStrict.checked && ctx){
-    const minAcc = parseFloat(ui.minAcc.value||"0.5");
-    if(!ctx.weak && ctx.mean < minAcc){
-      baseSide="PASS";
-      reason = `PASS：情境命中 ${(ctx.mean*100).toFixed(1)}% < ${(minAcc*100).toFixed(1)}%`;
-    }
-    if(ctx.weak){
-      baseSide="PASS";
-      reason = `PASS：樣本不足（使用回退仍不足）`;
-    }
-  }
-
-  
-// Playability rule: Strong/Medium can play, Weak = PASS (不打)
-  if((baseSide==="B"||baseSide==="P") && strength==="weak"){
-    const candSide = baseSide;
-    baseSide = "PASS";
-    reason = `PASS：${candSide==="B"?"莊":"閒"}偏向等級弱（不打）`;
-  }
-
-// Final reason string
-  let fullReason = reason;
-  if(ctx){
-    fullReason += `｜情境 ${(ctx.mean*100).toFixed(1)}% (n=${ctx.n}, ${ctx.key}${ctx.weak?",弱證據":""})`;
-  }
-
-  return {side:baseSide, pB,pP,pT, evB, evP, strength, trendScore, bRed, pRed, ctx, reason:fullReason};
+  return {side, strength:lvl, biasSide, biasLvl:lvl, pB, pP, pT, pBPair, pPPair, pBothPair, evB, evP, key, ctxMean, ctxN, ctxMode, reason};
 }
+
+
 
 /* =========================================================
    10) Performance tracking
@@ -1539,6 +1692,8 @@ function recalcAndRender(force=false){
 
   ui.hudRemain.textContent = String(totalRemaining());
   ui.hudRound.textContent  = String(S.history.length);
+  const sh = getActiveShoe();
+  ui.shoeInfo.textContent = `#${sh.shoeId}（${sh.rounds.length}局）`;
   ui.hudSim.textContent    = String(S.trials);
   ui.optArmed.checked = S.armed;
   ui.hudArmed.textContent = S.armed ? "是" : "否";
@@ -1558,16 +1713,21 @@ function recalcAndRender(force=false){
   ui.hudPB.textContent = fmtPct(rec.pB);
   ui.hudPP.textContent = fmtPct(rec.pP);
   ui.hudPT.textContent = fmtPct(rec.pT);
+  ui.hudBPair.textContent = fmtPct(rec.pBPair);
+  ui.hudPPair.textContent = fmtPct(rec.pPPair);
   ui.hudEVB.textContent = (rec.evB*100).toFixed(2)+"%";
   ui.hudEVP.textContent = (rec.evP*100).toFixed(2)+"%";
   ui.hudEVB.style.color = rec.evB>0 ? "var(--t)" : "var(--muted)";
   ui.hudEVP.style.color = rec.evP>0 ? "var(--t)" : "var(--muted)";
-  ui.hudCtx.textContent  = rec.ctx ? `${(rec.ctx.mean*100).toFixed(1)}% / n=${rec.ctx.n}${rec.ctx.weak?"（弱）":""}` : "--";
+    if(rec.ctxMean !== null && rec.ctxMean !== undefined){
+    const src = (rec.ctxMode === "global") ? "全域" : "情境";
+    ui.hudCtx.textContent = `${src} ${(rec.ctxMean*100).toFixed(1)}% / n=${rec.ctxN}`;
+  }else{
+    ui.hudCtx.textContent = "--";
+  }
 
   // Bias strip always shows side + strength (even when PASS)
-  // Bias side: if allowTrend, use trendScore sign; else default to (pB>=pP) => B.
-  const biasSide = (ui.optAllowTrend.checked && rec.trendScore !== 0) ? (rec.trendScore>0 ? "B" : "P") : (rec.pB>=rec.pP ? "B" : "P");
-  setBias(biasSide, rec.strength);
+  // Bias side: if allowTrend, use trendScore sign; else default to (pB>=pP) => B.  setBias(rec.biasSide, rec.biasLvl);
 
   // HUD command
   if(rec.side==="B"){
@@ -1585,7 +1745,7 @@ function recalcAndRender(force=false){
   ui.hudSub.textContent = `${rec.reason} ｜ ${armedTxt}`;
 
   // roads
-  renderAllRoads();
+  safeRenderAllRoads();
 
   // keypad / validator
   updateKeypadCounts();
@@ -1652,6 +1812,32 @@ function submitData(){
     keysB.forEach(k => updateLearning("B", k, corrB));
     keysP.forEach(k => updateLearning("P", k, corrP));
   }
+  // shoe record（每副牌紀錄）
+  const sh = getActiveShoe();
+  const slotSnapshot = {};
+  ["p1","p2","b1","b2","p3","b3"].forEach(id => { slotSnapshot[id] = getSlotRank(id) || null; });
+  const isPPair = slotSnapshot.p1 && slotSnapshot.p2 && (slotSnapshot.p1 === slotSnapshot.p2);
+  const isBPair = slotSnapshot.b1 && slotSnapshot.b2 && (slotSnapshot.b1 === slotSnapshot.b2);
+
+  sh.rounds.push({
+    handNo: sh.rounds.length + 1,
+    ts: nowISO(),
+    slots: slotSnapshot,
+    outcome,
+    pred: predSide,
+    correct,
+    tie: (outcome === "T"),
+    playerPair: isPPair,
+    bankerPair: isBPair,
+    est: (S.lastRec ? {
+      pB: S.lastRec.pB, pP: S.lastRec.pP, pT: S.lastRec.pT,
+      pBPair: S.lastRec.pBPair, pPPair: S.lastRec.pPPair, pBothPair: S.lastRec.pBothPair,
+      evB: S.lastRec.evB, evP: S.lastRec.evP,
+      biasSide: S.lastRec.biasSide, biasLvl: S.lastRec.biasLvl, strength: S.lastRec.strength,
+      ctxKey: S.lastRec.key, ctxMean: S.lastRec.ctxMean, ctxN: S.lastRec.ctxN
+    } : null)
+  });
+
 // log
   const rec = S.lastRec || {pB:null,pP:null,pT:null,evB:null,evP:null,ctx:null,strength:null};
   S.log.push({
@@ -1661,9 +1847,13 @@ function submitData(){
     armed: S.armed,
     pB: rec.pB, pP: rec.pP, pT: rec.pT,
     evB: rec.evB, evP: rec.evP,
-    ctxKey: rec.ctx ? rec.ctx.key : null,
-    ctxMean: rec.ctx ? rec.ctx.mean : null,
-    ctxN: rec.ctx ? rec.ctx.n : null,
+    ctxKey: rec.key || null,
+    ctxMode: rec.ctxMode || null,
+    ctxMean: (rec.ctxMean !== undefined ? rec.ctxMean : null),
+    ctxN: (rec.ctxN !== undefined ? rec.ctxN : null),
+    biasSide: rec.biasSide || null,
+    biasLvl: rec.biasLvl || null,
+    pBPair: rec.pBPair, pPPair: rec.pPPair, pBothPair: rec.pBothPair,
     strength: rec.strength,
     outcome,
     correct
@@ -1740,6 +1930,67 @@ function exportLog(){
   a.remove();
   URL.revokeObjectURL(url);
 }
+function exportAll(){
+  // 匯出整份狀態（含：牌庫、路單、每副牌紀錄、學習/績效）
+  const payload = deepClone(S);
+  payload.cache = {}; // cache屬於可重算資料，避免檔案膨脹
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `baccarat_dss_state_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function triggerImport(){
+  ui.importFile.click();
+}
+
+function importAll(evt){
+  const file = evt.target.files && evt.target.files[0];
+  evt.target.value = "";
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const obj = JSON.parse(String(reader.result || "{}"));
+      if(!obj || !obj.rankCounts || !obj.history || !obj.learn){
+        alert("匯入失敗：檔案格式不正確（缺少必要欄位）。");
+        return;
+      }
+      if(!confirm("確定要匯入並取代目前資料嗎？\n（匯入後可繼續接著記錄）")) return;
+
+      const st = ensureShoeStructure(Object.assign(deepClone(DEFAULTS), obj));
+
+      // rankCounts 防呆補齊 1..13
+      if(!st.rankCounts) st.rankCounts = initCounts(st.decks || 8);
+      for(let r=1;r<=13;r++){
+        if(typeof st.rankCounts[r] !== "number") st.rankCounts[r] = 0;
+        if(st.rankCounts[r] < 0) st.rankCounts[r] = 0;
+      }
+
+      S = st;
+      backupState = null;
+      submitLock = false;
+
+      clearAllSlots();
+      S.cache = {};
+
+      syncUIFromState();
+      recalcAndRender(true);
+
+      alert("匯入完成：已接續上次狀態。");
+    }catch(e){
+      alert("匯入失敗：JSON 解析錯誤。");
+    }
+  };
+  reader.readAsText(file);
+}
+
 function undoLastRound(){
   if(!backupState){ alert("沒有可撤銷的上一局。"); return; }
   S = deepClone(backupState);
@@ -1751,6 +2002,16 @@ function undoLastRound(){
 function resetSystem(){
   if(!confirm("確定換靴？（重置牌庫、路單、快取；保留學習/績效）\n若也要清學習，請先按『清空學習』。")) return;
   snapshot();
+
+  // 目前副牌收盤，建立新副牌
+  const cur = getActiveShoe();
+  cur.endedAt = nowISO();
+
+  const maxId = S.shoes.reduce((m, sh) => Math.max(m, sh.shoeId || 0), 0);
+  const nextId = maxId + 1;
+  S.shoes.push({ shoeId: nextId, startedAt: nowISO(), endedAt: null, rounds: [] });
+  S.activeShoeId = nextId;
+
   S.rankCounts = initCounts(S.decks);
   S.history = [];
   S.cache = {};
@@ -1772,6 +2033,7 @@ function syncUIFromState(){
   ui.minAcc.value = String(S.learn.minAcc);
 }
 buildKeypad();
+ui.importFile.addEventListener("change", importAll);
 syncUIFromState();
 setActiveSlot("p1");
 updateKeypadCounts();
