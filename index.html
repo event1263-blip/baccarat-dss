@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂 - 自適應動態切換版</title>
+    <title>百家樂 - 當靴統計融合版</title>
     <style>
         :root {
             --bg: #09090b; --card: #18181b; --border: #27272a;
@@ -18,7 +18,7 @@
         /* 🚁 懸浮抬頭顯示器 (Sticky HUD) */
         .sticky-hud {
             position: sticky; top: 0; z-index: 1000;
-            background: rgba(18, 18, 21, 0.90); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background: rgba(18, 18, 21, 0.92); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
             border-bottom: 1px solid rgba(255,255,255,0.1); padding: env(safe-area-inset-top) 8px 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6); transition: all 0.3s ease;
         }
@@ -30,32 +30,34 @@
         .hud-btn { background: #27272a; border: 1px solid #3f3f46; color: var(--text-main); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 800; cursor: pointer; }
         .hud-btn.undo { color: var(--warning); } .hud-btn.reset { color: var(--b-color); } .hud-btn.db { color: var(--p-color); }
 
-        /* 🎯 精準決策面板 */
+        /* 🎯 決策面板 */
         .oracle-box { text-align: center; padding: 12px 8px; border-radius: 12px; border: 2px solid var(--border); background: #000; position: relative; }
         .oracle-box.pass { border-color: #3f3f46; }
         .oracle-box.banker { border-color: var(--b-color); background: linear-gradient(180deg, rgba(239, 68, 68, 0.15) 0%, #000 100%); box-shadow: 0 0 15px rgba(239, 68, 68, 0.25); }
         .oracle-box.player { border-color: var(--p-color); background: linear-gradient(180deg, rgba(59, 130, 246, 0.15) 0%, #000 100%); box-shadow: 0 0 15px rgba(59, 130, 246, 0.25); }
         .oracle-box.locked { border-color: var(--highlight); background: repeating-linear-gradient(45deg, rgba(234, 179, 8, 0.05), rgba(234, 179, 8, 0.05) 10px, rgba(0,0,0,0) 10px, rgba(0,0,0,0) 20px); }
         
+        .oracle-main { font-size: 28px; font-weight: 900; letter-spacing: 1px; margin-bottom: 6px; line-height: 1.1; }
+        .oracle-box.banker .oracle-main { color: var(--b-color); text-shadow: 0 0 10px var(--b-color); }
+        .oracle-box.player .oracle-main { color: var(--p-color); text-shadow: 0 0 10px var(--p-color); }
+        .oracle-box.locked .oracle-main { color: var(--highlight); }
+
+        /* 明確判斷標籤 (無 % 數) */
+        .reason-badge { display: inline-flex; justify-content: center; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--text-main); margin-bottom: 8px;}
+        .str-high { color: var(--highlight); } .str-mid { color: #60a5fa; } .str-low { color: var(--text-muted); }
+        
+        /* 側注推薦區 (含 % 數) */
+        .sidebet-container { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; border-top: 1px dashed #333; padding-top: 8px;}
+        .sidebet-pill { font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; font-variant-numeric: tabular-nums; }
+        .sidebet-pill.active { background: rgba(34, 197, 94, 0.15); color: var(--t-color); border-color: var(--t-color); box-shadow: 0 0 8px rgba(34, 197, 94, 0.4); animation: pulse 1.5s infinite alternate; }
+        .sidebet-pill.active-pair { background: rgba(234, 179, 8, 0.15); color: var(--highlight); border-color: var(--highlight); box-shadow: 0 0 8px rgba(234, 179, 8, 0.4); animation: pulse 1.5s infinite alternate; }
+
+        /* 變路與斷龍警示 */
         .trend-alert { font-size: 12px; font-weight: 900; margin-bottom: 6px; letter-spacing: 0.5px; padding: 4px; border-radius: 6px; }
         .alert-high { color: #fff; background: rgba(249, 115, 22, 0.3); border: 1px solid var(--warning); animation: pulse 1.5s infinite alternate;}
         .alert-safe { color: var(--text-muted); background: rgba(255,255,255,0.05); }
         .alert-info { color: #60a5fa; background: rgba(59, 130, 246, 0.1); }
-        
-        .oracle-main { font-size: 26px; font-weight: 900; letter-spacing: 1px; margin-bottom: 6px; line-height: 1.1; }
-        .oracle-box.banker .oracle-main { color: var(--b-color); text-shadow: 0 0 10px var(--b-color); }
-        .oracle-box.player .oracle-main { color: var(--p-color); text-shadow: 0 0 10px var(--p-color); }
-        .oracle-box.locked .oracle-main { color: var(--highlight); }
-        
-        /* 策略標籤 (無干擾) */
-        .reason-badge { display: inline-flex; gap: 8px; justify-content: center; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--text-main); margin-bottom: 6px;}
-        .str-high { color: var(--highlight); } .str-mid { color: #60a5fa; } .str-low { color: var(--text-muted); }
-        
-        /* 側注推薦區 */
-        .sidebet-container { display: flex; justify-content: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; border-top: 1px dashed #333; padding-top: 8px;}
-        .sidebet-pill { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
-        .sidebet-pill.active { background: rgba(234, 179, 8, 0.2); color: var(--highlight); border-color: var(--highlight); box-shadow: 0 0 8px rgba(234, 179, 8, 0.4); animation: pulse 1.5s infinite alternate; font-size: 12px;}
-        @keyframes pulse { from{ transform: scale(1); } to{ transform: scale(1.02); } }
+        @keyframes pulse { from{ transform: scale(1); } to{ transform: scale(1.03); } }
 
         /* 📜 滾動內容區 */
         .scroll-container { padding: 12px; padding-bottom: 40px; }
@@ -77,10 +79,8 @@
         .circle-hollow { width: 12px; height: 12px; border-radius: 50%; border: 2px solid transparent; position: relative; }
         .circle-hollow.B, .circle-hollow.R { border-color: var(--b-color); } 
         .circle-hollow.P, .circle-hollow.Blue { border-color: var(--p-color); }
-        
         .tie-line { background: linear-gradient(to top right, transparent 45%, var(--t-color) 45%, var(--t-color) 55%, transparent 55%); }
         .tie-text { position: absolute; font-size: 9px; font-weight: 900; color: var(--t-color); z-index: 2; }
-        
         .has-bp::before { content:''; position:absolute; top:-2px; left:-2px; width:4px; height:4px; background:var(--b-color); border-radius:50%; border:1px solid #fff; z-index:5; }
         .has-pp::after { content:''; position:absolute; bottom:-2px; right:-2px; width:4px; height:4px; background:var(--p-color); border-radius:50%; border:1px solid #fff; z-index:5; }
 
@@ -164,9 +164,9 @@
             <div class="reason-badge" id="reasonBadge">判斷方式與強度分析中...</div>
 
             <div class="sidebet-container" id="sideBetContainer">
-                <div class="sidebet-pill" id="sbTie">和局機率偏低</div>
-                <div class="sidebet-pill" id="sbBP">莊對機率偏低</div>
-                <div class="sidebet-pill" id="sbPP">閒對機率偏低</div>
+                <div class="sidebet-pill" id="sbTie">和局 --%</div>
+                <div class="sidebet-pill" id="sbBP">莊對 --%</div>
+                <div class="sidebet-pill" id="sbPP">閒對 --%</div>
             </div>
         </div>
     </div>
@@ -260,8 +260,8 @@
             <div class="db-stat-grid">
                 <div class="db-stat-item"><span>已收錄總手數</span><span id="dbTotalHands" style="color:var(--highlight)">0</span></div>
                 <div class="db-stat-item"><span>N-Gram記憶體</span><span id="dbPatterns" style="color:var(--highlight)">0 組</span></div>
-                <div class="db-stat-item"><span>全局推薦勝率</span><span id="dbGlobalWinRate" style="color:var(--highlight)">0.0%</span></div>
-                <div class="db-stat-item"><span>數據庫理論勝率</span><span id="dbModelWinRate" style="color:var(--t-color)">0.0%</span></div>
+                <div class="db-stat-item"><span>歷史實際勝率</span><span id="dbGlobalWinRate" style="color:var(--highlight)">0.0%</span></div>
+                <div class="db-stat-item"><span>模型理論勝率</span><span id="dbModelWinRate" style="color:var(--t-color)">0.0%</span></div>
             </div>
             <div id="learningStatus" class="learning-status active">
                 🟢 學習引擎運行中 (收集數據以優化模型)
@@ -286,11 +286,11 @@
 const STATE_KEY = "baccarat_state_v16_adaptive_fix";
 const DB_KEY = "baccarat_bigdata_v16_adaptive_fix";
 
-// S.history 儲存完整物件 {w:'B', bp:true, pp:false}
+// 新增 stats.shoe 用來追蹤當靴統計的勝率
 let S = { 
     totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, 
-    stats: { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0} },
-    shadowPreds: { ev: null, trend: null, derived: null, ml: null },
+    stats: { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0} },
+    shadowPreds: { ev: null, trend: null, derived: null, ml: null, shoe: null },
     shoePerf: { recs: 0, hits: 0 }, lastRecSide: null 
 };
 let backupState = null;
@@ -378,7 +378,6 @@ function fallbackExport(blob, filename) {
     a.style.display = "none"; a.href = url; a.download = filename;
     document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
 }
-
 function importDatabase(evt) {
     const file = evt.target.files[0]; if (!file) return;
     const reader = new FileReader();
@@ -387,7 +386,7 @@ function importDatabase(evt) {
             let imp = JSON.parse(e.target.result); 
             if(imp.patterns) { 
                 let evalResult = evaluateImportedDB(imp);
-                let confirmMsg = `✅ 數據庫讀取成功！\n\n🔍 【大數據真實性與強度評估】\n- 總收錄局數: ${imp.totalHands}\n- 觸發預測型態: ${evalResult.validPatterns} 組\n- 該數據包理論勝率: ${evalResult.simWinRate}%\n\n確定要套用此數據庫嗎？`;
+                let confirmMsg = `✅ 數據庫讀取成功！\n\n🔍 【大數據真實性評估】\n- 總收錄: ${imp.totalHands} 局\n- 該數據庫理論勝率: ${evalResult.simWinRate}%\n\n確定套用嗎？`;
                 if(confirm(confirmMsg)) {
                     BigData = imp; if(!BigData.acc) BigData.acc = {recs:0, hits:0}; 
                     saveDatabase(); recalcAndRender();
@@ -410,7 +409,7 @@ function updateDBUI() {
     document.getElementById('dbModelWinRate').innerText = evalRes.simWinRate + "%";
 
     let statusEl = document.getElementById('learningStatus');
-    if (isModelFrozen()) { statusEl.className = "learning-status frozen"; statusEl.innerText = "🔮 總勝率達標 80%：模型已鎖定保護，暫停寫入新數據"; } 
+    if (isModelFrozen()) { statusEl.className = "learning-status frozen"; statusEl.innerText = "🔮 勝率達標 80%：模型已鎖定，暫停寫入新數據"; } 
     else { statusEl.className = "learning-status active"; statusEl.innerText = "🟢 學習引擎運行中 (收集數據以優化模型)"; }
 }
 function toggleDBPanel() { dbPanelOpen = !dbPanelOpen; document.getElementById('dbPanel').className = dbPanelOpen ? "database-panel open" : "database-panel"; updateDBUI(); }
@@ -425,14 +424,16 @@ function loadState() {
         if (st) { 
             S = JSON.parse(st); 
             if(!S.shoePerf) S.shoePerf = {recs:0, hits:0}; 
-            if(!S.stats) S.stats = { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0} };
-            if(!S.shadowPreds) S.shadowPreds = { ev: null, trend: null, derived: null, ml: null };
+            if(!S.stats) S.stats = { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0} };
+            // 如果從舊版載入，補上 shoe 的預測追蹤
+            if(!S.stats.shoe) S.stats.shoe = {p:0,h:0};
+            if(!S.shadowPreds) S.shadowPreds = { ev: null, trend: null, derived: null, ml: null, shoe: null };
         } 
     } catch(e){} 
 }
 function snapshot() { backupState = JSON.parse(JSON.stringify(S)); }
 function undoLastRound() { if (!backupState) return alert("無資料可撤銷"); S = JSON.parse(JSON.stringify(backupState)); backupState = null; saveState(); clearAllSlots(); recalcAndRender(); }
-function resetShoe() { if(confirm("確定重置本靴牌？當前勝率將歸零。")) { S = { totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, shoePerf: {recs:0, hits:0}, lastRecSide: null, stats: { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0} }, shadowPreds: { ev: null, trend: null, derived: null, ml: null } }; backupState = null; saveState(); clearAllSlots(); recalcAndRender(); } }
+function resetShoe() { if(confirm("確定重置本靴牌？當前勝率將歸零。")) { S = { totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, shoePerf: {recs:0, hits:0}, lastRecSide: null, stats: { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0} }, shadowPreds: { ev: null, trend: null, derived: null, ml: null, shoe: null } }; backupState = null; saveState(); clearAllSlots(); recalcAndRender(); } }
 function updateKeypadCounts() { for(let i=1; i<=13; i++) { let el = document.getElementById(`kcnt-${i}`); if(el) { el.innerText = S.deck[i]; el.className = S.deck[i] < 10 ? "key-count low" : "key-count"; } } }
 function getBaccaratVal(id) { let v = document.getElementById(`slot-${id}`).dataset.val; if(!v) return null; let n=parseInt(v); return n>=10?0:n; }
 function getRawVal(id) { let v = document.getElementById(`slot-${id}`).dataset.val; return v ? parseInt(v) : null; }
@@ -476,7 +477,7 @@ function inputKey(val) {
 function clearAllSlots() { currentSlotOrder.forEach(id=>{ let el=document.getElementById(`slot-${id}`); el.innerText=''; el.dataset.val=''; el.classList.remove('filled'); }); currentSlotIdx=0; evaluateDrawRules(); setActiveSlot(currentSlotOrder[0]); }
 
 /* =========================================================
-   4) 結算與後台策略評估 (4D Engine)
+   4) 結算與後台策略評估
 ========================================================= */
 function submitData() {
     const btn = document.getElementById('submitBtn'); if(btn.disabled) return;
@@ -485,21 +486,19 @@ function submitData() {
     let pRaw=[], bRaw=[], pPts=0, bPts=0, consumed=[];
     let rp1 = getRawVal('p1'), rp2 = getRawVal('p2'), rp3 = getRawVal('p3');
     let rb1 = getRawVal('b1'), rb2 = getRawVal('b2'), rb3 = getRawVal('b3');
-    
     if(rp1) { pRaw.push(rp1); consumed.push(rp1); pPts += rp1>=10?0:rp1; } if(rp2) { pRaw.push(rp2); consumed.push(rp2); pPts += rp2>=10?0:rp2; } if(rp3) { pRaw.push(rp3); consumed.push(rp3); pPts += rp3>=10?0:rp3; }
     if(rb1) { bRaw.push(rb1); consumed.push(rb1); bPts += rb1>=10?0:rb1; } if(rb2) { bRaw.push(rb2); consumed.push(rb2); bPts += rb2>=10?0:rb2; } if(rb3) { bRaw.push(rb3); consumed.push(rb3); bPts += rb3>=10?0:rb3; }
 
-    let isPPair = (pRaw.length >= 2 && pRaw[0] === pRaw[1]);
-    let isBPair = (bRaw.length >= 2 && bRaw[0] === bRaw[1]);
+    let isPPair = (pRaw.length >= 2 && pRaw[0] === pRaw[1]); let isBPair = (bRaw.length >= 2 && bRaw[0] === bRaw[1]);
     let winner = 'T', fP = pPts%10, fB = bPts%10;
     if(fP > fB) winner = 'P'; else if(fB > fP) winner = 'B';
     
-    // 後台四機器人戰績結算
     if (winner !== 'T') {
         if(S.shadowPreds.ev) { S.stats.ev.p++; if(S.shadowPreds.ev === winner) S.stats.ev.h++; }
         if(S.shadowPreds.trend) { S.stats.trend.p++; if(S.shadowPreds.trend === winner) S.stats.trend.h++; }
         if(S.shadowPreds.derived) { S.stats.derived.p++; if(S.shadowPreds.derived === winner) S.stats.derived.h++; }
         if(S.shadowPreds.ml) { S.stats.ml.p++; if(S.shadowPreds.ml === winner) S.stats.ml.h++; }
+        if(S.shadowPreds.shoe) { S.stats.shoe.p++; if(S.shadowPreds.shoe === winner) S.stats.shoe.h++; } // 當靴統計命中更新
         
         if (S.lastRecSide && S.lastRecSide !== 'PASS') {
             let isHit = (S.lastRecSide === winner);
@@ -517,45 +516,54 @@ function submitData() {
 }
 
 /* =========================================================
-   5) 四維度自適應決策與渲染
+   5) 5D 自適應引擎與融合側注
 ========================================================= */
-// 💥 完美修復：確保 Derived array 回傳的是字串 ('R'/'Blue')，避免 .val 出現 undefined
 function simulateAskRoad(hyp) {
     let testArr = [...S.history, {w: hyp, bp:false, pp:false}];
     let d = buildBigRoadAndDerived(testArr);
-    return [
-        d.eye.length > 0 ? d.eye[d.eye.length-1] : null, 
-        d.small.length > 0 ? d.small[d.small.length-1] : null, 
-        d.roach.length > 0 ? d.roach[d.roach.length-1] : null
-    ];
+    return [d.eye.length > 0 ? d.eye[d.eye.length-1] : null, d.small.length > 0 ? d.small[d.small.length-1] : null, d.roach.length > 0 ? d.roach[d.roach.length-1] : null];
 }
 
 function recalcAndRender() {
-    let pureHistObj = S.history.filter(x => x.w !== 'T');
-    let pureHistStr = pureHistObj.map(x => x.w);
+    let pureHist = S.history.filter(x => x.w !== 'T');
+    let pureHistStr = pureHist.map(x => x.w);
     
-    // --- 1. 四大機器人下一把推演 ---
+    // --- 1. 當靴統計 (Shoe Stats) 動態計算 ---
+    let sStats = { B: 0, P: 0, T: 0, BP: 0, PP: 0 };
+    for (let h of S.history) { sStats[h.w]++; if (h.bp) sStats.BP++; if (h.pp) sStats.PP++; }
+    
+    let shoeHands = S.history.length;
+    let shoeBP = sStats.B + sStats.P;
+    let shoeBRate = shoeBP > 0 ? sStats.B / shoeBP : 0;
+    let shoePRate = shoeBP > 0 ? sStats.P / shoeBP : 0;
+    let shoeTRate = shoeHands > 0 ? sStats.T / shoeHands : 0;
+    let shoeBPRate = shoeHands > 0 ? sStats.BP / shoeHands : 0;
+    let shoePPRate = shoeHands > 0 ? sStats.PP / shoeHands : 0;
+
+    // --- 2. 五大機器人下一把推演 ---
+    // A: 物理 EV
     let tc = (S.totalCards / 52) > 0 ? S.runningCount / (S.totalCards / 52) : 0;
     let p_p = basePlayerProb + (tc * 0.0005); let p_b = baseBankerProb - (tc * 0.0005);
-    let evBanker = (p_b * 0.95) - p_p; let evPlayer = p_p - p_b;
-    S.shadowPreds.ev = evBanker > 0.002 ? 'B' : (evPlayer > 0.002 ? 'P' : null);
+    S.shadowPreds.ev = ((p_b * 0.95) - p_p) > 0.002 ? 'B' : ((p_p - p_b) > 0.002 ? 'P' : null);
 
+    // B: 大路動能
     let trendSide = null;
     if (pureHistStr.length > 0) {
         let last = pureHistStr[pureHistStr.length-1];
-        let isChop = false;
-        if (pureHistStr.length >= 4 && pureHistStr[pureHistStr.length-1] !== pureHistStr[pureHistStr.length-2] && pureHistStr[pureHistStr.length-2] !== pureHistStr[pureHistStr.length-3]) isChop = true;
+        let isChop = (pureHistStr.length >= 4 && pureHistStr[pureHistStr.length-1] !== pureHistStr[pureHistStr.length-2] && pureHistStr[pureHistStr.length-2] !== pureHistStr[pureHistStr.length-3]);
         trendSide = isChop ? (last === 'B' ? 'P' : 'B') : last;
     }
     S.shadowPreds.trend = trendSide;
 
+    // C: 五路共振
     let derivedSide = null;
     let askB = simulateAskRoad('B'); let askP = simulateAskRoad('P');
     let bReds = askB.filter(x => x === 'R').length; let pReds = askP.filter(x => x === 'R').length;
     if (bReds >= 2 && pReds <= 1) derivedSide = 'B'; else if (pReds >= 2 && bReds <= 1) derivedSide = 'P';
     S.shadowPreds.derived = derivedSide;
 
-    let mlSide = null, tRate = 0, bpRate = 0, ppRate = 0;
+    // D: 歷史大數據
+    let mlSide = null, mlTRate = 0, mlBPRate = 0, mlPPRate = 0;
     if (pureHistStr.length >= 3) {
         let seq = pureHistStr.slice(-3).join(","); let ptn = BigData.patterns[seq];
         if (ptn) {
@@ -564,24 +572,34 @@ function recalcAndRender() {
                 let bR = ptn.B / tBP; let pR = ptn.P / tBP;
                 if (bR >= 0.55) mlSide = "B"; else if (pR >= 0.55) mlSide = "P";
             }
-            if (tH > 0) { tRate = ptn.T/tH; bpRate = ptn.BP/tH; ppRate = ptn.PP/tH; }
+            if (tH > 0) { mlTRate = ptn.T/tH; mlBPRate = ptn.BP/tH; mlPPRate = ptn.PP/tH; }
         }
     }
     S.shadowPreds.ml = mlSide;
 
-    // --- 2. 計算勝率選出主導策略 ---
+    // E: 當靴統計偏差 (Shoe Bias)
+    // 如果當靴莊或閒的佔比大於 53%，跟隨該偏差
+    S.shadowPreds.shoe = shoeBRate > 0.53 ? 'B' : (shoePRate > 0.53 ? 'P' : null);
+
+    // --- 3. 評估當前勝率選出主導策略 ---
     let winRates = {
         ev: S.stats.ev.p > 0 ? S.stats.ev.h / S.stats.ev.p : 0,
         trend: S.stats.trend.p > 0 ? S.stats.trend.h / S.stats.trend.p : 0,
         derived: S.stats.derived.p > 0 ? S.stats.derived.h / S.stats.derived.p : 0,
-        ml: S.stats.ml.p > 0 ? S.stats.ml.h / S.stats.ml.p : 0
+        ml: S.stats.ml.p > 0 ? S.stats.ml.h / S.stats.ml.p : 0,
+        shoe: S.stats.shoe.p > 0 ? S.stats.shoe.h / S.stats.shoe.p : 0
     };
     
     let bestStrat = 'trend'; let maxRate = -1;
-    // 必須至少模擬過 3 把才具備代表性
     for (let s in winRates) { if (S.stats[s].p >= 3 && winRates[s] > maxRate) { maxRate = winRates[s]; bestStrat = s; } }
 
-    // --- 3. 動能預警與極端規律 ---
+    // --- 4. 側注雙重融合運算 (Blend ML & Shoe Rates) ---
+    // 若 ML 有數據，則取加權平均 (ML 70%, 當靴 30%)，若無 ML 數據則完全參考當靴機率
+    let finalTRate = mlTRate > 0 ? (mlTRate * 0.7 + shoeTRate * 0.3) : shoeTRate;
+    let finalBPRate = mlBPRate > 0 ? (mlBPRate * 0.7 + shoeBPRate * 0.3) : shoeBPRate;
+    let finalPPRate = mlPPRate > 0 ? (mlPPRate * 0.7 + shoePPRate * 0.3) : shoePPRate;
+
+    // --- 5. 動能預警與 HUD 渲染 ---
     let breakMsg = "📊 牌局資料收集中...", alertClass = "alert-safe";
     let currStreakSide = null, currStreakLength = 0;
     if (pureHistStr.length > 0) {
@@ -596,14 +614,13 @@ function recalcAndRender() {
         let seq = pureHistStr.slice(-3).join(","); let ptn = BigData.patterns[seq];
         if (ptn && (ptn.B + ptn.P) >= 5) {
             let breakRate = ptn[opp] / (ptn.B + ptn.P);
-            if (breakRate >= 0.55) { breakMsg = `⚠️【斷龍警報】大數據斷龍機率高`; alertClass = "alert-high"; } 
-            else if (breakRate < 0.45) { breakMsg = `🛡️【防禦警報】嚴禁逆勢接刀`; alertClass = "alert-safe"; } 
+            if (breakRate >= 0.55) { breakMsg = `⚠️【斷龍高危】大數據斷龍機率: ${(breakRate*100).toFixed(1)}%`; alertClass = "alert-high"; } 
+            else if (breakRate < 0.45) { breakMsg = `🛡️【防禦警報】大數據斷龍率極低，勿逆勢`; alertClass = "alert-safe"; } 
             else { breakMsg = `🔮【動能追蹤】目前${currStreakSide==='B'?'莊':'閒'}連${currStreakLength}`; alertClass = "alert-safe"; }
         } else { breakMsg = `🔮 目前${currStreakSide==='B'?'莊':'閒'}連${currStreakLength}`; }
     } else if (isChoppingHard) { breakMsg = `🔄【變路警報】密集單跳中，注意反轉`; alertClass = "alert-info"; } 
     else { breakMsg = `📊 觀察牌局走勢中...`; }
 
-    // --- 4. HUD 渲染 ---
     document.getElementById('hdrRemain').innerText = S.totalCards;
     document.getElementById('hdrRound').innerText = S.history.length;
     updateKeypadCounts();
@@ -616,7 +633,7 @@ function recalcAndRender() {
     if (S.history.length < 15) {
         obox.className = "oracle-box locked";
         omain.innerHTML = `🔒 規律收集中`;
-        badge.innerHTML = `<span>前 15 局策略適配中，強制觀望</span>`;
+        badge.innerHTML = `<span>判斷: 燃燒期 (第 ${S.history.length}/15 局)</span> <span class="str-low">強度: 鎖定</span>`;
         S.lastRecSide = 'PASS';
     } else {
         let finalDecision = 'PASS';
@@ -628,15 +645,13 @@ function recalcAndRender() {
         } else if (isChoppingHard) {
             finalDecision = currStreakSide === 'B' ? 'P' : 'B'; rsnText = "極端規律 (單跳)"; strClass = "str-high"; strText = "極強";
         } else {
-            // 自適應策略採用
             if (maxRate >= 0.5) {
                 finalDecision = S.shadowPreds[bestStrat] || 'PASS';
-                let sName = bestStrat === 'ev' ? '物理算牌' : bestStrat === 'trend' ? '大路動能' : bestStrat === 'derived' ? '五路共振' : '歷史大數據';
+                let sName = bestStrat === 'ev' ? '物理算牌' : bestStrat === 'trend' ? '大路動能' : bestStrat === 'derived' ? '五路共振' : bestStrat === 'ml' ? '歷史大數據' : '當靴統計';
                 if (finalDecision !== 'PASS') {
                     rsnText = `自適應主導: ${sName}`;
                     if (maxRate >= 0.65) { strClass = "str-high"; strText = "強"; } 
                     else if (maxRate >= 0.55) { strClass = "str-mid"; strText = "中"; }
-                    else { strClass = "str-low"; strText = "弱"; }
                 }
             }
         }
@@ -651,14 +666,21 @@ function recalcAndRender() {
             badge.innerHTML = `<span>判斷: ${rsnText}</span> <span class="${strClass}">強度: ${strText}</span>`;
         } else {
             obox.className = "oracle-box pass"; omain.innerHTML = `🛡️ 觀望`;
-            badge.innerHTML = `<span>多空分歧，保護資金</span>`;
+            badge.innerHTML = `<span>判斷: 多空分歧</span> <span class="str-low">強度: 無</span>`;
         }
     }
 
+    // --- 🎯 更新側注 UI (帶有精準 % 數) ---
     let sbTie = document.getElementById('sbTie'); let sbBP = document.getElementById('sbBP'); let sbPP = document.getElementById('sbPP');
-    if (tRate > 0.14) { sbTie.className = "sidebet-pill active"; sbTie.innerText = "🔥 推薦和局"; } else { sbTie.className = "sidebet-pill"; sbTie.innerText = "和局機率偏低"; }
-    if (bpRate > 0.11) { sbBP.className = "sidebet-pill active"; sbBP.innerText = "🔥 推薦莊對"; } else { sbBP.className = "sidebet-pill"; sbBP.innerText = "莊對機率偏低"; }
-    if (ppRate > 0.11) { sbPP.className = "sidebet-pill active"; sbPP.innerText = "🔥 推薦閒對"; } else { sbPP.className = "sidebet-pill"; sbPP.innerText = "閒對機率偏低"; }
+    
+    if (finalTRate > 0.14) { sbTie.className = "sidebet-pill active"; sbTie.innerText = `🔥 推薦和局 ${(finalTRate*100).toFixed(1)}%`; } 
+    else { sbTie.className = "sidebet-pill"; sbTie.innerText = `和局 ${(finalTRate*100).toFixed(1)}%`; }
+    
+    if (finalBPRate > 0.11) { sbBP.className = "sidebet-pill active-pair"; sbBP.innerText = `🔥 推薦莊對 ${(finalBPRate*100).toFixed(1)}%`; } 
+    else { sbBP.className = "sidebet-pill"; sbBP.innerText = `莊對 ${(finalBPRate*100).toFixed(1)}%`; }
+    
+    if (finalPPRate > 0.11) { sbPP.className = "sidebet-pill active-pair"; sbPP.innerText = `🔥 推薦閒對 ${(finalPPRate*100).toFixed(1)}%`; } 
+    else { sbPP.className = "sidebet-pill"; sbPP.innerText = `閒對 ${(finalPPRate*100).toFixed(1)}%`; }
 
     renderAllRoads(); updateDBUI();
 }
@@ -697,7 +719,6 @@ function renderBeadPlate() {
     cont.scrollLeft = cont.scrollWidth;
 }
 
-// 🎯 大路和局完美修正版 (Tie attached to previous hand)
 function buildBigRoadAndDerived(hist) {
     let bigGrid={}, coords=[], lastRes=null, startC=0, c=0, r=0, maxC=0, pendingTies=0, lastCrd=null;
     function cellExists(cc, rr){ return !!bigGrid[`${cc},${rr}`]; }
