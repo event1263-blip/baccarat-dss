@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂量化終端 - 側注大數據版</title>
+    <title>百家樂量化終端 - Pro Max版</title>
     <style>
         :root {
             --bg: #09090b; --card: #18181b; --border: #27272a;
             --text-main: #f4f4f5; --text-muted: #a1a1aa;
             --b-color: #ef4444; --p-color: #3b82f6; --t-color: #22c55e;
-            --highlight: #eab308; --warning: #f97316;
+            --highlight: #eab308; --warning: #f97316; --purple: #a855f7;
         }
 
         body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; user-select: none; overflow-x: hidden; }
@@ -23,35 +23,34 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.6); transition: all 0.3s ease;
         }
 
-        .hud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-top: 4px; }
+        .hud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-top: 4px; }
         .hud-stats { font-size: 13px; font-weight: 800; color: var(--text-muted); }
-        .hud-stats span { color: var(--highlight); font-variant-numeric: tabular-nums; }
+        .hud-stats span { color: var(--highlight); font-variant-numeric: tabular-nums; margin-right: 8px;}
         .hud-actions { display: flex; gap: 8px; }
-        .hud-btn { background: #27272a; border: 1px solid #3f3f46; color: var(--text-main); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 800; cursor: pointer; }
+        .hud-btn { background: #27272a; border: 1px solid #3f3f46; color: var(--text-main); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 800; cursor: pointer; }
         .hud-btn.undo { color: var(--warning); } .hud-btn.reset { color: var(--b-color); } .hud-btn.db { color: var(--p-color); }
 
-        /* 巨大決策燈號 */
-        .oracle-box { text-align: center; padding: 12px 8px; border-radius: 12px; border: 2px solid var(--border); background: #000; }
+        /* 決策燈號 */
+        .oracle-box { text-align: center; padding: 14px 8px; border-radius: 12px; border: 2px solid var(--border); background: #000; position: relative; }
         .oracle-box.pass { border-color: #3f3f46; }
         .oracle-box.banker { border-color: var(--b-color); background: linear-gradient(180deg, rgba(239, 68, 68, 0.15) 0%, #000 100%); box-shadow: 0 0 15px rgba(239, 68, 68, 0.25); }
         .oracle-box.player { border-color: var(--p-color); background: linear-gradient(180deg, rgba(59, 130, 246, 0.15) 0%, #000 100%); box-shadow: 0 0 15px rgba(59, 130, 246, 0.25); }
         
-        .oracle-main { font-size: 24px; font-weight: 900; letter-spacing: 1px; margin-bottom: 6px; line-height: 1.1; }
+        .oracle-main { font-size: 24px; font-weight: 900; letter-spacing: 1px; margin-bottom: 6px; line-height: 1.1; display: flex; justify-content: center; align-items: center; gap: 10px;}
+        .strength-badge { font-size: 12px; padding: 2px 6px; border-radius: 6px; font-weight: 800; border: 1px solid currentColor; }
+        
         .oracle-box.banker .oracle-main { color: var(--b-color); text-shadow: 0 0 10px var(--b-color); }
         .oracle-box.player .oracle-main { color: var(--p-color); text-shadow: 0 0 10px var(--p-color); }
         
-        .oracle-sub { font-size: 11px; font-weight: 700; color: var(--text-muted); display: flex; justify-content: center; gap: 6px; }
-        .oracle-sub div { padding: 4px 6px; border-radius: 6px; background: rgba(255,255,255,0.08); }
+        /* 側注推薦區 */
+        .sidebet-container { display: flex; justify-content: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .sidebet-pill { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 8px; background: rgba(255,255,255,0.1); color: var(--text-main); border: 1px solid rgba(255,255,255,0.2); }
+        .sidebet-pill.active { background: rgba(234, 179, 8, 0.2); color: var(--highlight); border-color: var(--highlight); box-shadow: 0 0 8px rgba(234, 179, 8, 0.4); animation: pulse 1.5s infinite alternate;}
+        
+        @keyframes pulse { from{ transform: scale(1); } to{ transform: scale(1.05); } }
 
         /* 📜 滾動內容區 */
         .scroll-container { padding: 12px; padding-bottom: 40px; }
-
-        /* 📊 儀表板 (含側注預測) */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .dash-box { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px; border: 1px solid var(--border); }
-        .dash-header { font-size: 11px; color: var(--text-muted); font-weight: 800; margin-bottom: 8px; text-transform: uppercase; }
-        .dash-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; margin-bottom: 4px; }
-        .dash-val { font-variant-numeric: tabular-nums; }
 
         /* 🀄 五路圖模組 */
         .roads-card { background: var(--card); border-radius: 16px; padding: 10px; border: 1px solid var(--border); margin-bottom: 12px; }
@@ -74,7 +73,6 @@
         .tie-line { background: linear-gradient(to top right, transparent 45%, var(--t-color) 45%, var(--t-color) 55%, transparent 55%); }
         .tie-text { position: absolute; font-size: 9px; font-weight: 900; color: var(--t-color); z-index: 2; }
         
-        /* 莊對閒對的紅藍點標示 */
         .has-bp::before { content:''; position:absolute; top:-2px; left:-2px; width:4px; height:4px; background:var(--b-color); border-radius:50%; border:1px solid #fff; z-index:5; }
         .has-pp::after { content:''; position:absolute; bottom:-2px; right:-2px; width:4px; height:4px; background:var(--p-color); border-radius:50%; border:1px solid #fff; z-index:5; }
 
@@ -115,16 +113,24 @@
         .submit-btn.ready { background: var(--t-color); color: #000; box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); cursor: pointer; }
         .submit-btn:disabled { pointer-events: none; }
 
-        /* 🗄️ 大數據面板 */
-        .database-panel { position: fixed; bottom: -100%; left: 0; width: 100%; height: 85vh; background: #18181b; z-index: 2000; border-top-left-radius: 24px; border-top-right-radius: 24px; border-top: 1px solid #3f3f46; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; padding: 20px; }
+        /* 🗄️ 大數據抽屜面板 */
+        .fab-btn { position: fixed; bottom: 20px; right: 20px; background: var(--highlight); color: #000; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: none; z-index: 900; cursor: pointer; }
+        
+        .database-panel { position: fixed; bottom: -100%; left: 0; width: 100%; height: 90vh; background: #18181b; z-index: 2000; border-top-left-radius: 24px; border-top-right-radius: 24px; border-top: 1px solid #3f3f46; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; padding: 20px; overflow-y: auto;}
         .database-panel.open { bottom: 0; }
-        .db-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .db-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .db-title { font-size: 18px; font-weight: 900; color: #fff; }
         .db-close { background: none; border: none; color: var(--text-muted); font-size: 30px; cursor: pointer; line-height: 1; }
-        .db-section { background: #000; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #27272a; }
-        .db-section h3 { font-size: 14px; font-weight: 800; color: var(--highlight); margin: 0 0 12px 0; }
-        .db-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; font-weight: 600; }
+        
+        .db-section { background: #000; border-radius: 12px; padding: 14px; margin-bottom: 14px; border: 1px solid #27272a; }
+        .db-section h3 { font-size: 14px; font-weight: 800; color: var(--highlight); margin: 0 0 10px 0; }
+        .db-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; font-weight: 700; }
         .db-stat-item { display: flex; justify-content: space-between; padding: 8px; background: #18181b; border-radius: 8px; border: 1px solid #27272a;}
+        
+        .learning-status { padding: 8px; border-radius: 8px; text-align: center; font-size: 12px; font-weight: 800; margin-top: 10px; border: 1px solid; }
+        .learning-status.active { background: rgba(34, 197, 94, 0.1); color: var(--t-color); border-color: var(--t-color); }
+        .learning-status.frozen { background: rgba(168, 85, 247, 0.1); color: var(--purple); border-color: var(--purple); animation: pulse 2s infinite alternate; }
+
         .db-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .db-btn { padding: 12px; border-radius: 8px; border: none; font-weight: 800; font-size: 14px; cursor: pointer; color: #fff; }
         .btn-export { background: #2563eb; } .btn-import { background: #16a34a; }
@@ -135,40 +141,28 @@
 
     <div class="sticky-hud">
         <div class="hud-header">
-            <div class="hud-stats">剩牌: <span id="hdrRemain">416</span> ｜ 局: <span id="hdrRound">0</span></div>
+            <div class="hud-stats">剩牌: <span id="hdrRemain">416</span> 局數: <span id="hdrRound">0</span></div>
             <div class="hud-actions">
                 <button class="hud-btn undo" onclick="undoLastRound()">↩ 撤銷</button>
                 <button class="hud-btn reset" onclick="resetShoe()">換靴</button>
-                <button class="hud-btn db" onclick="toggleDBPanel()">⚙️ 數據</button>
             </div>
         </div>
         <div id="oracleBox" class="oracle-box pass">
-            <div class="oracle-main" id="oracleMain">等待輸入</div>
-            <div class="oracle-sub">
-                <div id="oracleEV">物理 EV: 結算中</div>
-                <div id="oracleML">大數據: 結算中</div>
+            <div class="oracle-main" id="oracleMain">
+                <span>等待輸入</span>
+                <span class="strength-badge" id="oracleStrength" style="display:none;"></span>
+            </div>
+            <div class="sidebet-container" id="sideBetContainer">
+                <div class="sidebet-pill" id="sbTie">和局 評估中</div>
+                <div class="sidebet-pill" id="sbBP">莊對 評估中</div>
+                <div class="sidebet-pill" id="sbPP">閒對 評估中</div>
             </div>
         </div>
     </div>
 
     <div class="scroll-container">
-        
-        <div class="dashboard">
-            <div class="dash-box">
-                <div class="dash-header">基本面條件機率</div>
-                <div class="dash-row"><span style="color:var(--b-color)">莊 Banker</span> <span class="dash-val" id="evBanker">--</span></div>
-                <div class="dash-row"><span style="color:var(--p-color)">閒 Player</span> <span class="dash-val" id="evPlayer">--</span></div>
-            </div>
-            <div class="dash-box">
-                <div class="dash-header">歷史側注預判 (高賠率)</div>
-                <div class="dash-row"><span style="color:var(--t-color)">和局 (8:1)</span> <span class="dash-val" id="mlTie" style="color:var(--highlight)">--</span></div>
-                <div class="dash-row"><span style="color:var(--b-color)">莊對 (11:1)</span> <span class="dash-val" id="mlBPair" style="color:var(--highlight)">--</span></div>
-                <div class="dash-row"><span style="color:var(--p-color)">閒對 (11:1)</span> <span class="dash-val" id="mlPPair" style="color:var(--highlight)">--</span></div>
-            </div>
-        </div>
-
         <div class="roads-card">
-            <div class="road-title">珠盤路 (紀錄對子與和局)</div>
+            <div class="road-title">珠盤路 (含對子標記)</div>
             <div class="road-container"><div class="road-grid" id="grid-bead"></div></div>
             <div class="road-title">大路 (Big Road)</div>
             <div class="road-container"><div class="road-grid" id="grid-big"></div></div>
@@ -181,7 +175,7 @@
 
         <div class="input-card">
             <div class="input-header">
-                <span style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;">發牌區 (自動判定對子)</span>
+                <span style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;">自動偵測點數與對子</span>
                 <label class="toggle-guide"><input type="checkbox" id="autoGuideToggle" checked onchange="evaluateDrawRules()" style="accent-color: var(--t-color);"> 🛡️ 防呆</label>
             </div>
             <div class="table-layout">
@@ -222,45 +216,76 @@
         </div>
     </div>
 
+    <button class="fab-btn" onclick="toggleDBPanel()">⚙️</button>
+
     <div class="database-panel" id="dbPanel">
         <div class="db-header">
             <div class="db-title">大數據學習中心 (ML DB)</div>
             <button class="db-close" onclick="toggleDBPanel()">×</button>
         </div>
-        <div class="db-section">
-            <h3>📈 全局歷史統計 (包含對子/和局)</h3>
+        
+        <div class="db-section" style="border-color: var(--p-color);">
+            <h3>🎯 實時戰況 (當靴追蹤)</h3>
+            <div class="db-stat-grid">
+                <div class="db-stat-item"><span>系統推薦次數</span><span id="shoeRecs">0</span></div>
+                <div class="db-stat-item"><span>成功命中次數</span><span id="shoeHits" style="color:var(--t-color)">0</span></div>
+                <div class="db-stat-item" style="grid-column: span 2; background:rgba(59, 130, 246, 0.1);">
+                    <span style="color:var(--p-color)">當靴推薦勝率</span>
+                    <span id="shoeWinRate" style="font-size:16px; color:var(--text-main)">0.0%</span>
+                </div>
+            </div>
+            <div style="font-size:10px; color:#888; margin-top:8px;">* 僅計算系統明確推薦莊閒且未和局之手數。點擊換靴即重置。</div>
+        </div>
+
+        <div class="db-section" style="border-color: var(--highlight);">
+            <h3>📈 全局大數據 (容量上限: 50,000手)</h3>
             <div class="db-stat-grid">
                 <div class="db-stat-item"><span>已收錄總手數</span><span id="dbTotalHands" style="color:var(--highlight)">0</span></div>
                 <div class="db-stat-item"><span>N-Gram記憶體</span><span id="dbPatterns" style="color:var(--highlight)">0 組</span></div>
-                <div class="db-stat-item"><span>歷史莊勝率</span><span id="dbWinB" style="color:var(--b-color)">0.0%</span></div>
-                <div class="db-stat-item"><span>歷史閒勝率</span><span id="dbWinP" style="color:var(--p-color)">0.0%</span></div>
-                <div class="db-stat-item"><span>歷史和局率</span><span id="dbWinT" style="color:var(--t-color)">0.0%</span></div>
-                <div class="db-stat-item"><span>歷史莊對率</span><span id="dbBPair">0.0%</span></div>
-                <div class="db-stat-item"><span>歷史閒對率</span><span id="dbPPair">0.0%</span></div>
+                <div class="db-stat-item"><span>全局推薦命中</span><span id="dbGlobalHits">0 / 0</span></div>
+                <div class="db-stat-item"><span>全局推薦勝率</span><span id="dbGlobalWinRate" style="color:var(--highlight)">0.0%</span></div>
+            </div>
+            <div id="learningStatus" class="learning-status active">
+                🟢 學習引擎運行中 (收集數據以優化模型)
             </div>
         </div>
+
         <div class="db-section">
-            <h3>💾 資料庫檔案管理</h3>
+            <h3>💾 資料庫檔案管理 (支援 iPhone 原生分享)</h3>
             <div class="db-actions">
-                <button class="db-btn btn-export" onclick="exportDatabase()">匯出大數據</button>
-                <button class="db-btn btn-import" onclick="document.getElementById('importFile').click()">匯入大數據</button>
+                <button class="db-btn btn-export" onclick="exportDatabase()">📤 匯出大數據</button>
+                <button class="db-btn btn-import" onclick="document.getElementById('importFile').click()">📥 匯入大數據</button>
                 <input type="file" id="importFile" accept=".json" style="display:none" onchange="importDatabase(event)">
-                <button class="db-btn btn-reset-db" onclick="resetDatabase()">⚠️ 抹除所有學習記憶</button>
+                <button class="db-btn btn-reset-db" onclick="resetDatabase()">⚠️ 抹除所有歷史與學習記憶</button>
             </div>
         </div>
     </div>
 
 <script>
 /* =========================================================
-   1) 系統核心變數與 Local Storage
-   * S.history 改存物件: { w: 'B'|'P'|'T', bp: true/false, pp: true/false }
+   1) 核心狀態變數
 ========================================================= */
-const STATE_KEY = "baccarat_state_v7_sidebets";
-const DB_KEY = "baccarat_bigdata_v7_sidebets";
+const STATE_KEY = "baccarat_state_v8_promax";
+const DB_KEY = "baccarat_bigdata_v8_promax";
 
-let S = { totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0 };
+// 單靴狀態
+let S = { 
+    totalCards: 416, 
+    deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, 
+    history: [], 
+    runningCount: 0,
+    shoePerf: { recs: 0, hits: 0 }, // 當靴表現
+    lastRecSide: null // 紀錄上一把推薦，用於結算比對
+};
 let backupState = null;
-let BigData = { totalHands: 0, stats: { B: 0, P: 0, T: 0, BP: 0, PP: 0 }, patterns: {} };
+
+// 大數據庫 (上限 50,000)
+let BigData = { 
+    totalHands: 0, 
+    stats: { B: 0, P: 0, T: 0, BP: 0, PP: 0 }, 
+    patterns: {},
+    acc: { recs: 0, hits: 0 } // 全局推薦命中追蹤
+};
 
 const baseBankerProb = 0.458597; const basePlayerProb = 0.446247; 
 const countWeights = {1:1, 2:1, 3:2, 4:2, 5:1, 6:-1, 7:-2, 8:-2, 9:-2, 10:0, 11:0, 12:0, 13:0};
@@ -270,12 +295,24 @@ let currentSlotIdx = 0; let dbPanelOpen = false;
 loadDatabase(); loadState(); updateDBUI(); recalcAndRender(); evaluateDrawRules();
 
 /* =========================================================
-   2) 大數據庫 (側注預測升級)
+   2) 大數據庫存取、自適應學習 (80% 鎖定)、iOS 專屬匯出
 ========================================================= */
 function loadDatabase() { try { let db = localStorage.getItem(DB_KEY); if (db) BigData = JSON.parse(db); } catch (e) {} }
 function saveDatabase() { localStorage.setItem(DB_KEY, JSON.stringify(BigData)); updateDBUI(); }
 
+function isModelFrozen() {
+    // 總預測次數 > 50 且 勝率 >= 80% 時鎖定模型
+    let globalWinRate = BigData.acc.recs > 0 ? BigData.acc.hits / BigData.acc.recs : 0;
+    return (BigData.acc.recs >= 50 && globalWinRate >= 0.80);
+}
+
 function updateBigData(rd) {
+    if (BigData.totalHands >= 50000) return; // 容量上限
+    if (rd.w === 'T') return; // 忽略和局主邏輯
+    
+    // 如果模型已達 80% 黃金水準，停止寫入新 Pattern 防止雜訊污染
+    if (isModelFrozen()) return; 
+
     BigData.totalHands++;
     BigData.stats[rd.w]++;
     if (rd.bp) BigData.stats.BP++;
@@ -283,14 +320,8 @@ function updateBigData(rd) {
 
     let pureHist = S.history.filter(x => x.w !== 'T');
     let seq = "";
-    
-    // 如果當前局是和局，參考序列就是 pureHist 的最後3把
-    // 如果當前局是莊/閒，參考序列是 pureHist 扣掉最新這把的倒數3把
-    if (rd.w === 'T') {
-        if (pureHist.length >= 3) seq = pureHist.slice(-3).map(x=>x.w).join(",");
-    } else {
-        if (pureHist.length >= 4) seq = pureHist.slice(-4, -1).map(x=>x.w).join(",");
-    }
+    if (rd.w === 'T') { if (pureHist.length >= 3) seq = pureHist.slice(-3).map(x=>x.w).join(","); } 
+    else { if (pureHist.length >= 4) seq = pureHist.slice(-4, -1).map(x=>x.w).join(","); }
 
     if (seq) {
         if (!BigData.patterns[seq]) BigData.patterns[seq] = { B: 0, P: 0, T: 0, BP: 0, PP: 0 };
@@ -301,66 +332,74 @@ function updateBigData(rd) {
     saveDatabase();
 }
 
-function getMachineLearningPrediction() {
-    let pureHist = S.history.filter(x => x.w !== 'T');
-    if (pureHist.length < 3) return { side: null, msg: "樣本收集中", tRate: 0, bpRate: 0, ppRate: 0, n: 0 };
-    
-    let seq = pureHist.slice(-3).map(x=>x.w).join(",");
-    let ptn = BigData.patterns[seq];
-    if (!ptn) return { side: null, msg: `未遇過此歷史型態`, tRate: 0, bpRate: 0, ppRate: 0, n: 0 };
-    
-    let totalBP = ptn.B + ptn.P;
-    let totalHands = totalBP + ptn.T; // 此型態發生過的總次數
-
-    let bRate = totalBP > 0 ? ptn.B / totalBP : 0;
-    let pRate = totalBP > 0 ? ptn.P / totalBP : 0;
-    let tRate = totalHands > 0 ? ptn.T / totalHands : 0;
-    let bpRate = totalHands > 0 ? ptn.BP / totalHands : 0;
-    let ppRate = totalHands > 0 ? ptn.PP / totalHands : 0;
-
-    let side = null, msg = `無明顯偏向 (n=${totalHands})`;
-    if (totalBP >= 5) {
-        if (bRate >= 0.58) { side = "B"; msg = `莊勝率 ${(bRate*100).toFixed(1)}% (n=${totalHands})`; }
-        else if (pRate >= 0.58) { side = "P"; msg = `閒勝率 ${(pRate*100).toFixed(1)}% (n=${totalHands})`; }
-    }
-    return { side, msg, tRate, bpRate, ppRate, n: totalHands };
-}
-
 function exportDatabase() {
-    const blob = new Blob([JSON.stringify(BigData, null, 2)], {type:"application/json"});
-    const url = URL.createObjectURL(blob); const a = document.createElement("a");
-    a.href = url; a.download = `Baccarat_SideBets_DB_${new Date().getTime()}.json`;
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    try {
+        const dataStr = JSON.stringify(BigData, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const filename = `Baccarat_ProDB_${new Date().getTime()}.json`;
+        
+        // 🍎 iOS Safari 專屬解決方案：Web Share API
+        if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, {type: "application/json"})] })) {
+            const file = new File([blob], filename, {type: "application/json"});
+            navigator.share({
+                files: [file], title: 'Baccarat DB', text: '百家樂大數據庫匯出'
+            }).catch(e => fallbackExport(blob, filename));
+        } else {
+            fallbackExport(blob, filename); // 電腦或其他瀏覽器
+        }
+    } catch(e) { alert("匯出錯誤：" + e.message); }
 }
+
+function fallbackExport(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.style.display = "none"; a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
 function importDatabase(evt) {
     const file = evt.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-        try { let imp = JSON.parse(e.target.result); if(imp.patterns) { BigData = imp; saveDatabase(); alert("✅ 匯入成功！"); recalcAndRender(); } else alert("❌ 格式不符。"); } catch(err) { alert("❌ 讀取失敗。"); }
+        try { let imp = JSON.parse(e.target.result); if(imp.patterns) { BigData = imp; if(!BigData.acc) BigData.acc = {recs:0, hits:0}; saveDatabase(); alert("✅ 匯入成功！"); recalcAndRender(); } else alert("❌ 格式不符。"); } catch(err) { alert("❌ 讀取失敗。"); }
     }; reader.readAsText(file); evt.target.value = ""; 
 }
-function resetDatabase() { if(confirm("⚠️ 清空所有學習紀錄？")) { BigData = { totalHands: 0, stats: { B: 0, P: 0, T: 0, BP: 0, PP: 0 }, patterns: {} }; saveDatabase(); alert("已清空。"); } }
+function resetDatabase() { if(confirm("⚠️ 確定清空所有數據？")) { BigData = { totalHands: 0, stats: { B: 0, P: 0, T: 0, BP: 0, PP: 0 }, patterns: {}, acc: {recs:0, hits:0} }; saveDatabase(); alert("已清空。"); } }
 
 function updateDBUI() {
+    // 當靴勝率
+    document.getElementById('shoeRecs').innerText = S.shoePerf.recs;
+    document.getElementById('shoeHits').innerText = S.shoePerf.hits;
+    document.getElementById('shoeWinRate').innerText = S.shoePerf.recs > 0 ? ((S.shoePerf.hits / S.shoePerf.recs)*100).toFixed(1) + "%" : "0.0%";
+
+    // 全局勝率與狀態
     document.getElementById('dbTotalHands').innerText = BigData.totalHands;
     document.getElementById('dbPatterns').innerText = Object.keys(BigData.patterns).length + " 組";
-    let pureHands = BigData.stats.B + BigData.stats.P;
-    document.getElementById('dbWinB').innerText = pureHands ? ((BigData.stats.B / pureHands)*100).toFixed(1) + "%" : "0%";
-    document.getElementById('dbWinP').innerText = pureHands ? ((BigData.stats.P / pureHands)*100).toFixed(1) + "%" : "0%";
-    document.getElementById('dbWinT').innerText = BigData.totalHands ? ((BigData.stats.T / BigData.totalHands)*100).toFixed(1) + "%" : "0%";
-    document.getElementById('dbBPair').innerText = BigData.totalHands ? ((BigData.stats.BP / BigData.totalHands)*100).toFixed(1) + "%" : "0%";
-    document.getElementById('dbPPair').innerText = BigData.totalHands ? ((BigData.stats.PP / BigData.totalHands)*100).toFixed(1) + "%" : "0%";
+    document.getElementById('dbGlobalHits').innerText = `${BigData.acc.hits} / ${BigData.acc.recs}`;
+    
+    let gRate = BigData.acc.recs > 0 ? (BigData.acc.hits / BigData.acc.recs) : 0;
+    document.getElementById('dbGlobalWinRate').innerText = (gRate * 100).toFixed(1) + "%";
+
+    let statusEl = document.getElementById('learningStatus');
+    if (isModelFrozen()) {
+        statusEl.className = "learning-status frozen";
+        statusEl.innerText = "🔮 總勝率達標 80%：模型已鎖定保護，暫停寫入新數據";
+    } else {
+        statusEl.className = "learning-status active";
+        statusEl.innerText = "🟢 學習引擎運行中 (收集數據以優化模型)";
+    }
 }
-function toggleDBPanel() { dbPanelOpen = !dbPanelOpen; document.getElementById('dbPanel').className = dbPanelOpen ? "database-panel open" : "database-panel"; }
+function toggleDBPanel() { dbPanelOpen = !dbPanelOpen; document.getElementById('dbPanel').className = dbPanelOpen ? "database-panel open" : "database-panel"; updateDBUI(); }
 
 /* =========================================================
-   3) 補牌防呆與輸入
+   3) 單靴與防呆輸入邏輯
 ========================================================= */
-function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(S)); }
-function loadState() { try { let st = localStorage.getItem(STATE_KEY); if (st) S = JSON.parse(st); } catch(e){} }
+function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(S)); updateDBUI(); }
+function loadState() { try { let st = localStorage.getItem(STATE_KEY); if (st) { S = JSON.parse(st); if(!S.shoePerf) S.shoePerf = {recs:0, hits:0}; } } catch(e){} }
 function snapshot() { backupState = JSON.parse(JSON.stringify(S)); }
 function undoLastRound() { if (!backupState) return alert("無資料可撤銷"); S = JSON.parse(JSON.stringify(backupState)); backupState = null; saveState(); clearAllSlots(); recalcAndRender(); }
-function resetShoe() { if(confirm("確定重置本靴牌？")) { S = { totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0 }; backupState = null; saveState(); clearAllSlots(); recalcAndRender(); } }
+function resetShoe() { if(confirm("確定重置本靴牌？當前勝率將歸零。")) { S = { totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, shoePerf: {recs:0, hits:0}, lastRecSide: null }; backupState = null; saveState(); clearAllSlots(); recalcAndRender(); } }
 
 function updateKeypadCounts() { for(let i=1; i<=13; i++) { let el = document.getElementById(`kcnt-${i}`); if(el) { el.innerText = S.deck[i]; el.className = S.deck[i] < 10 ? "key-count low" : "key-count"; } } }
 function getBaccaratVal(id) { let v = document.getElementById(`slot-${id}`).dataset.val; if(!v) return null; let n=parseInt(v); return n>=10?0:n; }
@@ -413,91 +452,109 @@ function inputKey(val) {
 function clearAllSlots() { slotOrder.forEach(id=>{ let el=document.getElementById(`slot-${id}`); el.innerText=''; el.dataset.val=''; el.classList.remove('filled'); }); currentSlotIdx=0; evaluateDrawRules(); setActiveSlot('p1'); }
 
 /* =========================================================
-   4) 全自動側注偵測結算 (Auto-Pair Detection)
+   4) 結算與勝率評估 (Perf Evaluation)
 ========================================================= */
 function submitData() {
     const btn = document.getElementById('submitBtn'); if(btn.disabled) return;
     btn.disabled=true; btn.innerText="演算中..."; snapshot();
 
     let pRaw=[], bRaw=[], pPts=0, bPts=0, consumed=[];
-    
-    // 取出原始點數 (1~13) 來判定對子
     let rp1 = getRawVal('p1'), rp2 = getRawVal('p2'), rp3 = getRawVal('p3');
     let rb1 = getRawVal('b1'), rb2 = getRawVal('b2'), rb3 = getRawVal('b3');
     
     if(rp1) { pRaw.push(rp1); consumed.push(rp1); pPts += rp1>=10?0:rp1; }
     if(rp2) { pRaw.push(rp2); consumed.push(rp2); pPts += rp2>=10?0:rp2; }
     if(rp3) { pRaw.push(rp3); consumed.push(rp3); pPts += rp3>=10?0:rp3; }
-    
     if(rb1) { bRaw.push(rb1); consumed.push(rb1); bPts += rb1>=10?0:rb1; }
     if(rb2) { bRaw.push(rb2); consumed.push(rb2); bPts += rb2>=10?0:rb2; }
     if(rb3) { bRaw.push(rb3); consumed.push(rb3); bPts += rb3>=10?0:rb3; }
 
-    // 自動偵測對子 (前兩張牌 Rank 相同)
     let isPPair = (pRaw.length >= 2 && pRaw[0] === pRaw[1]);
     let isBPair = (bRaw.length >= 2 && bRaw[0] === bRaw[1]);
-
-    // 判定勝負
     let winner = 'T', fP = pPts%10, fB = bPts%10;
     if(fP > fB) winner = 'P'; else if(fB > fP) winner = 'B';
     
-    // 寫入單靴與大數據歷史 (包含側注資訊)
+    // 🎯 勝率評估：檢查系統上一把的推薦是否命中
+    if (S.lastRecSide && S.lastRecSide !== 'PASS' && winner !== 'T') {
+        let isHit = (S.lastRecSide === winner);
+        S.shoePerf.recs++;
+        BigData.acc.recs++;
+        if (isHit) { S.shoePerf.hits++; BigData.acc.hits++; }
+    }
+
     let roundData = { w: winner, bp: isBPair, pp: isPPair };
     S.history.push(roundData);
-    
     consumed.forEach(v => { S.deck[v]--; S.totalCards--; S.runningCount += countWeights[v]; });
-    updateBigData(roundData);
+    
+    updateBigData(roundData); // 如果大於80% 內部會自動 block
     
     saveState(); clearAllSlots(); recalcAndRender();
     setTimeout(() => { if(S.totalCards >= 6) evaluateDrawRules(); }, 400);
 }
 
 /* =========================================================
-   5) 雙腦決策與側注機率 UI
+   5) 雙腦決策與強弱顯示 (HUD Updates)
 ========================================================= */
 function recalcAndRender() {
     let decksRem = S.totalCards / 52; let tc = decksRem > 0 ? S.runningCount / decksRem : 0;
     let edgeShift = tc * 0.0005; let p_player = basePlayerProb + edgeShift; let p_banker = baseBankerProb - edgeShift;
     let evBanker = (p_banker * 0.95) - p_player; let evPlayer = p_player - p_banker;
 
-    let ml = getMachineLearningPrediction();
+    // 取得歷史預測
+    let pureHist = S.history.filter(x => x.w !== 'T');
+    let mlSide = null, mlMsg = "樣本收集中", tRate = 0, bpRate = 0, ppRate = 0;
+    if (pureHist.length >= 3) {
+        let seq = pureHist.slice(-3).map(x=>x.w).join(",");
+        let ptn = BigData.patterns[seq];
+        if (ptn) {
+            let tBP = ptn.B + ptn.P; let tHands = tBP + ptn.T;
+            if (tBP >= 5) {
+                let bR = ptn.B/tBP, pR = ptn.P/tBP;
+                if (bR >= 0.58) { mlSide = "B"; } else if (pR >= 0.58) { mlSide = "P"; }
+            }
+            if (tHands > 0) { tRate = ptn.T/tHands; bpRate = ptn.BP/tHands; ppRate = ptn.PP/tHands; }
+        }
+    }
 
     document.getElementById('hdrRemain').innerText = S.totalCards;
     document.getElementById('hdrRound').innerText = S.history.length;
     updateKeypadCounts();
 
     const obox = document.getElementById('oracleBox'), omain = document.getElementById('oracleMain');
-    document.getElementById('oracleEV').innerText = `物理EV: ${Math.max(evBanker, evPlayer) > 0 ? (evBanker>evPlayer?'莊優':'閒優') : '無優勢'}`;
-    document.getElementById('oracleML').innerText = `大數據: ${ml.msg}`;
-
-    // 更新側注儀表板
-    document.getElementById('evBanker').innerText = (p_banker*100).toFixed(2) + "%";
-    document.getElementById('evPlayer').innerText = (p_player*100).toFixed(2) + "%";
-    document.getElementById('mlTie').innerText = ml.n >= 5 ? (ml.tRate*100).toFixed(1) + "%" : "--";
-    document.getElementById('mlBPair').innerText = ml.n >= 5 ? (ml.bpRate*100).toFixed(1) + "%" : "--";
-    document.getElementById('mlPPair').innerText = ml.n >= 5 ? (ml.ppRate*100).toFixed(1) + "%" : "--";
+    const badge = document.getElementById('oracleStrength');
+    
+    // 計算 EV 強度
+    let maxEV = Math.max(evBanker, evPlayer);
+    let strLabel = "弱"; let strColor = "var(--text-muted)";
+    if (maxEV > 0.015) { strLabel = "強"; strColor = "var(--highlight)"; }
+    else if (maxEV > 0.005) { strLabel = "中"; strColor = "#60a5fa"; }
 
     let phySide = evBanker > 0 ? 'B' : (evPlayer > 0 ? 'P' : null);
     
-    if (phySide === 'B' && ml.side === 'B') { obox.className = "oracle-box banker"; omain.innerText = "🔥 共振：重注莊家"; } 
-    else if (phySide === 'P' && ml.side === 'P') { obox.className = "oracle-box player"; omain.innerText = "🔥 共振：重注閒家"; } 
-    else if (phySide === 'B') { obox.className = "oracle-box banker"; omain.innerText = "物理優勢：試莊"; } 
-    else if (phySide === 'P') { obox.className = "oracle-box player"; omain.innerText = "物理優勢：試閒"; } 
-    else if (ml.side === 'B') { obox.className = "oracle-box banker"; omain.innerText = "歷史規律：試莊"; } 
-    else if (ml.side === 'P') { obox.className = "oracle-box player"; omain.innerText = "歷史規律：試閒"; } 
-    else { obox.className = "oracle-box pass"; omain.innerText = "🛡️ 條件不足：觀望"; }
+    // 決策輸出
+    if (phySide === 'B' && mlSide === 'B') { obox.className = "oracle-box banker"; omain.innerHTML = `🔥 共振：重注莊家 <span class="strength-badge" style="color:${strColor}; border-color:${strColor};">強度: ${strLabel}</span>`; S.lastRecSide = 'B'; } 
+    else if (phySide === 'P' && mlSide === 'P') { obox.className = "oracle-box player"; omain.innerHTML = `🔥 共振：重注閒家 <span class="strength-badge" style="color:${strColor}; border-color:${strColor};">強度: ${strLabel}</span>`; S.lastRecSide = 'P'; } 
+    else if (phySide === 'B') { obox.className = "oracle-box banker"; omain.innerHTML = `試探莊家 (物理優勢) <span class="strength-badge" style="color:${strColor}; border-color:${strColor};">強度: ${strLabel}</span>`; S.lastRecSide = 'B'; } 
+    else if (phySide === 'P') { obox.className = "oracle-box player"; omain.innerHTML = `試探閒家 (物理優勢) <span class="strength-badge" style="color:${strColor}; border-color:${strColor};">強度: ${strLabel}</span>`; S.lastRecSide = 'P'; } 
+    else if (mlSide === 'B') { obox.className = "oracle-box banker"; omain.innerHTML = `順勢試莊 (歷史規律) <span class="strength-badge" style="color:#aaa; border-color:#aaa;">強度: 趨勢</span>`; S.lastRecSide = 'B'; } 
+    else if (mlSide === 'P') { obox.className = "oracle-box player"; omain.innerHTML = `順勢試閒 (歷史規律) <span class="strength-badge" style="color:#aaa; border-color:#aaa;">強度: 趨勢</span>`; S.lastRecSide = 'P'; } 
+    else { obox.className = "oracle-box pass"; omain.innerHTML = `🛡️ 條件不足：觀望`; S.lastRecSide = 'PASS'; }
+
+    // 側注推薦邏輯 (高於自然發生機率 1.5 倍即亮起提示)
+    let sbTie = document.getElementById('sbTie'); let sbBP = document.getElementById('sbBP'); let sbPP = document.getElementById('sbPP');
+    sbTie.className = tRate > 0.14 ? "sidebet-pill active" : "sidebet-pill"; sbTie.innerText = `和局 ${(tRate*100).toFixed(0)}%`;
+    sbBP.className = bpRate > 0.11 ? "sidebet-pill active" : "sidebet-pill"; sbBP.innerText = `莊對 ${(bpRate*100).toFixed(0)}%`;
+    sbPP.className = ppRate > 0.11 ? "sidebet-pill active" : "sidebet-pill"; sbPP.innerText = `閒對 ${(ppRate*100).toFixed(0)}%`;
 
     renderAllRoads();
+    updateDBUI();
 }
 
 // 支援對子的完整五路圖渲染
 function renderAllRoads() {
     renderBeadPlate();
-    let pureHistoryForDerived = S.history.map(x => x.w); // 下三路只需要勝負字串
-    let bd = buildBigRoadAndDerived(S.history); // 大路需要完整物件(含對子)
+    let bd = buildBigRoadAndDerived(S.history); 
     renderRoadGrid("grid-big", bd.bigGrid, bd.maxCol, "big");
-    
-    // 衍生理路使用字串陣列運算
     let derived = buildBigRoadAndDerived(S.history.map(x => ({w: x.w, bp:false, pp:false}))); 
     renderRoadGrid("grid-eye", mapRoadLike(derived.eye).grid, mapRoadLike(derived.eye).maxCol, "eye");
     renderRoadGrid("grid-small", mapRoadLike(derived.small).grid, mapRoadLike(derived.small).maxCol, "small");
@@ -531,28 +588,21 @@ function renderBeadPlate() {
 
 function buildBigRoadAndDerived(hist) {
     let bigGrid={}, coords=[], lastRes=null, startC=0, c=0, r=0, maxC=0, pTies=0;
-    
     function cellExists(cc, rr){ return !!bigGrid[`${cc},${rr}`]; }
     function colHeight(cc){ let h=0; while(cellExists(cc,h)) h++; return h; }
 
     for(let data of hist) {
         if(data.w === "T") { pTies++; continue; }
         if(lastRes === null) { c=0; r=0; lastRes=data.w; bigGrid[`${c},${r}`]={v:data.w, t:pTies, bp:data.bp, pp:data.pp}; pTies=0; coords.push({c,r,val:data.w}); maxC=Math.max(maxC,c); continue; }
-        
-        if(data.w === lastRes) {
-            let nr=r+1;
-            if(nr<=5 && !cellExists(c,nr)) r=nr; else { c++; while(cellExists(c,r)) c++; }
-        } else {
-            startC++; while(cellExists(startC,0)) startC++; c=startC; r=0; lastRes=data.w;
-        }
+        if(data.w === lastRes) { let nr=r+1; if(nr<=5 && !cellExists(c,nr)) r=nr; else { c++; while(cellExists(c,r)) c++; } } 
+        else { startC++; while(cellExists(startC,0)) startC++; c=startC; r=0; lastRes=data.w; }
         bigGrid[`${c},${r}`]={v:data.w, t:pTies, bp:data.bp, pp:data.pp}; pTies=0; coords.push({c,r,val:data.w}); maxC=Math.max(maxC,c);
     }
 
     function getDerived(offset, coord) {
         let cc=coord.c, rr=coord.r, need=offset+1;
         if(rr===0) { if(cc<need) return null; return (colHeight(cc-1) === colHeight(cc-need)) ? "R" : "Blue"; }
-        let ref=cc-offset; if(ref<0) return null;
-        return (cellExists(ref,rr) === cellExists(ref,rr-1)) ? "R" : "Blue";
+        let ref=cc-offset; if(ref<0) return null; return (cellExists(ref,rr) === cellExists(ref,rr-1)) ? "R" : "Blue";
     }
 
     let eye=[], small=[], roach=[];
