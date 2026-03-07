@@ -3,54 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>商業決策支援系統 - 戰術儀表版</title>
+    <title>商業決策支援系統 - 量化剝削版</title>
     <style>
-        /* 基礎設定 */
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 6px; background-color: #000; color: #333; margin: 0; }
         .card { background: #fff; padding: 10px; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         
-        /* 頂部控制列 */
         .top-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
         .top-bar-title { font-size: 13px; font-weight: bold; color: #555; }
         .btn-group { display: flex; gap: 5px; }
         .btn-sm { border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; color: white; }
         .btn-undo { background: #ff9500; } .btn-reset { background: #ff3b30; }
         
-        /* 核心戰術看板 (不需滑動) */
-        .tactical-board { display: flex; gap: 8px; margin-bottom: 8px; }
+        /* 核心戰術看板：數據化改造 */
+        .tactical-board { display: flex; gap: 6px; margin-bottom: 8px; }
         
-        /* 左側：物理機率與資金 */
-        .left-panel { flex: 1.2; background: #333; color: white; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; }
-        .odds-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
+        /* 左側：精確機率與凱利注碼 */
+        .left-panel { flex: 1.2; background: #1c1c1e; color: white; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #333; }
+        .odds-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; border-bottom: 1px solid #444; padding-bottom: 4px; }
         .odds-row .b { color: #ff453a; } .odds-row .p { color: #0a84ff; }
         .capital-info { text-align: center; margin-top: 6px; }
-        .step-txt { font-size: 11px; color: #aaa; }
-        .amt-txt { font-size: 22px; font-weight: bold; color: #ffd60a; margin: 2px 0; }
-        .flip-txt { font-size: 12px; color: #32d74b; font-weight: bold; }
+        .step-txt { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .amt-txt { font-size: 24px; font-weight: bold; color: #32d74b; margin: 2px 0; }
         
-        /* 右側：趨勢問路模擬 (Ask the Road) */
-        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-        .ask-box { flex: 1; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; padding: 4px; text-align: center; }
-        .ask-title { font-size: 11px; font-weight: bold; margin-bottom: 4px; }
-        .ask-title.b { color: #ff3b30; } .ask-title.p { color: #007aff; }
-        .ask-indicators { display: flex; justify-content: space-around; align-items: center; }
-        .ask-circle { width: 14px; height: 14px; border-radius: 50%; border: 3px solid #ccc; box-sizing: border-box; }
-        .ask-circle.solid-red { background: #ff3b30; border-color: #ff3b30; } .ask-circle.solid-blue { background: #007aff; border-color: #007aff; }
-        .ask-circle.hollow-red { border-color: #ff3b30; background: transparent; } .ask-circle.hollow-blue { border-color: #007aff; background: transparent; }
+        /* 右側：大數據 EoR 監控核心 */
+        .eor-panel { flex: 1; border: 1px solid #000; border-radius: 8px; background: #000; padding: 6px; display: flex; flex-direction: column; justify-content: space-around; color: white; }
+        .var-title { font-size: 10px; font-weight: bold; color: #ffd60a; text-align: center; margin-bottom: 2px; }
+        .var-row { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; padding: 2px 0; }
+        .var-row .val { color: #fff; }
         
-        /* 決策與下注扳機 */
+        /* 決策面板：改為期望值導向 */
         .decision-panel { text-align: center; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 8px; border: 2px solid transparent; transition: 0.3s; }
-        .decision-panel.pass { background: #f2f2f7; border-color: #8e8e93; color: #8e8e93; }
+        .decision-panel.pass { background: #2c2c2e; border-color: #8e8e93; color: #8e8e93; }
         .decision-panel.banker { background: #ffebee; border-color: #ff3b30; color: #ff3b30; }
         .decision-panel.player { background: #e3f2fd; border-color: #007aff; color: #007aff; }
         
-        .trigger-btn { width: 100%; padding: 12px; border-radius: 8px; border: 2px dashed #ccc; background: #fafafa; font-size: 15px; font-weight: bold; color: #888; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
+        .trigger-btn { width: 100%; padding: 12px; border-radius: 8px; border: 2px dashed #ccc; background: #fafafa; font-size: 15px; font-weight: bold; color: #888; cursor: pointer; transition: 0.2s; margin-bottom: 8px; }
         .trigger-btn.active { border-style: solid; border-color: #32d74b; background: #eafaf1; color: #28a745; }
         
-        /* 極速輸入與鍵盤 (集中排列) */
-        .input-wrapper { display: flex; gap: 8px; margin-bottom: 8px; }
+        /* 極速輸入與鍵盤 */
+        .input-wrapper { display: flex; gap: 6px; margin-bottom: 6px; }
         .input-side { flex: 1; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
-        .side-head { text-align: center; font-size: 12px; font-weight: bold; color: white; padding: 4px; }
+        .side-head { text-align: center; font-size: 11px; font-weight: bold; color: white; padding: 4px; }
         .side-head.p { background: #007aff; } .side-head.b { background: #ff3b30; }
         .slot-row { display: flex; justify-content: space-around; padding: 6px; }
         .slot { width: 32px; height: 38px; border: 2px solid #ccc; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; background: #fff; cursor: pointer; }
@@ -62,34 +55,22 @@
         .key:active { background: #d1d1d6; }
         .key.clear { background: #ff9500; color: white; border: none; grid-column: span 2; }
         
-        .submit-btn { width: 100%; padding: 14px; background: #000; color: white; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; margin-top: 8px; cursor: pointer; }
-        .submit-btn:active { background: #333; }
+        .submit-btn { width: 100%; padding: 12px; background: #ffd60a; color: #000; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; margin-top: 6px; cursor: pointer; }
         
-        /* 歷史圖形 (置底) */
-        .history-card { background: #fff; padding: 8px; border-radius: 10px; margin-top: 10px; }
-        .road-title { font-size: 11px; font-weight: bold; color: #555; margin: 4px 0 2px 0; }
-        .road-container { width: 100%; overflow-x: auto; border: 1px solid #eee; background: #fff; box-sizing: border-box; margin-bottom: 4px; }
-        .road-grid { display: flex; min-width: max-content; }
-        .road-col { display: flex; flex-direction: column; }
-        .cell-lg { width: 16px; height: 16px; border: 1px solid #f9f9f9; display: flex; align-items: center; justify-content: center; position: relative; }
-        .cell-sm { width: 8px; height: 8px; border: 1px solid #f9f9f9; display: flex; align-items: center; justify-content: center; position: relative; }
-        .circle-hollow { width: 12px; height: 12px; border-radius: 50%; border: 2px solid transparent; box-sizing: border-box; }
-        .circle-hollow.B, .circle-hollow.R { border-color: #ff3b30; } .circle-hollow.P, .circle-hollow.Blue { border-color: #007aff; }
-        .tie-line { background: linear-gradient(to top right, transparent 45%, #28a745 45%, #28a745 55%, transparent 55%); }
-        .circle-solid { width: 6px; height: 6px; border-radius: 50%; }
-        .circle-solid.R { background-color: #ff3b30; } .circle-solid.Blue { background-color: #007aff; }
-        .slash { width: 8px; height: 8px; }
-        .slash.R { background: linear-gradient(to bottom left, transparent 40%, #ff3b30 40%, #ff3b30 60%, transparent 60%); }
-        .slash.Blue { background: linear-gradient(to bottom left, transparent 40%, #007aff 40%, #007aff 60%, transparent 60%); }
-        .derived-roads-wrapper { display: flex; gap: 4px; }
-        .derived-col { flex: 1; min-width: 0; }
+        .deck-tracker { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; }
+        .tracker-title { font-size: 12px; font-weight: bold; color: #555; text-align: center; margin-bottom: 6px; }
+        .tracker-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .card-count-box { border: 1px solid #ddd; border-radius: 4px; text-align: center; background: #fafafa; padding: 4px 0; }
+        .cc-val { font-size: 11px; font-weight: bold; color: #333; }
+        .cc-count { font-size: 14px; font-weight: bold; color: #007aff; margin-top: 2px; }
+        .card-count-box.empty { opacity: 0.3; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <div class="top-bar">
-            <div class="top-bar-title">剩餘牌數: <span id="totalCards">416</span></div>
+            <div class="top-bar-title">大數據精算引擎 | 剩餘: <span id="totalCards">416</span> 張</div>
             <div class="btn-group">
                 <button class="btn-sm btn-undo" onclick="undoLastRound()">↩ 撤銷</button>
                 <button class="btn-sm btn-reset" onclick="resetSystem()">新靴牌</button>
@@ -100,34 +81,31 @@
             <div class="left-panel">
                 <div class="odds-row"><span class="b">莊 <span id="bankerOdds">45.86</span>%</span><span class="p">閒 <span id="playerOdds">44.62</span>%</span></div>
                 <div class="capital-info">
-                    <div class="step-txt">階數: <span id="stepDisplay">1</span>/4</div>
-                    <div class="amt-txt" id="betAmount">100</div>
-                    <div class="flip-txt" id="flipProb">生存率 93.75%</div>
+                    <div class="step-txt">Kelly Criterion 指引注碼</div>
+                    <div class="amt-txt" id="betAmount">0</div>
+                    <div style="font-size: 10px; color: #888; margin-top: 4px;">期望值(EV): <span id="evDisplay">0.00%</span></div>
                 </div>
             </div>
             
-            <div class="right-panel">
-                <div class="ask-box">
-                    <div class="ask-title b">若開莊 (B)</div>
-                    <div class="ask-indicators">
-                        <div id="ask-B-eye" class="ask-circle"></div>
-                        <div id="ask-B-sm" class="ask-circle"></div>
-                        <div id="ask-B-roach" class="ask-circle"></div>
-                    </div>
+            <div class="eor-panel">
+                <div class="var-title">⚡ EoR 數學核心</div>
+                <div class="var-row">
+                    <span style="color: #aaa;">剩餘副數 (Decks)</span>
+                    <span class="val" id="decksRemaining">8.00</span>
                 </div>
-                <div class="ask-box">
-                    <div class="ask-title p">若開閒 (P)</div>
-                    <div class="ask-indicators">
-                        <div id="ask-P-eye" class="ask-circle"></div>
-                        <div id="ask-P-sm" class="ask-circle"></div>
-                        <div id="ask-P-roach" class="ask-circle"></div>
-                    </div>
+                <div class="var-row">
+                    <span style="color: #aaa;">流水數 (RC)</span>
+                    <span class="val" id="runningCount">0</span>
+                </div>
+                <div class="var-row" style="border-top: 1px solid #333; padding-top: 4px;">
+                    <span style="color: #ffd60a;">動態真數 (TC)</span>
+                    <span class="val" id="trueCount" style="color: #ffd60a; font-size: 14px;">0.00</span>
                 </div>
             </div>
         </div>
 
         <div id="decisionPanel" class="decision-panel pass">
-            訊號：<span id="predictionResult">初始化運算中...</span>
+            訊號：<span id="predictionResult">優勢不足，鎖定觀望 (EV < 0)</span>
         </div>
         <button id="triggerBtn" class="trigger-btn" onclick="toggleBet()">
             🔘 觀望中 (點擊以確認下注本局)
@@ -157,79 +135,72 @@
             <div class="key" onclick="inputKey('6')">6</div><div class="key" onclick="inputKey('7')">7</div><div class="key" onclick="inputKey('8')">8</div><div class="key" onclick="inputKey('9')">9</div><div class="key" onclick="inputKey('10')">10</div>
             <div class="key" onclick="inputKey('11')">J</div><div class="key" onclick="inputKey('12')">Q</div><div class="key" onclick="inputKey('13')">K</div><div class="key clear" onclick="clearAllSlots()">🗑️ 清空重填</div>
         </div>
+        <button class="submit-btn" onclick="submitData()">輸入數據・重算尾局機率</button>
 
-        <button class="submit-btn" onclick="submitData()">寫入資料並執行次局推算</button>
-    </div>
-
-    <div class="history-card">
-        <div class="road-title">大路 (Big Road)</div>
-        <div class="road-container"><div class="road-grid" id="grid-big"></div></div>
-        <div class="derived-roads-wrapper">
-            <div class="derived-col"><div class="road-title">大眼仔路</div><div class="road-container"><div class="road-grid" id="grid-eye"></div></div></div>
-            <div class="derived-col"><div class="road-title">小路</div><div class="road-container"><div class="road-grid" id="grid-small"></div></div></div>
-            <div class="derived-col"><div class="road-title">蟑螂路</div><div class="road-container"><div class="road-grid" id="grid-roach"></div></div></div>
+        <div class="deck-tracker">
+            <div class="tracker-title">🎴 剩餘牌庫精確追蹤 (Card Tracking)</div>
+            <div class="tracker-grid" id="deckTrackerGrid"></div>
         </div>
     </div>
 
     <script>
-        // === 核心變數與備份機制 (Undo) ===
+        // === EoR 深度算牌引擎變數 ===
         let totalCards = 416;
-        let deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 0:128};
-        let currentStep = 1; 
-        const betSteps = {1: 100, 2: 200, 3: 400, 4: 800};
+        let deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32};
+        
+        // Thorp's Baccarat Point System (權重)
+        // 1,2,3=0 | 4=+1 | 5,6=+2 | 7=+1 | 8=-1 | 9=-2 | 0=0
+        const eorWeights = {1:0, 2:0, 3:0, 4:1, 5:2, 6:2, 7:1, 8:-1, 9:-2, 10:0, 11:0, 12:0, 13:0};
+        let runningCount = 0;
+        
         let lastRecommendedSide = null; 
         let historyLog = []; 
         let isBetActive = false;
-        
-        // 撤銷快照
         let backupState = null;
+
+        // 基準機率常數 (8副牌初始)
+        const baseBankerProb = 0.4586;
+        const basePlayerProb = 0.4462;
+        const tieProb = 0.0952;
+        const baseCapital = 10000; // 模擬系統基準總資金，用於計算凱利注碼
+
+        function renderDeckTracker() {
+            const grid = document.getElementById('deckTrackerGrid'); grid.innerHTML = '';
+            const labels = {1:'A', 2:'2', 3:'3', 4:'4', 5:'5', 6:'6', 7:'7', 8:'8', 9:'9', 10:'10', 11:'J', 12:'Q', 13:'K'};
+            for(let i=1; i<=13; i++) {
+                let box = document.createElement('div'); box.className = `card-count-box ${deck[i] === 0 ? 'empty' : ''}`;
+                box.innerHTML = `<div class="cc-val">${labels[i]}</div><div class="cc-count" style="color:${deck[i]<10?'#ff3b30':'#007aff'}">${deck[i]}</div>`;
+                grid.appendChild(box);
+            }
+        }
 
         function saveState() {
             backupState = {
-                totalCards: totalCards,
-                deck: Object.assign({}, deck),
-                currentStep: currentStep,
-                lastRecommendedSide: lastRecommendedSide,
-                historyLog: [...historyLog]
+                totalCards: totalCards, deck: Object.assign({}, deck),
+                runningCount: runningCount, lastRecommendedSide: lastRecommendedSide, historyLog: [...historyLog]
             };
         }
 
         function undoLastRound() {
-            if (!backupState) { alert("無可撤銷的歷史紀錄。"); return; }
-            if (confirm("確定要撤銷上一局的結果嗎？資金與機率將回滾。")) {
-                totalCards = backupState.totalCards;
-                deck = Object.assign({}, backupState.deck);
-                currentStep = backupState.currentStep;
-                lastRecommendedSide = backupState.lastRecommendedSide;
-                historyLog = [...backupState.historyLog];
-                
-                isBetActive = false; updateBetTriggerUI();
-                recalcAndRender();
-                backupState = null; // 只能撤銷一次
+            if (!backupState) return;
+            if (confirm("撤銷上一局的物理消耗？")) {
+                totalCards = backupState.totalCards; deck = Object.assign({}, backupState.deck);
+                runningCount = backupState.runningCount; lastRecommendedSide = backupState.lastRecommendedSide; historyLog = [...backupState.historyLog];
+                isBetActive = false; updateBetTriggerUI(); recalcAndRender(); backupState = null; 
             }
         }
 
-        // === 下注扳機控制 ===
         function toggleBet() {
-            if (lastRecommendedSide === 'PASS') {
-                alert("⚠️ 系統鎖定：優勢不足，禁止下注。請嚴守紀律！"); return;
-            }
-            isBetActive = !isBetActive;
-            updateBetTriggerUI();
+            if (lastRecommendedSide === 'PASS') { alert("數學模型否決：當前期望值為負，禁止投入資金！"); return; }
+            isBetActive = !isBetActive; updateBetTriggerUI();
         }
 
         function updateBetTriggerUI() {
             const btn = document.getElementById('triggerBtn');
-            if (isBetActive) {
-                btn.classList.add('active');
-                btn.innerText = `✅ 已確認下注 ${betSteps[currentStep]} (點擊取消)`;
-            } else {
-                btn.classList.remove('active');
-                btn.innerText = "🔘 觀望中 (點擊以確認下注本局)";
-            }
+            if (isBetActive) { btn.classList.add('active'); btn.innerText = `✅ 系統授權下注 (點擊取消)`; } 
+            else { btn.classList.remove('active'); btn.innerText = "🔘 觀望中 (點擊以確認下注本局)"; }
         }
 
-        // === 鍵盤與輸入框控制 ===
         const slotOrder = ['p1', 'p2', 'b1', 'b2', 'p3', 'b3']; 
         let currentSlotIdx = 0;
 
@@ -243,149 +214,121 @@
             if (currentSlotIdx >= slotOrder.length) return; 
             const activeId = slotOrder[currentSlotIdx];
             const el = document.getElementById(`slot-${activeId}`);
-            
-            let displayVal = val;
-            if (val === '1') displayVal = 'A'; if (val === '11') displayVal = 'J';
-            if (val === '12') displayVal = 'Q'; if (val === '13') displayVal = 'K';
-
-            el.innerText = displayVal; el.dataset.val = val; el.classList.add('filled');
+            let dVal = val; if (val==='1') dVal='A'; if (val==='11') dVal='J'; if (val==='12') dVal='Q'; if (val==='13') dVal='K';
+            el.innerText = dVal; el.dataset.val = val; el.classList.add('filled');
             currentSlotIdx++;
             if (currentSlotIdx < slotOrder.length) setActiveSlot(slotOrder[currentSlotIdx]);
             else document.querySelectorAll('.slot').forEach(el => el.classList.remove('active'));
         }
 
-        function clearAllSlots() {
-            slotOrder.forEach(id => {
-                const el = document.getElementById(`slot-${id}`);
-                el.innerText = ''; el.dataset.val = ''; el.classList.remove('filled');
-            });
-            setActiveSlot('p1');
-        }
+        function clearAllSlots() { slotOrder.forEach(id => { const el = document.getElementById(`slot-${id}`); el.innerText = ''; el.dataset.val = ''; el.classList.remove('filled'); }); setActiveSlot('p1'); }
 
-        // === 系統初始化與送出邏輯 ===
-        recalcAndRender(); // 初次載入
+        recalcAndRender();
 
         function resetSystem() {
-            if(confirm("確定開啟新靴牌？將清空所有資料。")) {
-                totalCards = 416; deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 0:128};
-                currentStep = 1; lastRecommendedSide = null; historyLog = []; backupState = null;
-                isBetActive = false; updateBetTriggerUI();
-                recalcAndRender(); clearAllSlots();
+            if(confirm("確定開啟新靴牌？將重置大數據模型。")) {
+                totalCards = 416; deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32};
+                runningCount = 0; lastRecommendedSide = null; historyLog = []; backupState = null;
+                isBetActive = false; updateBetTriggerUI(); recalcAndRender(); clearAllSlots();
             }
         }
 
         function submitData() {
-            if (totalCards < 6) { alert("🛑 靴底已耗盡，無法繼續運算。請開啟新靴牌。"); return; }
+            if (totalCards < 6) { alert("🛑 靴底已耗盡，請開啟新靴牌。"); return; }
+            let pRaw = [], bRaw = [], pPts = 0, bPts = 0; let cardsConsumed = []; 
 
-            let pRaw = [], bRaw = [], validCards = [], pPts = 0, bPts = 0;
-            ['p1', 'p2', 'p3'].forEach(id => {
-                let v = document.getElementById(`slot-${id}`).dataset.val;
-                if(v) { let rv = parseInt(v); pRaw.push(rv); let bv = rv >= 10 ? 0 : rv; validCards.push(bv); pPts += bv; }
-            });
-            ['b1', 'b2', 'b3'].forEach(id => {
-                let v = document.getElementById(`slot-${id}`).dataset.val;
-                if(v) { let rv = parseInt(v); bRaw.push(rv); let bv = rv >= 10 ? 0 : rv; validCards.push(bv); bPts += bv; }
-            });
+            ['p1', 'p2', 'p3'].forEach(id => { let v = document.getElementById(`slot-${id}`).dataset.val; if(v) { let rv = parseInt(v); pRaw.push(rv); cardsConsumed.push(rv); pPts += (rv >= 10 ? 0 : rv); } });
+            ['b1', 'b2', 'b3'].forEach(id => { let v = document.getElementById(`slot-${id}`).dataset.val; if(v) { let rv = parseInt(v); bRaw.push(rv); cardsConsumed.push(rv); bPts += (rv >= 10 ? 0 : rv); } });
+            if (pRaw.length < 2 || bRaw.length < 2) { alert("數據不完整。"); return; }
 
-            if (pRaw.length < 2 || bRaw.length < 2) { alert("數據不完整：雙方至少需填入 2 張牌。"); return; }
-
-            // 存檔備份 (Undo準備)
             saveState();
-
-            // 判定勝負
             let fP = pPts % 10, fB = bPts % 10, winner = 'T';
             if (fP > fB) winner = 'P'; else if (fB > fP) winner = 'B';
             historyLog.push(winner); 
 
-            // 資金推進
-            if (isBetActive && lastRecommendedSide && lastRecommendedSide !== 'PASS' && winner !== 'T') {
-                if (winner === lastRecommendedSide) currentStep = 1; 
-                else {
-                    currentStep++;   
-                    if (currentStep > 4) { alert("⚠️ 資金達四階停損點。系統強制重置為 100。"); currentStep = 1; }
-                }
-            }
+            // 精確扣除與累積流水數
+            cardsConsumed.forEach(val => { 
+                if(deck[val] > 0) { 
+                    deck[val]--; totalCards--; 
+                    runningCount += eorWeights[val]; // 核心：增加權重
+                } 
+            });
 
-            // 扣除牌庫 (防負數保護)
-            validCards.forEach(val => { if(deck[val] > 0) { deck[val] = Math.max(0, deck[val] - 1); totalCards--; } });
-
-            isBetActive = false; // 局末強制解開扳機
-            updateBetTriggerUI();
-            clearAllSlots();
-            recalcAndRender();
+            isBetActive = false; updateBetTriggerUI(); clearAllSlots(); recalcAndRender();
         }
 
-        // === 核心推算與畫面更新 ===
+        // === 核心算牌與凱利推算引擎 ===
         function recalcAndRender() {
-            // 物理機率
-            let low = deck[1]+deck[2]+deck[3]+deck[4]+deck[5];
-            let high = deck[6]+deck[7]+deck[8]+deck[9]+deck[0];
-            let ratio = low / (high === 0 ? 1 : high);
-            let adj = (ratio - 1.0) * 0.01;
-            let p_p = Math.max(0, Math.min(1 - 0.0952, 0.4462 + adj));
-            let p_b = Math.max(0, Math.min(1 - 0.0952, 0.4586 - adj));
+            let decksRemaining = totalCards / 52;
+            let trueCount = decksRemaining > 0 ? (runningCount / decksRemaining) : 0;
+            
+            // 數學換算：TC 對莊閒機率的極限影響 (Multiplier)
+            // 當 TC 為正，代表有利於閒家 (Player)；當 TC 為負，有利於莊家 (Banker)
+            let edgeShift = trueCount * 0.0015; // 基於量化推演的影響因子
+
+            let p_player = basePlayerProb + edgeShift;
+            let p_banker = baseBankerProb - edgeShift;
+
+            // 機率正規化
+            p_player = Math.max(0, Math.min(1 - tieProb, p_player));
+            p_banker = Math.max(0, Math.min(1 - tieProb, p_banker));
 
             document.getElementById('totalCards').innerText = totalCards;
-            document.getElementById('bankerOdds').innerText = (p_b * 100).toFixed(2);
-            document.getElementById('playerOdds').innerText = (p_p * 100).toFixed(2);
+            document.getElementById('decksRemaining').innerText = decksRemaining.toFixed(2);
+            document.getElementById('runningCount').innerText = runningCount;
+            document.getElementById('trueCount').innerText = trueCount.toFixed(2);
             
-            // 決策判定
+            // 越到牌局尾段，如果 TC 累積龐大，數字會變成極限紅色
+            let tcColor = Math.abs(trueCount) > 5 ? '#ff3b30' : '#ffd60a';
+            document.getElementById('trueCount').style.color = tcColor;
+
+            document.getElementById('bankerOdds').innerText = (p_banker * 100).toFixed(2);
+            document.getElementById('playerOdds').innerText = (p_player * 100).toFixed(2);
+            
             const dp = document.getElementById('decisionPanel');
             const pe = document.getElementById('predictionResult');
-            const diff = Math.abs(p_b - p_p);
-            let tp = 0, op = 0;
-            
-            // 閥值設為 0.2%
-            if (diff < 0.002) { lastRecommendedSide = 'PASS'; dp.className = "decision-panel pass"; pe.innerText = "優勢不足，強制觀望 (Pass)"; tp = 0.5; op = 0.5; } 
-            else if (p_b > p_p) { lastRecommendedSide = 'B'; dp.className = "decision-panel banker"; pe.innerText = "優勢達標：建議莊家 (Banker)"; tp = p_b; op = p_p; } 
-            else { lastRecommendedSide = 'P'; dp.className = "decision-panel player"; pe.innerText = "優勢達標：建議閒家 (Player)"; tp = p_p; op = p_b; }
-
-            // 資金顯示
-            let flipProb = 1 - Math.pow(1 - (tp / (tp + op)), 5 - currentStep);
-            document.getElementById('stepDisplay').innerText = currentStep;
+            const evDisp = document.getElementById('evDisplay');
             const amt = document.getElementById('betAmount');
-            if (lastRecommendedSide === 'PASS') { amt.innerText = "鎖定"; amt.style.color = "#aaa"; } 
-            else { amt.innerText = betSteps[currentStep]; amt.style.color = "#ffd60a"; }
-            const fp = document.getElementById('flipProb');
-            fp.innerText = "生存率 " + (flipProb * 100).toFixed(1) + "%";
-            fp.style.color = flipProb < 0.60 ? "#ff453a" : "#32d74b";
 
-            // 繪製路單與問路
-            renderRoadsAndAsk();
+            // --- 凱利公式與期望值計算 (Kelly Criterion & Expected Value) ---
+            // 莊家賠率 (扣5%水) = 0.95, 閒家賠率 = 1.00
+            let evBanker = (p_banker * 0.95) - (p_player * 1.00); 
+            let evPlayer = (p_player * 1.00) - (p_banker * 1.00);
+            
+            let bestEV = 0; let kellyFraction = 0;
+            
+            if (evBanker > 0 && evBanker > evPlayer) {
+                lastRecommendedSide = 'B';
+                bestEV = evBanker;
+                kellyFraction = evBanker / 0.95; // f* = EV / b
+                dp.className = "decision-panel banker";
+                pe.innerText = "✅ 尾局優勢反轉：下注莊家 (Banker)";
+            } else if (evPlayer > 0 && evPlayer > evBanker) {
+                lastRecommendedSide = 'P';
+                bestEV = evPlayer;
+                kellyFraction = evPlayer / 1.00;
+                dp.className = "decision-panel player";
+                pe.innerText = "✅ 尾局優勢反轉：下注閒家 (Player)";
+            } else {
+                lastRecommendedSide = 'PASS';
+                dp.className = "decision-panel pass";
+                pe.innerText = "❌ 無數學優勢，鎖定觀望 (EV < 0)";
+            }
+
+            // 更新 UI
+            evDisp.innerText = (bestEV * 100).toFixed(3) + "%";
+            if (bestEV > 0) evDisp.style.color = "#32d74b"; else evDisp.style.color = "#888";
+
+            if (lastRecommendedSide === 'PASS') { 
+                amt.innerText = "0"; amt.style.color = "#aaa"; 
+            } else { 
+                // 將 Kelly Fraction 轉換為實際建議金額 (保守使用 Quarter Kelly)
+                let recommendedBet = Math.max(100, Math.floor((baseCapital * kellyFraction * 0.25) / 100) * 100);
+                amt.innerText = recommendedBet; amt.style.color = "#32d74b"; 
+            }
+
+            renderDeckTracker();
         }
-
-        function renderRoadsAndAsk() {
-            let bigMap = genericMatrixMapper(historyLog, true);
-            let derived = generateDerivedArrays(historyLog);
-            renderGrid('grid-big', bigMap.grid, bigMap.maxCol, 'big');
-            renderGrid('grid-eye', genericMatrixMapper(derived.eye, false).grid, genericMatrixMapper(derived.eye, false).maxCol, 'eye');
-            renderGrid('grid-small', genericMatrixMapper(derived.small, false).grid, genericMatrixMapper(derived.small, false).maxCol, 'small');
-            renderGrid('grid-roach', genericMatrixMapper(derived.roach, false).grid, genericMatrixMapper(derived.roach, false).maxCol, 'roach');
-
-            // 問路模擬
-            const simulate = (hyp) => {
-                let testArr = [...historyLog, hyp];
-                let d = generateDerivedArrays(testArr);
-                return { e: d.eye.pop(), s: d.small.pop(), r: d.roach.pop() };
-            };
-            const applyAsk = (id, res, type) => {
-                const el = document.getElementById(id);
-                el.className = 'ask-circle';
-                if(!res) { el.style.borderColor = '#ccc'; return; }
-                let isSolid = type !== 'eye';
-                let col = res === 'R' ? 'red' : 'blue';
-                el.classList.add((isSolid ? 'solid-' : 'hollow-') + col);
-            };
-
-            let resB = simulate('B'), resP = simulate('P');
-            applyAsk('ask-B-eye', resB.e, 'eye'); applyAsk('ask-B-sm', resB.s, 'small'); applyAsk('ask-B-roach', resB.r, 'roach');
-            applyAsk('ask-P-eye', resP.e, 'eye'); applyAsk('ask-P-sm', resP.s, 'small'); applyAsk('ask-P-roach', resP.r, 'roach');
-        }
-
-        // --- 五路圖演算底層 ---
-        function genericMatrixMapper(arr, supportTie) { let gridMap = {}; let lastRes = null; let sc = 0, cc = 0, cr = 0, mc = 0; let lastCrd = null; for (let i = 0; i < arr.length; i++) { let res = arr[i]; if (supportTie && res === 'T') { if (lastCrd && gridMap[lastCrd]) gridMap[lastCrd].tie++; continue; } if (res === lastRes) { let nr = cr + 1; if (nr <= 5 && !gridMap[`${cc},${nr}`]) cr = nr; else cc++; } else { if (lastRes !== null) { sc++; while (gridMap[`${sc},0`]) sc++; } cc = sc; cr = 0; } lastCrd = `${cc},${cr}`; gridMap[lastCrd] = { val: res, tie: 0 }; lastRes = res; if (cc > mc) mc = cc; } return { grid: gridMap, maxCol: mc }; }
-        function generateDerivedArrays(hist) { let pHist = hist.filter(x => x !== 'T'); let pCols = []; let cCol = []; let lRes = null; for(let r of pHist) { if (r === lRes) cCol.push(r); else { if(cCol.length>0) pCols.push(cCol); cCol = [r]; lRes = r; } } if(cCol.length>0) pCols.push(cCol); let eye = [], sm = [], roach = []; for (let c = 0; c < pCols.length; c++) { for (let r = 0; r < pCols[c].length; r++) { if (c >= 1) { if (r === 0 && c >= 2) eye.push(pCols[c-1].length === pCols[c-2].length ? 'R' : 'Blue'); else if (r > 0) eye.push((pCols[c-1] && pCols[c-1].length > r) ? 'R' : ((pCols[c-1] && pCols[c-1].length === r) ? 'Blue' : 'R')); } if (c >= 2) { if (r === 0 && c >= 3) sm.push(pCols[c-1].length === pCols[c-3].length ? 'R' : 'Blue'); else if (r > 0) sm.push((pCols[c-2] && pCols[c-2].length > r) ? 'R' : ((pCols[c-2] && pCols[c-2].length === r) ? 'Blue' : 'R')); } if (c >= 3) { if (r === 0 && c >= 4) roach.push(pCols[c-1].length === pCols[c-4].length ? 'R' : 'Blue'); else if (r > 0) roach.push((pCols[c-3] && pCols[c-3].length > r) ? 'R' : ((pCols[c-3] && pCols[c-3].length === r) ? 'Blue' : 'R')); } } } return { eye, small: sm, roach }; }
-        function renderGrid(domId, gridMap, maxCol, type) { const container = document.getElementById(domId); container.innerHTML = ''; const isSm = (type === 'small' || type === 'roach'); const cols = Math.max(isSm ? 24 : 12, maxCol + 1); for (let c = 0; c < cols; c++) { let colDiv = document.createElement('div'); colDiv.className = 'road-col'; for (let r = 0; r < 6; r++) { let cell = document.createElement('div'); cell.className = isSm ? 'cell-sm' : 'cell-lg'; if (gridMap[`${c},${r}`]) { let data = gridMap[`${c},${r}`]; let item = document.createElement('div'); if (type === 'big' || type === 'eye') { item.className = `circle-hollow ${data.val}`; if(data.tie > 0) { item.classList.add('tie-line'); } } else if (type === 'small') { item.className = `circle-solid ${data.val}`; } else if (type === 'roach') { item.className = `slash ${data.val}`; } cell.appendChild(item); } colDiv.appendChild(cell); } container.appendChild(colDiv); } container.parentElement.scrollLeft = container.parentElement.scrollWidth; }
     </script>
 </body>
 </html>
