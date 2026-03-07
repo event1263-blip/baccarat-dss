@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂 - 自適應切換與防噪版</title>
+    <title>百家樂 - 自動尋參最佳化版</title>
     <style>
         :root {
             --bg: #09090b; --card: #18181b; --border: #27272a;
@@ -145,6 +145,7 @@
 
         .db-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .db-btn { padding: 12px; border-radius: 8px; border: none; font-weight: 800; font-size: 14px; cursor: pointer; color: #fff; }
+        .btn-auto { background: var(--purple); color: #fff; border: 1px solid #c084fc; width: 100%; margin-top: 8px; }
         .btn-export { background: #2563eb; } .btn-import { background: #16a34a; }
         .btn-reset-db { background: #dc2626; grid-column: span 2; }
     </style>
@@ -246,43 +247,43 @@
         </div>
 
         <div class="db-section" style="border-color: var(--highlight);">
-            <h3>⚙️ 演算法動態參數控制台</h3>
+            <h3>⚙️ 動態參數控制 (手動/自動尋參)</h3>
             <div style="font-size:10px; color:#888; margin-bottom:8px;">* 提高閥值可增加預測準確率，但會過濾掉多數出手機會。</div>
             <div class="param-control">
-                <span class="param-label">主預測最低勝率閥值 (預設 0.58)</span>
+                <span class="param-label">主預測進場閥值 (預設 0.58)</span>
                 <input type="number" id="cfgMainThreshold" class="param-input" step="0.01" min="0.51" max="0.99" onchange="saveConfig()">
             </div>
             <div class="param-control">
-                <span class="param-label">側注進場閥值 (對子/和局 預設 0.14)</span>
+                <span class="param-label">側注進場閥值 (預設 0.14)</span>
                 <input type="number" id="cfgSideThreshold" class="param-input" step="0.01" min="0.05" max="0.50" onchange="saveConfig()">
             </div>
+            <button class="db-btn btn-auto" onclick="autoTuneThreshold()">🤖 自動尋參 (智能優化至 80% 勝率)</button>
         </div>
         
         <div class="db-section" style="border-color: var(--p-color);">
-            <h3>🎯 實時戰況 (當靴追蹤)</h3>
+            <h3>🎯 實時戰況 (當靴命中率)</h3>
             <div class="db-stat-grid">
-                <div class="db-stat-item"><span>莊閒命中</span><span id="shoeHits" style="color:var(--highlight)">0 / 0</span></div>
-                <div class="db-stat-item"><span>當靴勝率</span><span id="shoeWinRate">0.0%</span></div>
-                <div class="db-stat-item"><span>和局命中</span><span id="shoeTieHits" style="color:var(--t-color)">0 / 0</span></div>
-                <div class="db-stat-item"><span>莊對命中</span><span id="shoeBPHits" style="color:var(--b-color)">0 / 0</span></div>
-                <div class="db-stat-item"><span>閒對命中</span><span id="shoePPHits" style="color:var(--p-color)">0 / 0</span></div>
+                <div class="db-stat-item"><span>莊閒預測</span><span id="shoeHits" style="color:var(--highlight)">0 / 0 (0.0%)</span></div>
+                <div class="db-stat-item"><span>和局預測</span><span id="shoeTieHits" style="color:var(--t-color)">0 / 0 (0.0%)</span></div>
+                <div class="db-stat-item"><span>莊對預測</span><span id="shoeBPHits" style="color:var(--b-color)">0 / 0 (0.0%)</span></div>
+                <div class="db-stat-item"><span>閒對預測</span><span id="shoePPHits" style="color:var(--p-color)">0 / 0 (0.0%)</span></div>
             </div>
         </div>
 
         <div class="db-section" style="border-color: var(--highlight);">
-            <h3>📈 全局大數據 (容量上限: 50,000手)</h3>
+            <h3>📈 全局大數據 (沙盤推演命中率)</h3>
             <div class="db-stat-grid">
-                <div class="db-stat-item"><span>已收錄總手數</span><span id="dbTotalHands" style="color:var(--highlight)">0</span></div>
+                <div class="db-stat-item"><span>已收錄總局數</span><span id="dbTotalHands" style="color:var(--highlight)">0</span></div>
                 <div class="db-stat-item"><span>N-Gram記憶體</span><span id="dbPatterns" style="color:var(--highlight)">0 組</span></div>
                 
                 <div class="db-stat-item" style="grid-column: span 2; background:rgba(234, 179, 8, 0.1);">
-                    <span style="color:var(--highlight)">全局莊閒預測命中</span>
+                    <span style="color:var(--highlight)">全局主預測 (莊/閒)</span>
                     <span id="dbGlobalHits" style="color:var(--text-main); font-size:14px;">0 / 0 (0.0%)</span>
                 </div>
                 
-                <div class="db-stat-item"><span>全局和局命中</span><span id="dbGlobalTieHits" style="color:var(--t-color)">0 / 0</span></div>
-                <div class="db-stat-item"><span>全局莊對命中</span><span id="dbGlobalBPHits" style="color:var(--b-color)">0 / 0</span></div>
-                <div class="db-stat-item"><span>全局閒對命中</span><span id="dbGlobalPPHits" style="color:var(--p-color)">0 / 0</span></div>
+                <div class="db-stat-item"><span>全局和局</span><span id="dbGlobalTieHits" style="color:var(--t-color)">0 / 0 (0.0%)</span></div>
+                <div class="db-stat-item"><span>全局莊對</span><span id="dbGlobalBPHits" style="color:var(--b-color)">0 / 0 (0.0%)</span></div>
+                <div class="db-stat-item"><span>全局閒對</span><span id="dbGlobalPPHits" style="color:var(--p-color)">0 / 0 (0.0%)</span></div>
             </div>
             <div id="learningStatus" class="learning-status active">
                 🟢 學習引擎運行中 (收集數據以優化模型)
@@ -290,7 +291,7 @@
         </div>
 
         <div class="db-section">
-            <h3>💾 資料庫檔案管理 (支援 iPhone 匯出)</h3>
+            <h3>💾 資料庫檔案管理</h3>
             <div class="db-actions">
                 <button class="db-btn btn-export" onclick="exportDatabase()">📤 匯出大數據</button>
                 <button class="db-btn btn-import" onclick="document.getElementById('importFile').click()">📥 匯入大數據</button>
@@ -302,11 +303,11 @@
 
 <script>
 /* =========================================================
-   1) 核心狀態變數與自動資料遷移
+   1) 核心狀態變數與動態參數
 ========================================================= */
-const STATE_KEY = "baccarat_state_v19_final";
-const DB_KEY = "baccarat_bigdata_v19_final";
-const CFG_KEY = "baccarat_config_v19";
+const STATE_KEY = "baccarat_state_v19_bayes";
+const DB_KEY = "baccarat_bigdata_v19_bayes";
+const CFG_KEY = "baccarat_config_v19_bayes";
 
 let Config = { mainThreshold: 0.58, sideThreshold: 0.14 };
 try { let c = localStorage.getItem(CFG_KEY); if (c) Config = Object.assign(Config, JSON.parse(c)); } catch(e){}
@@ -314,12 +315,9 @@ try { let c = localStorage.getItem(CFG_KEY); if (c) Config = Object.assign(Confi
 let S = { 
     totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, 
     shoePerf: { recs: 0, hits: 0, tieRecs: 0, tieHits: 0, bpRecs: 0, bpHits: 0, ppRecs: 0, ppHits: 0 }, 
-    stats: { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0} },
-    shadowPreds: { ev: null, trend: null, derived: null, ml: null, shoe: null },
     lastRecSide: null, lastSideBets: { tie: false, bp: false, pp: false }
 };
 let backupState = null;
-
 let BigData = { 
     totalHands: 0, stats: { B: 0, P: 0, T: 0, BP: 0, PP: 0 }, patterns: {}, 
     acc: { recs: 0, hits: 0, tieRecs: 0, tieHits: 0, bpRecs: 0, bpHits: 0, ppRecs: 0, ppHits: 0 } 
@@ -333,7 +331,7 @@ let currentSlotIdx = 0; let dbPanelOpen = false;
 loadDatabase(); loadState(); loadInputOrder(); initConfigUI(); updateDBUI(); recalcAndRender(); evaluateDrawRules();
 
 /* =========================================================
-   1.5) 參數與順序設定
+   1.5) 參數設定與自動尋參 (Auto-Tune)
 ========================================================= */
 function initConfigUI() {
     document.getElementById('cfgMainThreshold').value = Config.mainThreshold;
@@ -345,6 +343,39 @@ function saveConfig() {
     localStorage.setItem(CFG_KEY, JSON.stringify(Config));
     recalcDBStats(BigData); 
     saveDatabase(); recalcAndRender();
+}
+
+// 🤖 自動最佳化參數以達到 80% 勝率
+function autoTuneThreshold() {
+    if (Object.keys(BigData.patterns).length === 0) {
+        alert("⚠️ 資料庫為空，無法進行最佳化尋參。請先輸入牌局或匯入大數據。");
+        return;
+    }
+    
+    let bestThresh = 0.51;
+    let found = false;
+    let originalThresh = Config.mainThreshold;
+    
+    // 從 51% 掃描到 95% 閥值
+    for (let t = 0.51; t <= 0.95; t += 0.01) {
+        Config.mainThreshold = t;
+        let res = recalcDBStats(BigData); // 測試這個閥值的表現
+        if (parseFloat(res.simWinRate) >= 80.0 && BigData.acc.recs > 0) {
+            bestThresh = t;
+            found = true;
+            break; // 找到最低能滿足 80% 的閥值就停止
+        }
+    }
+    
+    if (found) {
+        document.getElementById('cfgMainThreshold').value = bestThresh.toFixed(2);
+        saveConfig(); 
+        alert(`✅ 自動最佳化完成！\n已將主預測閥值調升至 ${(bestThresh*100).toFixed(0)}%，歷史回測勝率達標 80% 以上。\n(注意：高準確率意味著出手機會將大幅減少)`);
+    } else {
+        Config.mainThreshold = originalThresh; // 還原
+        recalcDBStats(BigData);
+        alert(`⚠️ 最佳化失敗。此資料庫雜訊過多，即使將閥值調至極限，亦無法達到 80% 勝率。建議繼續收集新數據。`);
+    }
 }
 
 function loadInputOrder() {
@@ -370,6 +401,7 @@ function loadDatabase() {
         let db = localStorage.getItem(DB_KEY); 
         if (db) {
             let parsed = JSON.parse(db);
+            // 防錯：如果讀到舊版沒有 acc 紀錄，自動補齊
             if(!parsed.acc) parsed.acc = {recs:0, hits:0, tieRecs:0, tieHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0};
             BigData = parsed;
         } 
@@ -379,28 +411,34 @@ function saveDatabase() { localStorage.setItem(DB_KEY, JSON.stringify(BigData));
 
 function isModelFrozen() { return (BigData.acc.recs >= 50 && (BigData.acc.hits / BigData.acc.recs) >= 0.80); }
 
+// 🔄 核心修復：深度沙盤回測 (支援舊格式安全讀取)
 function recalcDBStats(db) {
     db.acc = { recs: 0, hits: 0, tieRecs: 0, tieHits: 0, bpRecs: 0, bpHits: 0, ppRecs: 0, ppHits: 0 };
     let validPatterns = 0;
     
     for (let seq in db.patterns) {
         let ptn = db.patterns[seq]; 
-        let tBP = ptn.B + ptn.P;
-        let tHands = tBP + ptn.T;
+        // 防呆：舊資料庫沒有 BP/PP 時自動補 0
+        let bC = ptn.B || 0; let pC = ptn.P || 0; let tC = ptn.T || 0;
+        let bpC = ptn.BP || 0; let ppC = ptn.PP || 0;
+
+        let tBP = bC + pC;
+        let tHands = tBP + tC;
         
         if (tBP >= 5) {
-            let bRate = ptn.B / tBP; let pRate = ptn.P / tBP;
-            if (bRate >= Config.mainThreshold) { validPatterns++; db.acc.recs += tBP; db.acc.hits += ptn.B; } 
-            else if (pRate >= Config.mainThreshold) { validPatterns++; db.acc.recs += tBP; db.acc.hits += ptn.P; }
+            let bRate = bC / tBP; let pRate = pC / tBP;
+            if (bRate >= Config.mainThreshold) { validPatterns++; db.acc.recs += tBP; db.acc.hits += bC; } 
+            else if (pRate >= Config.mainThreshold) { validPatterns++; db.acc.recs += tBP; db.acc.hits += pC; }
         }
         
-        let smoothT = (ptn.T + 1.9) / (tHands + 20);
-        let smoothBP = (ptn.BP + 1.5) / (tHands + 20);
-        let smoothPP = (ptn.PP + 1.5) / (tHands + 20);
+        // Bayesian Smoothing 貝氏平滑化防噪
+        let smoothT = (tC + 1.9) / (tHands + 20);
+        let smoothBP = (bpC + 1.5) / (tHands + 20);
+        let smoothPP = (ppC + 1.5) / (tHands + 20);
         
-        if (smoothT >= Config.sideThreshold) { db.acc.tieRecs += tHands; db.acc.tieHits += ptn.T; }
-        if (smoothBP >= Config.sideThreshold) { db.acc.bpRecs += tHands; db.acc.bpHits += ptn.BP; }
-        if (smoothPP >= Config.sideThreshold) { db.acc.ppRecs += tHands; db.acc.ppHits += ptn.PP; }
+        if (smoothT >= Config.sideThreshold) { db.acc.tieRecs += tHands; db.acc.tieHits += tC; }
+        if (smoothBP >= Config.sideThreshold) { db.acc.bpRecs += tHands; db.acc.bpHits += bpC; }
+        if (smoothPP >= Config.sideThreshold) { db.acc.ppRecs += tHands; db.acc.ppHits += ppC; }
     }
     return { simWinRate: db.acc.recs > 0 ? (db.acc.hits / db.acc.recs * 100).toFixed(1) : 0.0, validPatterns };
 }
@@ -448,9 +486,10 @@ function importDatabase(evt) {
             let imp = JSON.parse(e.target.result); 
             if(imp.patterns) { 
                 let evalResult = recalcDBStats(imp);
-                let confirmMsg = `✅ 數據讀取成功！\n\n🔍 【大數據深度沙盤回測】\n- 總收錄: ${imp.totalHands} 局\n- 當前進場閥值: ${(Config.mainThreshold*100).toFixed(0)}%\n- 該數據包理論勝率: ${evalResult.simWinRate}%\n\n確定套用嗎？\n(若勝率不如預期，可取消並調整閥值後再試)`;
+                let confirmMsg = `✅ 數據庫讀取成功！\n\n🔍 【大數據深度沙盤回測】\n- 總收錄: ${imp.totalHands} 局\n- 當前進場閥值: ${(Config.mainThreshold*100).toFixed(0)}%\n- 該數據包理論勝率: ${evalResult.simWinRate}%\n\n確定套用嗎？\n(若勝率不夠高，匯入後可使用「自動尋參」功能)`;
                 if(confirm(confirmMsg)) {
-                    BigData = imp; saveDatabase(); recalcAndRender();
+                    BigData = imp; 
+                    saveDatabase(); recalcAndRender();
                 }
             } else alert("❌ 格式不符。"); 
         } catch(err) { alert("❌ 讀取失敗。"); }
@@ -458,28 +497,32 @@ function importDatabase(evt) {
 }
 function resetDatabase() { if(confirm("⚠️ 確定清空所有數據？")) { BigData = { totalHands: 0, stats: { B: 0, P: 0, T: 0, BP: 0, PP: 0 }, patterns: {}, acc: {recs:0, hits:0, tieRecs:0, tieHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0} }; saveDatabase(); alert("已清空。"); } }
 
-function updateDBUI() {
-    document.getElementById('shoeHits').innerText = `${S.shoePerf.hits} / ${S.shoePerf.recs}`;
-    document.getElementById('shoeWinRate').innerText = S.shoePerf.recs > 0 ? ((S.shoePerf.hits / S.shoePerf.recs)*100).toFixed(1) + "%" : "0.0%";
-    document.getElementById('shoeTieHits').innerText = `${S.shoePerf.tieHits} / ${S.shoePerf.tieRecs}`;
-    document.getElementById('shoeBPHits').innerText = `${S.shoePerf.bpHits} / ${S.shoePerf.bpRecs}`;
-    document.getElementById('shoePPHits').innerText = `${S.shoePerf.ppHits} / ${S.shoePerf.ppRecs}`;
+function formatRate(hits, recs) { return recs === 0 ? `0 / 0 (0.0%)` : `${hits} / ${recs} (${(hits / recs * 100).toFixed(1)}%)`; }
 
+function updateDBUI() {
+    // 當靴顯示
+    document.getElementById('shoeHits').innerText = formatRate(S.shoePerf.hits, S.shoePerf.recs);
+    document.getElementById('shoeTieHits').innerText = formatRate(S.shoePerf.tieHits, S.shoePerf.tieRecs);
+    document.getElementById('shoeBPHits').innerText = formatRate(S.shoePerf.bpHits, S.shoePerf.bpRecs);
+    document.getElementById('shoePPHits').innerText = formatRate(S.shoePerf.ppHits, S.shoePerf.ppRecs);
+
+    // 全局顯示
     document.getElementById('dbTotalHands').innerText = BigData.totalHands; 
     document.getElementById('dbPatterns').innerText = Object.keys(BigData.patterns).length + " 組";
-    document.getElementById('dbGlobalHits').innerText = `${BigData.acc.hits} / ${BigData.acc.recs} (${BigData.acc.recs > 0 ? (BigData.acc.hits / BigData.acc.recs * 100).toFixed(1) : 0}%)`;
-    document.getElementById('dbGlobalTieHits').innerText = `${BigData.acc.tieHits} / ${BigData.acc.tieRecs}`;
-    document.getElementById('dbGlobalBPHits').innerText = `${BigData.acc.bpHits} / ${BigData.acc.bpRecs}`;
-    document.getElementById('dbGlobalPPHits').innerText = `${BigData.acc.ppHits} / ${BigData.acc.ppRecs}`;
+    
+    document.getElementById('dbGlobalHits').innerText = formatRate(BigData.acc.hits, BigData.acc.recs);
+    document.getElementById('dbGlobalTieHits').innerText = formatRate(BigData.acc.tieHits, BigData.acc.tieRecs);
+    document.getElementById('dbGlobalBPHits').innerText = formatRate(BigData.acc.bpHits, BigData.acc.bpRecs);
+    document.getElementById('dbGlobalPPHits').innerText = formatRate(BigData.acc.ppHits, BigData.acc.ppRecs);
 
     let statusEl = document.getElementById('learningStatus');
-    if (isModelFrozen()) { statusEl.className = "learning-status frozen"; statusEl.innerText = "🔮 總勝率達標 80%：模型已鎖定保護，暫停寫入新數據"; } 
+    if (isModelFrozen()) { statusEl.className = "learning-status frozen"; statusEl.innerText = "🔮 勝率達標 80%：模型已鎖定保護，暫停寫入新數據"; } 
     else { statusEl.className = "learning-status active"; statusEl.innerText = "🟢 學習引擎運行中 (收集數據以優化模型)"; }
 }
 function toggleDBPanel() { dbPanelOpen = !dbPanelOpen; document.getElementById('dbPanel').className = dbPanelOpen ? "database-panel open" : "database-panel"; updateDBUI(); }
 
 /* =========================================================
-   3) 單靴防呆與狀態管理 (自動修復舊格式 Bug)
+   3) 單靴防呆與狀態管理
 ========================================================= */
 function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(S)); updateDBUI(); }
 function loadState() { 
@@ -487,13 +530,11 @@ function loadState() {
         let st = localStorage.getItem(STATE_KEY); 
         if (st) { 
             let parsed = JSON.parse(st);
-            // 🚨 自動資料清洗：將舊版的字串陣列轉換成新版的物件陣列，徹底解決五路圖消失 Bug
+            // 防護：新舊格式轉換
             if (parsed.history && parsed.history.length > 0 && typeof parsed.history[0] === 'string') {
                 parsed.history = parsed.history.map(w => ({w: w, bp: false, pp: false}));
             }
             if(!parsed.shoePerf) parsed.shoePerf = {recs:0, hits:0, tieRecs:0, tieHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0}; 
-            if(!parsed.stats) parsed.stats = { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0} };
-            if(!parsed.shadowPreds) parsed.shadowPreds = { ev: null, trend: null, derived: null, ml: null, shoe: null };
             if(!parsed.lastSideBets) parsed.lastSideBets = { tie: false, bp: false, pp: false };
             S = parsed;
         } 
@@ -501,7 +542,7 @@ function loadState() {
 }
 function snapshot() { backupState = JSON.parse(JSON.stringify(S)); }
 function undoLastRound() { if (!backupState) return alert("無資料可撤銷"); S = JSON.parse(JSON.stringify(backupState)); backupState = null; saveState(); clearAllSlots(); recalcAndRender(); }
-function resetShoe() { if(confirm("確定重置本靴牌？當前勝率將歸零。")) { S = { totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, shoePerf: {recs:0, hits:0, tieRecs:0, tieHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0}, lastRecSide: null, stats: { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0} }, shadowPreds: { ev: null, trend: null, derived: null, ml: null, shoe: null }, lastSideBets: {tie:false, bp:false, pp:false} }; backupState = null; saveState(); clearAllSlots(); recalcAndRender(); } }
+function resetShoe() { if(confirm("確定重置本靴牌？當前勝率將歸零。")) { S = { totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, shoePerf: {recs:0, hits:0, tieRecs:0, tieHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0}, lastRecSide: null, lastSideBets: {tie:false, bp:false, pp:false} }; backupState = null; saveState(); clearAllSlots(); recalcAndRender(); } }
 function updateKeypadCounts() { for(let i=1; i<=13; i++) { let el = document.getElementById(`kcnt-${i}`); if(el) { el.innerText = S.deck[i]; el.className = S.deck[i] < 10 ? "key-count low" : "key-count"; } } }
 function getBaccaratVal(id) { let v = document.getElementById(`slot-${id}`).dataset.val; if(!v) return null; let n=parseInt(v); return n>=10?0:n; }
 function getRawVal(id) { let v = document.getElementById(`slot-${id}`).dataset.val; return v ? parseInt(v) : null; }
@@ -545,7 +586,7 @@ function inputKey(val) {
 function clearAllSlots() { currentSlotOrder.forEach(id=>{ let el=document.getElementById(`slot-${id}`); el.innerText=''; el.dataset.val=''; el.classList.remove('filled'); }); currentSlotIdx=0; evaluateDrawRules(); setActiveSlot(currentSlotOrder[0]); }
 
 /* =========================================================
-   4) 結算與後台策略評估 (5D Tracking)
+   4) 結算與勝率追蹤 (Track Hits)
 ========================================================= */
 function submitData() {
     const btn = document.getElementById('submitBtn'); if(btn.disabled) return;
@@ -557,25 +598,19 @@ function submitData() {
     if(rp1) { pRaw.push(rp1); consumed.push(rp1); pPts += rp1>=10?0:rp1; } if(rp2) { pRaw.push(rp2); consumed.push(rp2); pPts += rp2>=10?0:rp2; } if(rp3) { pRaw.push(rp3); consumed.push(rp3); pPts += rp3>=10?0:rp3; }
     if(rb1) { bRaw.push(rb1); consumed.push(rb1); bPts += rb1>=10?0:rb1; } if(rb2) { bRaw.push(rb2); consumed.push(rb2); bPts += rb2>=10?0:rb2; } if(rb3) { bRaw.push(rb3); consumed.push(rb3); bPts += rb3>=10?0:rb3; }
 
-    let isPPair = (pRaw.length >= 2 && pRaw[0] === pRaw[1]); let isBPair = (bRaw.length >= 2 && bRaw[0] === bRaw[1]);
+    let isPPair = (pRaw.length >= 2 && pRaw[0] === pRaw[1]);
+    let isBPair = (bRaw.length >= 2 && bRaw[0] === bRaw[1]);
     let winner = 'T', fP = pPts%10, fB = bPts%10;
     if(fP > fB) winner = 'P'; else if(fB > fP) winner = 'B';
     
-    if (winner !== 'T') {
-        if(S.shadowPreds.ev) { S.stats.ev.p++; if(S.shadowPreds.ev === winner) S.stats.ev.h++; }
-        if(S.shadowPreds.trend) { S.stats.trend.p++; if(S.shadowPreds.trend === winner) S.stats.trend.h++; }
-        if(S.shadowPreds.derived) { S.stats.derived.p++; if(S.shadowPreds.derived === winner) S.stats.derived.h++; }
-        if(S.shadowPreds.ml) { S.stats.ml.p++; if(S.shadowPreds.ml === winner) S.stats.ml.h++; }
-        if(S.shadowPreds.shoe) { S.stats.shoe.p++; if(S.shadowPreds.shoe === winner) S.stats.shoe.h++; }
-        
-        if (S.lastRecSide && S.lastRecSide !== 'PASS') {
-            let isHit = (S.lastRecSide === winner);
-            S.shoePerf.recs++; BigData.acc.recs++;
-            if (isHit) { S.shoePerf.hits++; BigData.acc.hits++; }
-        }
+    // 結算主推薦勝率 (忽略和局)
+    if (S.lastRecSide && S.lastRecSide !== 'PASS' && winner !== 'T') {
+        let isHit = (S.lastRecSide === winner);
+        S.shoePerf.recs++; BigData.acc.recs++;
+        if (isHit) { S.shoePerf.hits++; BigData.acc.hits++; }
     }
     
-    // 獨立追蹤側注勝負
+    // 結算側注推薦勝率
     if (S.lastSideBets.tie) { S.shoePerf.tieRecs++; BigData.acc.tieRecs++; if (winner === 'T') { S.shoePerf.tieHits++; BigData.acc.tieHits++; } }
     if (S.lastSideBets.bp) { S.shoePerf.bpRecs++; BigData.acc.bpRecs++; if (isBPair) { S.shoePerf.bpHits++; BigData.acc.bpHits++; } }
     if (S.lastSideBets.pp) { S.shoePerf.ppRecs++; BigData.acc.ppRecs++; if (isPPair) { S.shoePerf.ppHits++; BigData.acc.ppHits++; } }
@@ -589,100 +624,52 @@ function submitData() {
 }
 
 /* =========================================================
-   5) 5D 自適應引擎與貝氏側注預測
+   5) 決策 HUD (防噪貝氏運算)
 ========================================================= */
-function simulateAskRoad(hyp) {
-    let testArr = [...S.history, {w: hyp, bp:false, pp:false}];
-    let d = buildBigRoadAndDerived(testArr);
-    return [d.eye.length > 0 ? d.eye[d.eye.length-1].val : null, d.small.length > 0 ? d.small[d.small.length-1].val : null, d.roach.length > 0 ? d.roach[d.roach.length-1].val : null];
-}
-
 function recalcAndRender() {
-    let pureHist = S.history.filter(x => x.w !== 'T');
-    let pureHistStr = pureHist.map(x => x.w);
+    let decksRem = S.totalCards / 52; let tc = decksRem > 0 ? S.runningCount / decksRem : 0;
+    let edgeShift = tc * 0.0005; let p_player = basePlayerProb + edgeShift; let p_banker = baseBankerProb - edgeShift;
+    let evBanker = (p_banker * 0.95) - p_player; let evPlayer = p_player - p_banker;
+
+    let pureHist = S.history.map(x=>x.w).filter(x => x !== 'T');
+    let mlSide = null, finalTRate = 0, finalBPRate = 0, finalPPRate = 0;
     
-    let sStats = { B: 0, P: 0, T: 0, BP: 0, PP: 0 };
-    for (let h of S.history) { sStats[h.w]++; if (h.bp) sStats.BP++; if (h.pp) sStats.PP++; }
-    
-    let shoeHands = S.history.length;
-    let shoeBP = sStats.B + sStats.P;
-    let shoeBRate = shoeBP > 0 ? sStats.B / shoeBP : 0;
-    let shoePRate = shoeBP > 0 ? sStats.P / shoeBP : 0;
-    let shoeTRate = shoeHands > 0 ? sStats.T / shoeHands : 0;
-    let shoeBPRate = shoeHands > 0 ? sStats.BP / shoeHands : 0;
-    let shoePPRate = shoeHands > 0 ? sStats.PP / shoeHands : 0;
+    if (S.history.length > 0) {
+        let seq = "";
+        if (S.history[S.history.length-1].w === 'T') { if (pureHist.length >= 3) seq = pureHist.slice(-3).join(","); }
+        else { if (pureHist.length >= 4) seq = pureHist.slice(-4, -1).join(","); }
 
-    let tc = (S.totalCards / 52) > 0 ? S.runningCount / (S.totalCards / 52) : 0;
-    let p_p = basePlayerProb + (tc * 0.0005); let p_b = baseBankerProb - (tc * 0.0005);
-    S.shadowPreds.ev = ((p_b * 0.95) - p_p) > 0.002 ? 'B' : ((p_p - p_b) > 0.002 ? 'P' : null);
-
-    let trendSide = null;
-    if (pureHistStr.length > 0) {
-        let last = pureHistStr[pureHistStr.length-1];
-        let isChop = (pureHistStr.length >= 4 && pureHistStr[pureHistStr.length-1] !== pureHistStr[pureHistStr.length-2] && pureHistStr[pureHistStr.length-2] !== pureHistStr[pureHistStr.length-3]);
-        trendSide = isChop ? (last === 'B' ? 'P' : 'B') : last;
-    }
-    S.shadowPreds.trend = trendSide;
-
-    let derivedSide = null;
-    let askB = simulateAskRoad('B'); let askP = simulateAskRoad('P');
-    let bReds = askB.filter(x => x === 'R').length; let pReds = askP.filter(x => x === 'R').length;
-    if (bReds >= 2 && pReds <= 1) derivedSide = 'B'; else if (pReds >= 2 && bReds <= 1) derivedSide = 'P';
-    S.shadowPreds.derived = derivedSide;
-
-    let mlSide = null, mlTRate = 0, mlBPRate = 0, mlPPRate = 0;
-    if (pureHistStr.length >= 3) {
-        let seq = pureHistStr.slice(-3).join(","); let ptn = BigData.patterns[seq];
+        let ptn = BigData.patterns[seq];
         if (ptn) {
-            let tBP = ptn.B + ptn.P; let tH = tBP + ptn.T;
-            if (tBP >= 5) {
-                let bR = ptn.B / tBP; let pR = ptn.P / tBP;
-                if (bR >= Config.mainThreshold) mlSide = "B"; else if (pR >= Config.mainThreshold) mlSide = "P";
+            let tBP = (ptn.B || 0) + (ptn.P || 0); 
+            let tHands = tBP + (ptn.T || 0);
+            if (tBP >= 5) { 
+                let bR = (ptn.B||0)/tBP, pR = (ptn.P||0)/tBP; 
+                if (bR >= Config.mainThreshold) { mlSide = "B"; } else if (pR >= Config.mainThreshold) { mlSide = "P"; } 
             }
-            // Bayesian Smoothing for Side Bets
-            mlTRate = (ptn.T + 1.9) / (tH + 20);
-            mlBPRate = (ptn.BP + 1.5) / (tH + 20);
-            mlPPRate = (ptn.PP + 1.5) / (tH + 20);
+            finalTRate = ((ptn.T||0) + 1.9) / (tHands + 20);
+            finalBPRate = ((ptn.BP||0) + 1.5) / (tHands + 20);
+            finalPPRate = ((ptn.PP||0) + 1.5) / (tHands + 20);
         }
     }
-    S.shadowPreds.ml = mlSide;
-    S.shadowPreds.shoe = shoeBRate > 0.53 ? 'B' : (shoePRate > 0.53 ? 'P' : null);
 
-    let winRates = {
-        ev: S.stats.ev.p > 0 ? S.stats.ev.h / S.stats.ev.p : 0,
-        trend: S.stats.trend.p > 0 ? S.stats.trend.h / S.stats.trend.p : 0,
-        derived: S.stats.derived.p > 0 ? S.stats.derived.h / S.stats.derived.p : 0,
-        ml: S.stats.ml.p > 0 ? S.stats.ml.h / S.stats.ml.p : 0,
-        shoe: S.stats.shoe.p > 0 ? S.stats.shoe.h / S.stats.shoe.p : 0
-    };
-    
-    let bestStrat = 'trend'; let maxRate = -1;
-    for (let s in winRates) { if (S.stats[s].p >= 3 && winRates[s] > maxRate) { maxRate = winRates[s]; bestStrat = s; } }
-
-    let finalTRate = mlTRate > 0 ? (mlTRate * 0.7 + shoeTRate * 0.3) : shoeTRate;
-    let finalBPRate = mlBPRate > 0 ? (mlBPRate * 0.7 + shoeBPRate * 0.3) : shoeBPRate;
-    let finalPPRate = mlPPRate > 0 ? (mlPPRate * 0.7 + shoePPRate * 0.3) : shoePPRate;
-
-    let breakMsg = "📊 牌局資料收集中...", alertClass = "alert-safe";
+    let breakMsg = "📊 牌局資料收集中..."; let alertClass = "alert-safe";
     let currStreakSide = null, currStreakLength = 0;
-    if (pureHistStr.length > 0) {
-        currStreakSide = pureHistStr[pureHistStr.length-1]; currStreakLength = 1;
-        for(let i=pureHistStr.length-2; i>=0; i--) { if(pureHistStr[i] === currStreakSide) currStreakLength++; else break; }
-    }
-    let isChoppingHard = false;
-    if (pureHistStr.length >= 4) { if (pureHistStr[pureHistStr.length-1] !== pureHistStr[pureHistStr.length-2] && pureHistStr[pureHistStr.length-2] !== pureHistStr[pureHistStr.length-3] && pureHistStr[pureHistStr.length-3] !== pureHistStr[pureHistStr.length-4]) isChoppingHard = true; }
+    if (pureHist.length >= 3) {
+        let last = pureHist[pureHist.length-1]; currStreakSide = last; currStreakLength = 1;
+        for(let i=pureHist.length-2; i>=0; i--) { if(pureHist[i]===last) currStreakLength++; else break; }
 
-    if (currStreakLength >= 3) {
-        let opp = currStreakSide === 'B' ? 'P' : 'B';
-        let seq = pureHistStr.slice(-3).join(","); let ptn = BigData.patterns[seq];
-        if (ptn && (ptn.B + ptn.P) >= 5) {
-            let breakRate = ptn[opp] / (ptn.B + ptn.P);
-            if (breakRate >= 0.55) { breakMsg = `⚠️【斷龍高危】大數據斷龍機率: ${(breakRate*100).toFixed(1)}%`; alertClass = "alert-high"; } 
-            else if (breakRate < 0.45) { breakMsg = `🛡️【防禦警報】大數據斷龍率極低，勿逆勢`; alertClass = "alert-safe"; } 
-            else { breakMsg = `🔮【動能追蹤】目前${currStreakSide==='B'?'莊':'閒'}連${currStreakLength}`; alertClass = "alert-safe"; }
-        } else { breakMsg = `🔮 目前${currStreakSide==='B'?'莊':'閒'}連${currStreakLength}`; }
-    } else if (isChoppingHard) { breakMsg = `🔄【變路警報】密集單跳中，注意反轉`; alertClass = "alert-info"; } 
-    else { breakMsg = `📊 觀察牌局走勢中...`; }
+        if (currStreakLength >= 3) {
+            let opp = last === 'B' ? 'P' : 'B';
+            let seq = pureHist.slice(-3).join(","); let ptn = BigData.patterns[seq];
+            if (ptn && ((ptn.B||0) + (ptn.P||0)) >= 5) {
+                let breakRate = (ptn[opp]||0) / ((ptn.B||0) + (ptn.P||0));
+                if (breakRate >= 0.55) { breakMsg = `⚠️【斷龍高危】大數據斷龍機率: ${(breakRate*100).toFixed(1)}%`; alertClass = "alert-high"; } 
+                else if (breakRate < 0.45) { breakMsg = `🛡️【防禦警報】大數據斷龍機率低，嚴禁逆勢。`; alertClass = "alert-safe"; } 
+                else { breakMsg = `🔮【動能追蹤】目前${last==='B'?'莊':'閒'}連${currStreakLength}`; alertClass = "alert-safe"; }
+            } else { breakMsg = `🔮 目前${last==='B'?'莊':'閒'}連${currStreakLength} (歷史樣本不足)`; }
+        }
+    }
 
     document.getElementById('hdrRemain').innerText = S.totalCards;
     document.getElementById('hdrRound').innerText = S.history.length;
@@ -692,36 +679,27 @@ function recalcAndRender() {
     trendAlertEl.className = `trend-alert ${alertClass}`; trendAlertEl.innerText = breakMsg;
 
     const obox = document.getElementById('oracleBox'), omain = document.getElementById('oracleMain'), badge = document.getElementById('reasonBadge');
-
+    let phySide = evBanker > 0.002 ? 'B' : (evPlayer > 0.002 ? 'P' : null);
+    
     if (S.history.length < 15) {
-        obox.className = "oracle-box locked";
-        omain.innerHTML = `🔒 規律收集中`;
+        obox.className = "oracle-box locked"; omain.innerHTML = `🔒 規律收集中`;
         badge.innerHTML = `<span>判斷: 燃燒期 (第 ${S.history.length}/15 局)</span> <span class="str-low">強度: 鎖定</span>`;
         S.lastRecSide = 'PASS';
     } else {
         let finalDecision = 'PASS'; let rsnText = "無明顯優勢"; let strClass = "str-low"; let strText = "弱";
 
-        if (currStreakLength >= 4) {
-            finalDecision = currStreakSide; rsnText = "極端規律 (長龍)"; strClass = "str-high"; strText = "極強";
-        } else if (isChoppingHard) {
-            finalDecision = currStreakSide === 'B' ? 'P' : 'B'; rsnText = "極端規律 (單跳)"; strClass = "str-high"; strText = "極強";
-        } else {
-            if (maxRate >= 0.5) {
-                finalDecision = S.shadowPreds[bestStrat] || 'PASS';
-                let sName = bestStrat === 'ev' ? '物理算牌' : bestStrat === 'trend' ? '大路動能' : bestStrat === 'derived' ? '五路共振' : bestStrat === 'ml' ? '歷史大數據' : '當靴統計';
-                if (finalDecision !== 'PASS') {
-                    rsnText = `自適應主導: ${sName}`;
-                    if (maxRate >= 0.65) { strClass = "str-high"; strText = "強"; } 
-                    else if (maxRate >= 0.55) { strClass = "str-mid"; strText = "中"; }
-                }
-            }
-        }
+        if (phySide === 'B' && mlSide === 'B') { finalDecision = 'B'; rsnText = "雙腦共振"; strClass = "str-high"; strText = "強"; } 
+        else if (phySide === 'P' && mlSide === 'P') { finalDecision = 'P'; rsnText = "雙腦共振"; strClass = "str-high"; strText = "強"; } 
+        else if (phySide === 'B') { finalDecision = 'B'; rsnText = "物理計算"; strClass = "str-mid"; strText = "中"; } 
+        else if (phySide === 'P') { finalDecision = 'P'; rsnText = "物理計算"; strClass = "str-mid"; strText = "中"; } 
+        else if (mlSide === 'B') { finalDecision = 'B'; rsnText = "趨勢大數據"; strClass = "str-mid"; strText = "中"; } 
+        else if (mlSide === 'P') { finalDecision = 'P'; rsnText = "趨勢大數據"; strClass = "str-mid"; strText = "中"; } 
 
         S.lastRecSide = finalDecision;
 
         if (finalDecision === 'B') { obox.className = "oracle-box banker"; omain.innerHTML = `🔥 推薦莊家`; badge.innerHTML = `<span>判斷: ${rsnText}</span> <span class="${strClass}">強度: ${strText}</span>`; } 
         else if (finalDecision === 'P') { obox.className = "oracle-box player"; omain.innerHTML = `🔥 推薦閒家`; badge.innerHTML = `<span>判斷: ${rsnText}</span> <span class="${strClass}">強度: ${strText}</span>`; } 
-        else { obox.className = "oracle-box pass"; omain.innerHTML = `🛡️ 觀望`; badge.innerHTML = `<span>多空分歧，保護資金</span>`; }
+        else { obox.className = "oracle-box pass"; omain.innerHTML = `🛡️ 觀望`; badge.innerHTML = `<span style="color:var(--text-muted)">無明顯優勢訊號</span>`; }
     }
 
     let sbTie = document.getElementById('sbTie'); let sbBP = document.getElementById('sbBP'); let sbPP = document.getElementById('sbPP');
@@ -737,6 +715,9 @@ function recalcAndRender() {
     renderAllRoads(); updateDBUI();
 }
 
+/* =========================================================
+   繪圖引擎保持原樣
+========================================================= */
 function renderAllRoads() {
     renderBeadPlate();
     let bd = buildBigRoadAndDerived(S.history); 
@@ -746,7 +727,6 @@ function renderAllRoads() {
     renderRoadGrid("grid-small", mapRoadLike(derived.small).grid, mapRoadLike(derived.small).maxCol, "small");
     renderRoadGrid("grid-roach", mapRoadLike(derived.roach).grid, mapRoadLike(derived.roach).maxCol, "roach");
 }
-
 function renderBeadPlate() {
     const cont = document.getElementById('grid-bead'); cont.innerHTML = '';
     let grid = {}, maxC = 0, c=0, r=0;
@@ -770,12 +750,10 @@ function renderBeadPlate() {
     }
     cont.scrollLeft = cont.scrollWidth;
 }
-
 function buildBigRoadAndDerived(hist) {
     let bigGrid={}, coords=[], lastRes=null, startC=0, c=0, r=0, maxC=0, pendingTies=0, lastCrd=null;
     function cellExists(cc, rr){ return !!bigGrid[`${cc},${rr}`]; }
     function colHeight(cc){ let h=0; while(cellExists(cc,h)) h++; return h; }
-
     for(let data of hist) {
         if(data.w === "T") { if(lastCrd) bigGrid[lastCrd].t++; else pendingTies++; continue; }
         if(lastRes === null) { c=0; r=0; lastRes=data.w; lastCrd=`${c},${r}`; bigGrid[lastCrd]={v:data.w, t:pendingTies, bp:data.bp, pp:data.pp}; pendingTies=0; coords.push({c,r,val:data.w}); maxC=Math.max(maxC,c); continue; }
@@ -783,18 +761,15 @@ function buildBigRoadAndDerived(hist) {
         else { startC++; while(cellExists(startC,0)) startC++; c=startC; r=0; lastRes=data.w; }
         lastCrd=`${c},${r}`; bigGrid[lastCrd]={v:data.w, t:pendingTies, bp:data.bp, pp:data.pp}; pendingTies=0; coords.push({c,r,val:data.w}); maxC=Math.max(maxC,c);
     }
-
     function getDerived(offset, coord) {
         let cc=coord.c, rr=coord.r, need=offset+1;
         if(rr===0) { if(cc<need) return null; return (colHeight(cc-1) === colHeight(cc-need)) ? "R" : "Blue"; }
         let ref=cc-offset; if(ref<0) return null; return (cellExists(ref,rr) === cellExists(ref,rr-1)) ? "R" : "Blue";
     }
-
     let eye=[], small=[], roach=[];
     coords.forEach(coord => { let e=getDerived(1,coord); if(e) eye.push(e); let s=getDerived(2,coord); if(s) small.push(s); let ro=getDerived(3,coord); if(ro) roach.push(ro); });
     return { bigGrid, maxCol: maxC, eye, small, roach };
 }
-
 function mapRoadLike(arr) {
     let grid={}, last=null, sc=0, c=0, r=0, maxC=0;
     for(let res of arr){
@@ -805,7 +780,6 @@ function mapRoadLike(arr) {
     }
     return {grid, maxCol:maxC};
 }
-
 function renderRoadGrid(id, map, maxC, type) {
     const cont = document.getElementById(id); cont.innerHTML='';
     const isSm = (type!=='big'); const cols = Math.max(isSm?24:18, maxC+1);
@@ -830,6 +804,8 @@ function renderRoadGrid(id, map, maxC, type) {
     }
     cont.scrollLeft = cont.scrollWidth;
 }
+// Init
+initConfigUI();
 </script>
 </body>
 </html>
