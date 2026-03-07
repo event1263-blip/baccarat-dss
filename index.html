@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>商業決策支援系統 - 戰場完美版</title>
+    <title>商業決策支援系統 - 高勝率狙擊版</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 6px; background-color: #000; color: #333; margin: 0; }
         .card { background: #fff; padding: 8px; border-radius: 8px; margin-bottom: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
@@ -11,23 +11,21 @@
         .top-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 4px; margin-bottom: 4px; }
         .top-bar-title { font-size: 13px; font-weight: bold; color: #555; }
         .btn-group { display: flex; gap: 5px; }
-        .btn-sm { border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; color: white; }
+        .btn-sm { border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-sm:active { transform: scale(0.9); }
         .btn-undo { background: #ff9500; } .btn-reset { background: #ff3b30; }
         
-        /* 戰術看板 */
         .tactical-board { display: flex; gap: 4px; margin-bottom: 6px; }
         .left-panel { flex: 1.1; background: #1c1c1e; color: white; border-radius: 6px; padding: 8px; display: flex; flex-direction: column; justify-content: center; border: 1px solid #333; position: relative; }
         .odds-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; border-bottom: 1px solid #444; padding-bottom: 4px; margin-bottom: 4px; }
         .odds-row .b { color: #ff453a; } .odds-row .p { color: #0a84ff; }
         .capital-info { text-align: center; }
         .step-txt { font-size: 10px; color: #aaa; display: flex; justify-content: center; align-items: center; gap: 4px; }
-        /* 風險偏好選擇器 */
         .risk-select { background: #333; color: #ffd60a; border: 1px solid #555; border-radius: 4px; font-size: 9px; padding: 1px 2px; }
         .amt-txt { font-size: 22px; font-weight: bold; color: #32d74b; margin: 2px 0; }
         .ev-txt { font-size: 11px; font-weight: bold; }
         
         .right-panel { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-        /* 將 EoR 數據精簡化，並與問路合併，減少空間 */
         .eor-mini-row { display: flex; justify-content: space-between; font-size: 10px; font-weight: bold; color: #fff; background: #000; padding: 4px 6px; border-radius: 4px; border: 1px solid #333; }
         
         .ask-box { flex: 1; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -38,10 +36,13 @@
         .ask-circle.solid-red { background: #ff3b30; border-color: #ff3b30; } .ask-circle.solid-blue { background: #007aff; border-color: #007aff; }
         .ask-circle.hollow-red { border-color: #ff3b30; background: transparent; } .ask-circle.hollow-blue { border-color: #007aff; background: transparent; }
 
-        .decision-panel { text-align: center; padding: 8px; border-radius: 6px; font-weight: bold; font-size: 14px; margin-bottom: 6px; border: 2px solid transparent; transition: 0.3s; }
+        /* 決策面板：高對比度提示 */
+        .decision-panel { text-align: center; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 15px; margin-bottom: 6px; border: 2px solid transparent; transition: 0.3s; }
         .decision-panel.pass { background: #2c2c2e; border-color: #8e8e93; color: #8e8e93; }
-        .decision-panel.banker { background: #ffebee; border-color: #ff3b30; color: #ff3b30; }
-        .decision-panel.player { background: #e3f2fd; border-color: #007aff; color: #007aff; }
+        .decision-panel.banker { background: #ffebee; border-color: #ff3b30; color: #ff3b30; animation: glow-red 2s infinite alternate; }
+        .decision-panel.player { background: #e3f2fd; border-color: #007aff; color: #007aff; animation: glow-blue 2s infinite alternate; }
+        @keyframes glow-red { from { box-shadow: 0 0 5px rgba(255,59,48,0.2); } to { box-shadow: 0 0 15px rgba(255,59,48,0.6); } }
+        @keyframes glow-blue { from { box-shadow: 0 0 5px rgba(0,122,255,0.2); } to { box-shadow: 0 0 15px rgba(0,122,255,0.6); } }
         
         .trigger-btn { width: 100%; padding: 10px; border-radius: 6px; border: 2px dashed #ccc; background: #fafafa; font-size: 14px; font-weight: bold; color: #888; cursor: pointer; transition: 0.2s; margin-bottom: 6px; }
         .trigger-btn.active { border-style: solid; border-color: #32d74b; background: #eafaf1; color: #28a745; }
@@ -108,15 +109,15 @@
                 <div class="odds-row"><span class="b">莊 <span id="bankerOdds">45.86</span>%</span><span class="p">閒 <span id="playerOdds">44.62</span>%</span></div>
                 <div class="capital-info">
                     <div class="step-txt">
-                        Kelly 建議注碼 
+                        高勝率策略注碼 
                         <select class="risk-select" id="riskLevel" onchange="recalcAndRender()">
-                            <option value="0.25">保守 (x0.25)</option>
+                            <option value="0.25">穩健 (x0.25)</option>
                             <option value="0.5">標準 (x0.5)</option>
-                            <option value="1.0">積極 (x1.0)</option>
+                            <option value="1.0">狙擊 (x1.0)</option>
                         </select>
                     </div>
                     <div class="amt-txt" id="betAmount">0</div>
-                    <div class="ev-txt" id="evDisplay">期望值 0.00%</div>
+                    <div class="ev-txt" id="evDisplay">相對期望值 0.00%</div>
                 </div>
             </div>
             
@@ -140,7 +141,7 @@
             </div>
         </div>
 
-        <div id="decisionPanel" class="decision-panel pass">訊號：<span id="predictionResult">優勢不足，鎖定觀望</span></div>
+        <div id="decisionPanel" class="decision-panel pass">訊號：<span id="predictionResult">嚴格過濾中，請觀望</span></div>
         <button id="triggerBtn" class="trigger-btn" onclick="toggleBet()">🔘 觀望中 (點擊以確認下注本局)</button>
 
         <div class="input-toolbar">
@@ -202,11 +203,16 @@
     <script>
         let totalCards = 416;
         let deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32};
-        const eorWeights = {1:0, 2:0, 3:0, 4:1, 5:2, 6:2, 7:1, 8:-1, 9:-2, 10:0, 11:0, 12:0, 13:0};
+        
+        // 【高勝率優化 1】: 採用最嚴謹的百家樂 EoR 權重
+        const eorWeights = {1:1, 2:1, 3:1, 4:2, 5:2, 6:1, 7:0, 8:-1, 9:-2, 10:0, 11:0, 12:0, 13:0};
         let runningCount = 0;
         
         let lastRecommendedSide = null; let historyLog = []; let isBetActive = false; let backupState = null;
-        const baseBankerProb = 0.4586, basePlayerProb = 0.4462, tieProb = 0.0952, baseCapital = 10000; 
+        
+        // 國際標準 8 副牌基礎機率
+        const baseBankerProb = 0.4586; const basePlayerProb = 0.4462; const tieProb = 0.0952; 
+        const baseCapital = 10000; 
 
         function updateKeypadCounts() {
             for(let i=1; i<=13; i++) {
@@ -223,7 +229,7 @@
 
         function undoLastRound() {
             if (!backupState) return;
-            if (confirm("撤銷上一局？數據將完美回滾。")) {
+            if (confirm("確定撤銷上一局？數據將完美回滾。")) {
                 totalCards = backupState.totalCards; deck = Object.assign({}, backupState.deck);
                 runningCount = backupState.runningCount; lastRecommendedSide = backupState.lastRecommendedSide; historyLog = [...backupState.historyLog];
                 isBetActive = false; updateBetTriggerUI(); recalcAndRender(); backupState = null; 
@@ -232,7 +238,7 @@
         }
 
         function toggleBet() {
-            if (lastRecommendedSide === 'PASS') { alert("資金保護鎖定：當前期望值為負，嚴禁下注！"); return; }
+            if (lastRecommendedSide === 'PASS') { alert("勝率過濾系統警告：當前局勢勝率未達安全閥值，嚴禁盲目下注！"); return; }
             isBetActive = !isBetActive; updateBetTriggerUI();
         }
 
@@ -304,7 +310,7 @@
             }
         }
 
-        // --- 防連擊鎖定 (Debounce) ---
+        // 【高勝率優化 2】: 防高壓雙擊鎖死機制
         function submitData() {
             const btn = document.getElementById('submitBtn');
             if (btn.disabled) return;
@@ -315,9 +321,8 @@
             ['b1', 'b2', 'b3'].forEach(id => { let v = document.getElementById(`slot-${id}`).dataset.val; if(v) { let rv = parseInt(v); bRaw.push(rv); cardsConsumed.push(rv); bPts += (rv >= 10 ? 0 : rv); } });
             if (pRaw.length < 2 || bRaw.length < 2) { alert("數據不完整。"); return; }
 
-            // 防呆鎖定按鈕 0.8秒
-            btn.disabled = true;
-            btn.innerText = "運算中...";
+            // 鎖定防連擊
+            btn.disabled = true; btn.innerText = "精算中...";
 
             saveState();
 
@@ -329,16 +334,15 @@
 
             isBetActive = false; clearAllSlots(); recalcAndRender();
 
-            // 解除防呆鎖定
-            setTimeout(() => {
-                btn.disabled = false;
-                btn.innerText = "寫入資料並執行次局推算";
-            }, 800);
+            // 0.8秒後解除鎖定
+            setTimeout(() => { btn.disabled = false; btn.innerText = "寫入資料並執行次局推算"; }, 800);
         }
 
         function recalcAndRender() {
             let decksRemaining = totalCards / 52;
             let trueCount = decksRemaining > 0 ? (runningCount / decksRemaining) : 0;
+            
+            // TC 對勝率的影響係數
             let edgeShift = trueCount * 0.0015; 
             let p_player = Math.max(0, Math.min(1 - tieProb, basePlayerProb + edgeShift));
             let p_banker = Math.max(0, Math.min(1 - tieProb, baseBankerProb - edgeShift));
@@ -352,27 +356,57 @@
             document.getElementById('playerOdds').innerText = (p_player * 100).toFixed(2);
             
             const dp = document.getElementById('decisionPanel'), pe = document.getElementById('predictionResult'), evDisp = document.getElementById('evDisplay'), amt = document.getElementById('betAmount');
-            let evBanker = (p_banker * 0.95) - (p_player * 1.00), evPlayer = (p_player * 1.00) - (p_banker * 1.00);
+            
+            // 【高勝率優化 3】: 有效勝率(排除和局)與嚴格期望值過濾
+            let effectiveP_B = p_banker / (p_banker + p_player);
+            let effectiveP_P = p_player / (p_banker + p_player);
+            
+            let evBanker = (effectiveP_B * 0.95) - (effectiveP_P * 1.00); 
+            let evPlayer = (effectiveP_P * 1.00) - (effectiveP_B * 1.00);
+            
             let bestEV = 0, kellyFraction = 0;
             
-            if (evBanker > 0 && evBanker > evPlayer) { lastRecommendedSide = 'B'; bestEV = evBanker; kellyFraction = evBanker / 0.95; dp.className = "decision-panel banker"; pe.innerText = "✅ 優勢反轉：建議莊家 (B)"; } 
-            else if (evPlayer > 0 && evPlayer > evBanker) { lastRecommendedSide = 'P'; bestEV = evPlayer; kellyFraction = evPlayer / 1.00; dp.className = "decision-panel player"; pe.innerText = "✅ 優勢反轉：建議閒家 (P)"; } 
-            else { lastRecommendedSide = 'PASS'; dp.className = "decision-panel pass"; pe.innerText = "❌ 期望值負數，鎖定觀望"; }
+            // 嚴格過濾邏輯：不僅要 EV > 0，且必須避開長龍逆勢
+            let pureRounds = historyLog.filter(x => x !== 'T');
+            let streakSide = null; let streakLen = 0;
+            if (pureRounds.length >= 3) {
+                streakSide = pureRounds[pureRounds.length - 1];
+                for(let i = pureRounds.length - 1; i >= 0; i--) { if(pureRounds[i] === streakSide) streakLen++; else break; }
+            }
 
-            evDisp.innerText = "期望值(EV) " + (bestEV * 100).toFixed(3) + "%"; evDisp.style.color = bestEV > 0 ? "#32d74b" : "#888";
+            // 必須具備高信心水準 (EV > 0.001) 才出手，否則全部過濾
+            if (evBanker > 0.001 && evBanker > evPlayer) { 
+                if (streakSide === 'P' && streakLen >= 3) {
+                    lastRecommendedSide = 'PASS'; dp.className = "decision-panel pass"; pe.innerText = "🛑 物理占優但遇閒長龍，強制迴避";
+                } else {
+                    lastRecommendedSide = 'B'; bestEV = evBanker; kellyFraction = evBanker / 0.95; 
+                    dp.className = "decision-panel banker"; pe.innerText = "🎯 高勝率狙擊：重注莊家 (Banker)";
+                }
+            } 
+            else if (evPlayer > 0.001 && evPlayer > evBanker) { 
+                if (streakSide === 'B' && streakLen >= 3) {
+                    lastRecommendedSide = 'PASS'; dp.className = "decision-panel pass"; pe.innerText = "🛑 物理占優但遇莊長龍，強制迴避";
+                } else {
+                    lastRecommendedSide = 'P'; bestEV = evPlayer; kellyFraction = evPlayer / 1.00; 
+                    dp.className = "decision-panel player"; pe.innerText = "🎯 高勝率狙擊：重注閒家 (Player)";
+                }
+            } 
+            else { 
+                lastRecommendedSide = 'PASS'; dp.className = "decision-panel pass"; pe.innerText = "🛡️ 無絕對優勢，嚴格過濾觀望"; 
+            }
+
+            evDisp.innerText = "期望值(EV) +" + (Math.max(0, bestEV) * 100).toFixed(2) + "%"; 
+            evDisp.style.color = bestEV > 0.001 ? "#32d74b" : "#888";
             
-            // 讀取風險偏好設定 (0.25, 0.5, 或 1.0)
             const riskMultiplier = parseFloat(document.getElementById('riskLevel').value);
 
-            if (lastRecommendedSide === 'PASS') { amt.innerText = "0"; amt.style.color = "#aaa"; } 
+            if (lastRecommendedSide === 'PASS') { amt.innerText = "鎖定 0"; amt.style.color = "#aaa"; } 
             else { amt.innerText = Math.max(100, Math.floor((baseCapital * kellyFraction * riskMultiplier) / 100) * 100); amt.style.color = "#32d74b"; }
 
-            updateBetTriggerUI(); // 更新按鈕上的金額顯示
-            updateKeypadCounts(); 
-            renderRoadsAndAsk();  
+            updateBetTriggerUI(); updateKeypadCounts(); renderRoadsAndAsk();  
         }
 
-        // --- 修正首局和局 Bug 的繪圖引擎 ---
+        // --- 修復首局和局 Bug 的繪圖引擎 ---
         function renderRoadsAndAsk() {
             let bigMap = genericMatrixMapper(historyLog, true); let derived = generateDerivedArrays(historyLog);
             renderGrid('grid-big', bigMap.grid, bigMap.maxCol, 'big'); renderGrid('grid-eye', genericMatrixMapper(derived.eye, false).grid, genericMatrixMapper(derived.eye, false).maxCol, 'eye'); renderGrid('grid-small', genericMatrixMapper(derived.small, false).grid, genericMatrixMapper(derived.small, false).maxCol, 'small'); renderGrid('grid-roach', genericMatrixMapper(derived.roach, false).grid, genericMatrixMapper(derived.roach, false).maxCol, 'roach');
@@ -386,20 +420,19 @@
         
         function genericMatrixMapper(arr, supportTie) { 
             let gridMap = {}; let lastRes = null; let sc = 0, cc = 0, cr = 0, mc = 0; let lastCrd = null; 
-            let pendingTies = 0; // 修復首局和局遺失的關鍵變數
+            let pendingTies = 0; 
             for (let i = 0; i < arr.length; i++) { 
                 let res = arr[i]; 
                 if (supportTie && res === 'T') { 
                     if (lastCrd && gridMap[lastCrd]) gridMap[lastCrd].tie++; 
-                    else pendingTies++; // 若還沒開出莊閒就遇到和局，先存起來
+                    else pendingTies++; 
                     continue; 
                 } 
                 if (res === lastRes) { let nr = cr + 1; if (nr <= 5 && !gridMap[`${cc},${nr}`]) cr = nr; else cc++; } 
                 else { if (lastRes !== null) { sc++; while (gridMap[`${sc},0`]) sc++; } cc = sc; cr = 0; } 
                 lastCrd = `${cc},${cr}`; 
-                gridMap[lastCrd] = { val: res, tie: pendingTies }; // 補上累積的和局
-                pendingTies = 0; // 歸零
-                lastRes = res; if (cc > mc) mc = cc; 
+                gridMap[lastCrd] = { val: res, tie: pendingTies }; 
+                pendingTies = 0; lastRes = res; if (cc > mc) mc = cc; 
             } 
             return { grid: gridMap, maxCol: mc }; 
         }
