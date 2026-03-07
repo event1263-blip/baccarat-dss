@@ -3,497 +3,396 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂決策系統 - 巨眼指揮版（嚴謹模擬）</title>
+  <title>百家樂決策系統 - 巨眼指揮版（嚴謹模擬 + HUD）</title>
 
   <style>
-    :root {
-      --bg-color: #0d0d12;
-      --card-bg: #1c1c1e;
-      --card-border: #2c2c2e;
-      --text-main: #f2f2f7;
-      --text-muted: #8e8e93;
-      --banker-red: #ff3b30;
-      --player-blue: #0a84ff;
-      --tie-green: #32d74b;
-      --highlight: #ffd60a;
-      --warning: #ff9f0a;
-      --danger: #ff3b30; /* ✅ 修正：原本未定義導致庫存低不變紅 */
+    :root{
+      --bg:#0d0d12;
+      --card:#1c1c1e;
+      --border:#2c2c2e;
+      --text:#f2f2f7;
+      --muted:#8e8e93;
+      --b:#ff3b30;
+      --p:#0a84ff;
+      --t:#32d74b;
+      --y:#ffd60a;
+      --w:#ff9f0a;
+      --danger:#ff3b30;
     }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      margin: 0;
-      padding: 8px 6px;
-      user-select: none;
-      -webkit-font-smoothing: antialiased;
-    }
-    .module-card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 12px;
-      margin-bottom: 8px;
-      border: 1px solid var(--card-border);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      margin:0;
+      padding: 8px 6px 10px;
+      user-select:none;
+      -webkit-font-smoothing:antialiased;
+
+      /* ✅ 重要：給固定 HUD 讓位（避免被蓋住） */
+      padding-top: calc(env(safe-area-inset-top) + 98px);
     }
 
-    /* --- 頂部導航 --- */
-    .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding: 0 4px; gap:10px; }
-    .shoe-info { font-size: 13px; font-weight: 700; color: var(--text-muted); display: flex; gap: 10px; flex-wrap:wrap; align-items:center; }
-    .shoe-info span { color: var(--text-main); font-variant-numeric: tabular-nums; font-weight:900; }
-    .action-btns { display: flex; gap: 6px; flex-wrap:wrap; justify-content:flex-end; }
-    .btn-icon {
-      background: #2c2c2e; color: var(--text-main);
-      border: none; border-radius: 10px;
-      padding: 8px 12px; font-size: 13px; font-weight: 900;
-      cursor: pointer; transition: 0.15s;
-      box-shadow: 0 2px 0 #111;
+    .module-card{
+      background:var(--card);
+      border-radius:16px;
+      padding:12px;
+      margin-bottom:8px;
+      border:1px solid var(--border);
+      box-shadow:0 4px 12px rgba(0,0,0,.3);
     }
-    .btn-icon:active { transform: translateY(2px); box-shadow:none; background:#3c3c3e; }
-    .btn-undo { color: var(--warning); }
 
-    /* --- 🐉 長龍雷達 --- */
-    .dragon-radar {
-      background: rgba(255, 159, 10, 0.15);
-      border: 1px solid rgba(255, 159, 10, 0.4);
+    /* =========================
+       ✅ 固定 HUD（永遠看得到）
+    ========================= */
+    .hud{
+      position: fixed;
+      top: env(safe-area-inset-top);
+      left: 6px;
+      right: 6px;
+      z-index: 9999;
+
+      border-radius: 18px;
+      border: 2px solid #333;
+      background: rgba(17,17,17,0.86);
+      backdrop-filter: blur(10px);
+
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+      overflow: hidden;
+
+      transition: 0.18s ease;
+    }
+
+    .hud.pass{ border-color:#444; }
+    .hud.banker{
+      border-color: var(--b);
+      box-shadow: 0 0 26px rgba(255,59,48,.35), 0 10px 30px rgba(0,0,0,0.45);
+      background: linear-gradient(180deg, rgba(255,59,48,0.18) 0%, rgba(17,17,17,0.86) 70%);
+    }
+    .hud.player{
+      border-color: var(--p);
+      box-shadow: 0 0 26px rgba(10,132,255,.35), 0 10px 30px rgba(0,0,0,0.45);
+      background: linear-gradient(180deg, rgba(10,132,255,0.18) 0%, rgba(17,17,17,0.86) 70%);
+    }
+
+    .hud-top{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      cursor: pointer; /* 點 HUD 可展開/收合 */
+    }
+
+    .hud-title{
+      font-size: 20px;
+      font-weight: 1000;
+      line-height: 1.1;
+      letter-spacing: .5px;
+    }
+    .hud-sub{
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #c7c7cc;
+      opacity: .9;
+    }
+
+    .hud-left{ min-width: 0; }
+    .hud-title span.badge{
+      display:inline-block;
+      margin-left:8px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 1000;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      vertical-align: middle;
+    }
+
+    .hud-actions{
+      display:flex;
+      gap:6px;
+      flex-shrink:0;
+    }
+    .hud-btn{
+      border:none;
       border-radius: 12px;
       padding: 10px 12px;
-      margin-bottom: 8px;
-      justify-content: space-between;
-      align-items: center;
-      display: none;
-    }
-    .dragon-radar.active { display: flex; animation: radar-pulse 1.2s infinite alternate; }
-    @keyframes radar-pulse {
-      from { box-shadow: 0 0 8px rgba(255, 159, 10, 0.25); }
-      to   { box-shadow: 0 0 22px rgba(255, 159, 10, 0.60); }
-    }
-    .dragon-text { font-size: 13px; font-weight: 1000; color: var(--warning); }
-    .dragon-count { font-size: 15px; font-weight: 1200; background: var(--warning); color: #000; padding: 3px 10px; border-radius: 999px; }
-
-    /* --- 🎯 巨眼決策面板 --- */
-    .oracle-panel {
-      text-align: center;
-      padding: 20px 10px;
-      border-radius: 16px;
-      margin-bottom: 12px;
-      background: #111;
-      border: 2px solid #333;
-      transition: all 0.2s ease-in-out;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 86px;
-    }
-    .oracle-title {
-      font-size: 32px;
+      font-size: 13px;
       font-weight: 1000;
-      margin-bottom: 6px;
-      letter-spacing: 1px;
-      line-height: 1.05;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      color: var(--text);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.45);
+      cursor:pointer;
+      transition: 0.12s;
     }
-    .oracle-subtitle { font-size: 14px; font-weight: 800; color: #aaa; }
+    .hud-btn:active{ transform: translateY(2px); box-shadow:none; }
+    .hud-btn.undo{ color: var(--w); }
+    .hud-btn.reset{ color: #ff5c5c; }
 
-    .oracle-panel.pass { border-color: #444; opacity: 0.85; }
-    .oracle-panel.banker {
-      background: linear-gradient(180deg, rgba(255,59,48,0.22) 0%, rgba(20,0,0,1) 100%);
-      border-color: var(--banker-red);
-      animation: alert-banker 1.05s infinite alternate;
+    /* HUD 縮略資訊列（永遠顯示） */
+    .hud-mini{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap:10px;
+      padding: 0 12px 10px;
+      font-variant-numeric: tabular-nums;
     }
-    .oracle-panel.banker .oracle-title { color:#fff; text-shadow: 0 0 18px var(--banker-red), 0 0 34px var(--banker-red); }
-    .oracle-panel.banker .oracle-subtitle { color:#ffd2d2; }
-
-    .oracle-panel.player {
-      background: linear-gradient(180deg, rgba(10,132,255,0.22) 0%, rgba(0,5,20,1) 100%);
-      border-color: var(--player-blue);
-      animation: alert-player 1.05s infinite alternate;
+    .mini-item{
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--muted);
+      white-space: nowrap;
     }
-    .oracle-panel.player .oracle-title { color:#fff; text-shadow: 0 0 18px var(--player-blue), 0 0 34px var(--player-blue); }
-    .oracle-panel.player .oracle-subtitle { color:#d6e7ff; }
+    .mini-item b{ color: var(--text); font-weight: 1100; }
+    .mini-item b.b{ color: var(--b); }
+    .mini-item b.p{ color: var(--p); }
+    .mini-item b.g{ color: var(--t); }
 
-    @keyframes alert-banker {
-      0% { box-shadow: 0 0 12px rgba(255,59,48,0.32); transform: scale(1); }
-      100% { box-shadow: 0 0 38px rgba(255,59,48,0.80), inset 0 0 22px rgba(255,59,48,0.45); transform: scale(1.02); }
+    /* 展開區（預設收起） */
+    .hud-details{
+      display:none;
+      padding: 10px 12px 12px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.10);
     }
-    @keyframes alert-player {
-      0% { box-shadow: 0 0 12px rgba(10,132,255,0.32); transform: scale(1); }
-      100% { box-shadow: 0 0 38px rgba(10,132,255,0.85), inset 0 0 22px rgba(10,132,255,0.45); transform: scale(1.02); }
+    .hud.expanded .hud-details{ display:block; }
+
+    .detail-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      font-variant-numeric: tabular-nums;
     }
+    .detail-box{
+      border-radius: 14px;
+      padding:10px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.25);
+    }
+    .detail-box .h{
+      font-size: 11px;
+      font-weight: 1000;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .row{ display:flex; justify-content:space-between; margin-bottom: 6px; font-weight: 1000; font-size: 13px; }
+    .row .k{ color: var(--muted); font-weight: 900; }
+    .row .v{ color: var(--text); }
+    .row .v.b{ color: var(--b); }
+    .row .v.p{ color: var(--p); }
+    .row .v.g{ color: var(--t); }
 
-    /* --- 儀表板 --- */
-    .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-    .dash-box { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 10px; border: 1px solid #2c2c2e; }
-    .dash-header { font-size: 11px; color: var(--text-muted); font-weight: 1000; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .ev-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .ev-label { font-size: 13px; font-weight: 1000; }
-    .ev-label.b { color: var(--banker-red); }
-    .ev-label.p { color: var(--player-blue); }
-    .ev-val { font-size: 14px; font-weight: 1000; font-variant-numeric: tabular-nums; }
+    /* =========================
+       其餘原本 UI（保留）
+    ========================= */
 
-    .stat-line { font-size: 12px; color: var(--text-muted); font-weight: 900; margin-top: 6px; line-height: 1.35; }
-    .stat-line b { color: var(--text-main); }
+    .dashboard{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px; }
+    .dash-box{ background: rgba(0,0,0,0.3); border-radius:12px; padding:10px; border:1px solid #2c2c2e; }
+    .dash-header{ font-size:11px; color:var(--muted); font-weight:1000; text-transform:uppercase; margin-bottom:8px; display:flex; justify-content:space-between; }
+    .ev-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .ev-label{ font-size:13px; font-weight:1100; }
+    .ev-label.b{ color:var(--b); } .ev-label.p{ color:var(--p); }
+    .ev-val{ font-size:14px; font-weight:1100; font-variant-numeric:tabular-nums; }
 
-    /* 技術面 dots + 變路 */
-    .trend-dots { display: flex; gap: 4px; }
-    .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); }
-    .dot.r { background: var(--banker-red); }
-    .dot.b { background: var(--player-blue); }
-    .dot.e { background: #333; }
-    .break-trend-alert {
-      font-size: 11px; font-weight: 1000; color: var(--warning);
-      margin-top: 8px; text-align: center;
+    .trend-dots{ display:flex; gap:4px; }
+    .dot{ width:14px; height:14px; border-radius:50%; border:1px solid rgba(255,255,255,0.1); }
+    .dot.r{ background:var(--b); } .dot.b{ background:var(--p); } .dot.e{ background:#333; }
+    .break-trend-alert{
+      font-size:11px; font-weight:1100; color:var(--w);
+      margin-top:8px; text-align:center;
       background: rgba(255,159,10,0.12);
-      padding: 6px 8px; border-radius: 10px;
+      padding: 6px 8px; border-radius: 12px;
       border: 1px solid rgba(255,159,10,0.25);
       display:none;
     }
 
-    /* ✅ 下注 Opt-in 區 */
-    .bet-panel {
-      margin-top: 10px;
-      background: rgba(255,255,255,0.04);
-      border: 1px dashed rgba(255,255,255,0.15);
-      border-radius: 12px;
-      padding: 10px;
-      display: grid;
-      gap: 8px;
-    }
-    .bet-row { display:flex; justify-content:space-between; align-items:center; font-variant-numeric:tabular-nums; }
-    .bet-row .k { color: var(--text-muted); font-weight: 900; font-size: 12px; }
-    .bet-row .v { font-weight: 1100; font-size: 14px; }
-    .v.b { color: var(--banker-red); }
-    .v.p { color: var(--player-blue); }
-    .v.g { color: var(--tie-green); }
-    .arm-btn {
-      width:100%;
-      padding: 14px 12px;
-      border-radius: 14px;
-      border: none;
-      font-size: 16px;
-      font-weight: 1200;
+    .input-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .input-header span{ font-size:12px; font-weight:900; color:var(--muted); }
+    .toggle-guide{ font-size:12px; font-weight:1100; color:#fff; background: rgba(10,132,255,0.3); padding: 6px 10px; border-radius: 12px; display:flex; align-items:center; gap:6px; }
+    .toggle-guide input{ transform: scale(1.1); }
+
+    .table-layout{ display:flex; gap:8px; }
+    .table-side{ flex:1; background: rgba(0,0,0,0.3); border-radius:12px; padding:8px; border:1px solid #2a2a2c; }
+    .side-label{ text-align:center; font-size:12px; font-weight:1100; margin-bottom:8px; padding: 6px 0; border-radius: 12px; letter-spacing:.8px; }
+    .side-label.p{ background: rgba(10,132,255,0.2); color: var(--p); }
+    .side-label.b{ background: rgba(255,59,48,0.2); color: var(--b); }
+    .cards-row{ display:flex; justify-content:space-between; gap:6px; }
+
+    .playing-card{
+      flex:1; aspect-ratio: 2/3;
       background: #2c2c2e;
-      color: #fff;
-      cursor: pointer;
-      box-shadow: 0 3px 0 #111;
-      transition: 0.12s;
-    }
-    .arm-btn:active { transform: translateY(3px); box-shadow:none; background:#3c3c3e; }
-    .arm-btn.armed { background: rgba(50,215,75,0.85); color:#000; }
-    .arm-btn.locked { background: #1f1f22; color:#666; cursor:not-allowed; box-shadow:none; }
-
-    details.settings { margin-top:10px; }
-    details.settings > summary {
-      cursor:pointer;
-      list-style:none;
-      padding: 10px 12px;
       border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.05);
-      font-weight: 1100;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-    }
-    details.settings > summary::-webkit-details-marker { display:none; }
-    .set-grid { margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-    .field { background: rgba(0,0,0,0.28); border:1px solid rgba(255,255,255,0.08); border-radius: 12px; padding:10px; }
-    .field label { display:block; font-size:11px; color:var(--text-muted); font-weight:1000; margin-bottom:8px; text-transform:uppercase; }
-    .field select, .field input {
-      width:100%;
-      padding:10px 10px;
-      border-radius: 12px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:#111;
-      color:var(--text-main);
-      font-weight:1000;
-      outline:none;
-    }
-    .field small { display:block; margin-top:8px; color:var(--text-muted); font-size:11px; line-height:1.35; font-weight:800; }
-
-    /* --- 輸入區 --- */
-    .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .input-header span { font-size: 12px; font-weight: 800; color: var(--text-muted); }
-    .toggle-guide { font-size: 12px; font-weight: 1000; color: #fff; background: rgba(10,132,255,0.3); padding: 6px 10px; border-radius: 10px; display: flex; align-items: center; gap: 6px; }
-    .toggle-guide input { transform: scale(1.1); }
-
-    .table-layout { display: flex; gap: 8px; }
-    .table-side { flex: 1; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 8px; border: 1px solid #2a2a2c; }
-    .side-label { text-align: center; font-size: 12px; font-weight: 1100; margin-bottom: 8px; padding: 6px 0; border-radius: 10px; letter-spacing:0.8px; }
-    .side-label.p { background: rgba(10,132,255,0.2); color: var(--player-blue); }
-    .side-label.b { background: rgba(255,59,48,0.2); color: var(--banker-red); }
-
-    .cards-row { display: flex; justify-content: space-between; gap: 6px; }
-    .playing-card {
-      flex: 1; aspect-ratio: 2/3;
-      background: #2c2c2e;
-      border-radius: 10px;
       border: 1px solid #555;
-      display: flex; align-items: center; justify-content: center;
+      display:flex; align-items:center; justify-content:center;
       font-size: 22px; font-weight: 1200;
-      color: #fff;
-      cursor: pointer;
-      transition: all 0.15s;
+      color:#fff;
+      cursor:pointer;
+      transition: .15s;
     }
-    .playing-card.active {
-      background: #3a3a3c;
-      border-color: var(--highlight);
+    .playing-card.active{
+      background:#3a3a3c;
+      border-color: var(--y);
       transform: translateY(-4px);
-      box-shadow: 0 6px 12px rgba(255, 214, 10, 0.40);
-      color: var(--highlight);
-      border-width: 2px;
+      box-shadow: 0 6px 12px rgba(255,214,10,0.4);
+      color: var(--y);
+      border-width:2px;
     }
-    .playing-card.filled { background: #e5e5ea; color: #000; border-color: #fff; }
-    .playing-card.disabled { background: #18181a !important; border-color: #222; opacity: 0.28; pointer-events: none; }
+    .playing-card.filled{ background:#e5e5ea; color:#000; border-color:#fff; }
+    .playing-card.disabled{ background:#18181a !important; border-color:#222; opacity:.28; pointer-events:none; }
 
-    /* --- 鍵盤 --- */
-    .keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
-    .key {
-      background: #2c2c2e;
-      border-radius: 12px;
+    .keypad{ display:grid; grid-template-columns: repeat(5,1fr); gap:8px; margin-top:12px; }
+    .key{
+      background:#2c2c2e;
+      border-radius: 14px;
       padding: 10px 0;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      cursor: pointer;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      cursor:pointer;
       box-shadow: 0 3px 0 #111;
-      transition: 0.1s;
+      transition:.1s;
       border: 1px solid rgba(255,255,255,0.08);
     }
-    .key:active { transform: translateY(3px); box-shadow:none; background:#444; }
-    .key-val { font-size: 22px; font-weight: 1200; color: #fff; line-height: 1; }
-    .key-count { font-size: 11px; font-weight: 1100; color: var(--text-muted); margin-top: 6px; font-variant-numeric:tabular-nums; }
-    .key-count.low { color: var(--danger); }
+    .key:active{ transform: translateY(3px); box-shadow:none; background:#444; }
+    .key-val{ font-size:22px; font-weight:1200; color:#fff; line-height:1; }
+    .key-count{ font-size:11px; font-weight:1100; color: var(--muted); margin-top:6px; font-variant-numeric: tabular-nums; }
+    .key-count.low{ color: var(--danger); }
 
-    .key.action-clear {
-      background: rgba(255,159,10,0.15);
-      color: var(--warning);
-      border: 1px solid rgba(255,159,10,0.3);
-      grid-column: span 2;
-      flex-direction: row;
-      font-size: 16px;
-      font-weight: 1100;
-      gap: 6px;
-      align-items:center;
-      justify-content:center;
-    }
-    .key.action-back {
+    .key.action-back{
       background: rgba(255,255,255,0.06);
-      color: var(--text-main);
+      color: var(--text);
       border: 1px solid rgba(255,255,255,0.12);
       grid-column: span 3;
       flex-direction: row;
       font-size: 16px;
       font-weight: 1100;
       gap: 6px;
-      align-items:center;
-      justify-content:center;
+    }
+    .key.action-clear{
+      background: rgba(255,159,10,0.15);
+      color: var(--w);
+      border: 1px solid rgba(255,159,10,0.3);
+      grid-column: span 2;
+      flex-direction: row;
+      font-size: 16px;
+      font-weight: 1100;
+      gap: 6px;
     }
 
-    /* 提交按鈕 */
-    .submit-btn {
-      width: 100%;
+    .submit-btn{
+      width:100%;
       padding: 18px;
-      background: #2c2c2e;
-      color: #666;
-      font-size: 18px;
-      font-weight: 1200;
-      border: none;
-      border-radius: 14px;
+      background:#2c2c2e;
+      color:#666;
+      font-size:18px;
+      font-weight:1200;
+      border:none;
+      border-radius: 16px;
       margin-top: 16px;
-      transition: all 0.2s ease;
-      letter-spacing: 1px;
       box-shadow: 0 3px 0 #111;
-      cursor: not-allowed;
+      cursor:not-allowed;
+      transition:.2s;
     }
-    .submit-btn.ready {
-      background: var(--tie-green);
-      color: #000;
+    .submit-btn.ready{
+      background: var(--t);
+      color:#000;
       box-shadow: 0 0 22px rgba(50,215,75,0.45);
-      cursor: pointer;
+      cursor:pointer;
       animation: pulse 1.2s infinite alternate;
     }
-    .submit-btn.ready:active { transform: scale(0.985); }
-    @keyframes pulse { from{transform:scale(1)} to{transform:scale(1.01)} }
+    .submit-btn.ready:active{ transform: scale(.985); }
+    @keyframes pulse{ from{transform:scale(1)} to{transform:scale(1.01)} }
 
-    /* --- 路單 --- */
-    .road-container { width: 100%; overflow-x: auto; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 4px; box-sizing: border-box; }
-    .road-grid { display: flex; min-width: max-content; background:#fff; border-radius:10px; padding:3px; }
-    .road-col { display: flex; flex-direction: column; }
-    .cell-lg { width: 16px; height: 16px; border: 1px solid #f0f0f0; display:flex; align-items:center; justify-content:center; position:relative; }
-    .cell-sm { width: 8px; height: 8px; border: 1px solid #f0f0f0; display:flex; align-items:center; justify-content:center; position:relative; }
-
-    .circle-hollow { width: 12px; height: 12px; border-radius: 50%; border: 2px solid transparent; box-sizing: border-box; }
-    .circle-hollow.B, .circle-hollow.R { border-color: var(--banker-red); }
-    .circle-hollow.P, .circle-hollow.Blue { border-color: var(--player-blue); }
-    .tie-line { background: linear-gradient(to top right, transparent 45%, var(--tie-green) 45%, var(--tie-green) 55%, transparent 55%); }
-    .tie-text { position:absolute; font-size:8px; font-weight:1200; color: var(--tie-green); } /* ✅ 修正：原版缺 tie-text */
-    .circle-solid { width: 6px; height: 6px; border-radius: 50%; }
-    .circle-solid.R { background-color: var(--banker-red); }
-    .circle-solid.Blue { background-color: var(--player-blue); }
-    .slash { width: 8px; height: 8px; }
-    .slash.R { background: linear-gradient(to bottom left, transparent 40%, var(--banker-red) 40%, var(--banker-red) 60%, transparent 60%); }
-    .slash.Blue { background: linear-gradient(to bottom left, transparent 40%, var(--player-blue) 40%, var(--player-blue) 60%, transparent 60%); }
-    .derived-roads-wrapper { display: flex; gap: 6px; margin-top: 8px; }
-    .derived-col { flex: 1; min-width: 0; }
-
-    .note {
-      margin-top:10px;
-      color: var(--text-muted);
-      font-size: 11px;
-      line-height: 1.4;
-      font-weight: 800;
-    }
-    .note b { color: var(--text-main); }
-
+    .road-container{ width:100%; overflow-x:auto; background: rgba(0,0,0,0.2); border-radius: 12px; padding:4px; box-sizing:border-box; }
+    .road-grid{ display:flex; min-width:max-content; background:#fff; border-radius: 12px; padding:3px; }
+    .road-col{ display:flex; flex-direction:column; }
+    .cell-lg{ width:16px; height:16px; border:1px solid #f0f0f0; display:flex; align-items:center; justify-content:center; position:relative; }
+    .cell-sm{ width:8px; height:8px; border:1px solid #f0f0f0; display:flex; align-items:center; justify-content:center; position:relative; }
+    .circle-hollow{ width:12px; height:12px; border-radius:50%; border:2px solid transparent; box-sizing:border-box; }
+    .circle-hollow.B, .circle-hollow.R{ border-color: var(--b); }
+    .circle-hollow.P, .circle-hollow.Blue{ border-color: var(--p); }
+    .tie-line{ background: linear-gradient(to top right, transparent 45%, var(--t) 45%, var(--t) 55%, transparent 55%); }
+    .tie-text{ position:absolute; font-size:8px; font-weight:1200; color: var(--t); }
+    .circle-solid{ width:6px; height:6px; border-radius:50%; }
+    .circle-solid.R{ background: var(--b); }
+    .circle-solid.Blue{ background: var(--p); }
+    .slash{ width:8px; height:8px; }
+    .slash.R{ background: linear-gradient(to bottom left, transparent 40%, var(--b) 40%, var(--b) 60%, transparent 60%); }
+    .slash.Blue{ background: linear-gradient(to bottom left, transparent 40%, var(--p) 40%, var(--p) 60%, transparent 60%); }
+    .derived-roads-wrapper{ display:flex; gap:6px; margin-top: 8px; }
+    .derived-col{ flex:1; min-width:0; }
   </style>
 </head>
+
 <body>
 
-  <div class="top-nav">
-    <div class="shoe-info">
-      剩餘 <span id="totalCards">416</span> 牌 ｜ 第 <span id="roundCount">0</span> 局 ｜ 下注：<span id="armedFlag">否</span>
+  <!-- ✅ 固定 HUD：不管你滑到哪都看得到 -->
+  <div id="hud" class="hud pass">
+    <div class="hud-top" onclick="toggleHud()">
+      <div class="hud-left">
+        <div class="hud-title" id="hudMain">觀望 <span class="badge" id="hudBadge">點我展開</span></div>
+        <div class="hud-sub" id="hudSub">等待輸入 / 計算中…</div>
+      </div>
+
+      <div class="hud-actions" onclick="event.stopPropagation()">
+        <button class="hud-btn undo" onclick="undoLastRound()">↩ 撤銷</button>
+        <button class="hud-btn reset" onclick="resetSystem()">換靴</button>
+      </div>
     </div>
-    <div class="action-btns">
-      <button class="btn-icon btn-undo" onclick="undoLastRound()">↩ 撤銷</button>
-      <button class="btn-icon" onclick="resetSystem()">換靴</button>
+
+    <div class="hud-mini">
+      <div class="mini-item">剩餘 <b id="hudRemain">416</b></div>
+      <div class="mini-item">局數 <b id="hudRound">0</b></div>
+      <div class="mini-item">下注 <b id="hudArmed">否</b></div>
+      <div class="mini-item">SIM <b id="hudSim">--</b></div>
+    </div>
+
+    <div class="hud-details">
+      <div class="detail-grid">
+        <div class="detail-box">
+          <div class="h">Probabilities</div>
+          <div class="row"><span class="k">P(B)</span><span class="v b" id="hudPB">--</span></div>
+          <div class="row"><span class="k">P(P)</span><span class="v p" id="hudPP">--</span></div>
+          <div class="row"><span class="k">P(T)</span><span class="v g" id="hudPT">--</span></div>
+        </div>
+        <div class="detail-box">
+          <div class="h">Expected Value</div>
+          <div class="row"><span class="k">EV(B)</span><span class="v" id="hudEVB">--</span></div>
+          <div class="row"><span class="k">EV(P)</span><span class="v" id="hudEVP">--</span></div>
+          <div class="row"><span class="k">抽水</span><span class="v" id="hudCom">5%</span></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div id="dragonRadar" class="dragon-radar">
-    <div class="dragon-text" id="dragonText">動能過熱</div>
-    <div class="dragon-count" id="dragonCount">連 0</div>
-  </div>
-
-  <div id="decisionPanel" class="oracle-panel pass">
-    <div class="oracle-title" id="mainSignal">觀望</div>
-    <div class="oracle-subtitle" id="subSignal">等待輸入 / 計算中…</div>
-  </div>
-
+  <!-- 原本 dashboard / UI（你可以保留，因為 HUD 已經解決「看不到」問題） -->
   <div class="dashboard">
     <div class="dash-box">
-      <div class="dash-header">
-        <span>條件機率 / EV</span>
-        <span id="simInfo" style="color:var(--highlight);font-weight:1100;">SIM: --</span>
-      </div>
+      <div class="dash-header"><span>條件機率 / EV</span><span id="simInfo" style="color:var(--y);font-weight:1100;">SIM: --</span></div>
       <div class="ev-row"><span class="ev-label b">莊 P(B)</span><span class="ev-val" id="bankerOdds">--</span></div>
       <div class="ev-row"><span class="ev-label p">閒 P(P)</span><span class="ev-val" id="playerOdds">--</span></div>
-      <div class="ev-row"><span class="ev-label" style="color:var(--tie-green)">和 P(T)</span><span class="ev-val" id="tieOdds">--</span></div>
-
+      <div class="ev-row"><span class="ev-label" style="color:var(--t)">和 P(T)</span><span class="ev-val" id="tieOdds">--</span></div>
       <div class="ev-row"><span class="ev-label b">莊 EV</span><span class="ev-val" id="evBanker">--</span></div>
       <div class="ev-row"><span class="ev-label p">閒 EV</span><span class="ev-val" id="evPlayer">--</span></div>
-
-      <div class="stat-line" id="evExplain">
-        EV(莊)=<b>(1-抽水)</b>·P(B) − P(P) ｜ EV(閒)=P(P) − P(B)
-      </div>
     </div>
 
     <div class="dash-box">
       <div class="dash-header">技術面（問路 / 下三路）</div>
-
-      <div class="ev-row">
-        <span class="ev-label b">若開莊</span>
-        <div class="trend-dots" id="askB-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div>
-      </div>
-
-      <div class="ev-row">
-        <span class="ev-label p">若開閒</span>
-        <div class="trend-dots" id="askP-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div>
-      </div>
-
+      <div class="ev-row"><span class="ev-label b">若開莊</span><div class="trend-dots" id="askB-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div></div>
+      <div class="ev-row"><span class="ev-label p">若開閒</span><div class="trend-dots" id="askP-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div></div>
       <div id="breakAlert" class="break-trend-alert"></div>
-
-      <div class="bet-panel">
-        <div class="bet-row"><div class="k">模式</div><div class="v" id="modeText">勝率模式</div></div>
-        <div class="bet-row"><div class="k">建議</div><div class="v" id="suggestText">觀望</div></div>
-        <div class="bet-row"><div class="k">下一局注碼</div><div class="v" id="betAmount">100</div></div>
-        <div class="bet-row"><div class="k">下注命中率</div><div class="v" id="hitRate">--</div></div>
-        <button id="armBtn" class="arm-btn" onclick="toggleArm()">💰 決定下注下一局</button>
-      </div>
-
-      <details class="settings">
-        <summary>⚙️ 設定 <span style="color:var(--text-muted);font-weight:900;">展開/收合</span></summary>
-        <div class="set-grid">
-          <div class="field">
-            <label>策略模式</label>
-            <select id="setMode" onchange="applySettings()">
-              <option value="winrate" selected>勝率模式（不保證獲利）</option>
-              <option value="ev">EV 模式（只在 EV>0 才出手）</option>
-              <option value="display">只顯示（永遠觀望）</option>
-            </select>
-            <small>勝率模式：以 P(B)/P(P)（不含和局）選邊，配合過濾器。</small>
-          </div>
-
-          <div class="field">
-            <label>問路門檻</label>
-            <select id="setTrendGate" onchange="applySettings()">
-              <option value="off">關閉</option>
-              <option value="2" selected>≥2紅</option>
-              <option value="3">3紅</option>
-            </select>
-            <small>問路屬描述性訊號，只做你自己的“出手規則”。</small>
-          </div>
-
-          <div class="field">
-            <label>長龍防護</label>
-            <select id="setDragonGuard" onchange="applySettings()">
-              <option value="on" selected>開啟（連4起警示）</option>
-              <option value="off">關閉</option>
-            </select>
-            <small>只做風險提示/防逆勢，非“預測斷龍”。</small>
-          </div>
-
-          <div class="field">
-            <label>SIM 次數</label>
-            <select id="setTrials" onchange="applySettings()">
-              <option value="6000">6000（快）</option>
-              <option value="12000" selected>12000（建議）</option>
-              <option value="20000">20000（穩）</option>
-            </select>
-            <small>無放回模擬：依剩餘牌庫+標準補牌規則估 P(B/P/T)。</small>
-          </div>
-
-          <div class="field">
-            <label>莊抽水（commission）</label>
-            <input id="setCommission" type="number" min="0" max="0.1" step="0.005" value="0.05" onchange="applySettings()" />
-            <small>常見 5%（0.05）。免佣桌請自行調整。</small>
-          </div>
-
-          <div class="field">
-            <label>注碼模式</label>
-            <select id="setBetMode" onchange="applySettings()">
-              <option value="martingale" selected>馬丁 100/200/400/800</option>
-              <option value="flat">固定注碼</option>
-            </select>
-            <small>只做風險管理與統計，不宣稱提升勝率。</small>
-          </div>
-
-          <div class="field">
-            <label>固定注碼</label>
-            <input id="setFlatBet" type="number" min="1" step="1" value="100" onchange="applySettings()" />
-            <small>僅固定注碼模式生效。</small>
-          </div>
-
-          <div class="field">
-            <label>補牌防呆</label>
-            <select id="setAutoGuide" onchange="applySettings()">
-              <option value="on" selected>開啟（嚴格合法才可送出）</option>
-              <option value="off">關閉（手動覆寫）</option>
-            </select>
-            <small>關閉後僅檢查莊閒至少各 2 張。</small>
-          </div>
-        </div>
-      </details>
-
     </div>
   </div>
 
   <div class="module-card">
     <div class="input-header">
       <span>依序發牌（P1 → B1 → P2 → B2 → P3 → B3）</span>
-      <label class="toggle-guide">
-        <input type="checkbox" id="autoGuideToggle" checked onchange="evaluateDrawRules()">
-        防呆
-      </label>
+      <label class="toggle-guide"><input type="checkbox" id="autoGuideToggle" checked onchange="evaluateDrawRules()">防呆</label>
     </div>
 
     <div class="table-layout">
@@ -505,7 +404,6 @@
           <div class="playing-card disabled" id="slot-p3" onclick="setActiveSlot('p3')" data-rank=""></div>
         </div>
       </div>
-
       <div class="table-side">
         <div class="side-label b">BANKER 莊</div>
         <div class="cards-row">
@@ -517,16 +415,10 @@
     </div>
 
     <div class="keypad" id="keypad"></div>
-
     <button class="submit-btn" id="submitBtn" onclick="submitData()" disabled>輸入需符合法定規則</button>
-
-    <div class="note">
-      ✅ 本版本把「機率/EV」改為 <b>無放回 Monte Carlo 模擬</b>（依剩餘牌庫與補牌規則），不再使用任意線性偏移。<br/>
-      ⚠️ 問路/路單只作你自己的「出手規則」，不保證預測力。
-    </div>
   </div>
 
-  <div class="module-card" style="padding: 8px;">
+  <div class="module-card" style="padding:8px;">
     <div class="road-container"><div class="road-grid" id="grid-big"></div></div>
     <div class="derived-roads-wrapper">
       <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-eye"></div></div></div>
@@ -536,37 +428,24 @@
   </div>
 
 <script>
-/* =========================
-   A) 參數 / 狀態（含 localStorage）
-========================= */
-const STORE_KEY = "baccarat_giant_strict_mc_v1";
+/* ===== 這份版本的核心是 UI：固定 HUD，不用滑上去看 ===== */
 
+const STORE_KEY = "baccarat_giant_strict_mc_hud_v1";
 const DEFAULTS = {
   decks: 8,
   commission: 0.05,
-  mode: "winrate",          // winrate | ev | display
-  trendGate: "2",           // off | 2 | 3
-  dragonGuard: "on",        // on | off
   trials: 12000,
-  betMode: "martingale",    // martingale | flat
-  flatBet: 100,
-  autoGuide: "on",
-
-  // runtime state
-  rankCounts: null,         // {1..13:count}
-  history: [],              // ['B','P','T']
-  armed: false,             // Opt-in bet
-  plannedSide: "PASS",      // 'B'|'P'|'PASS'
-  step: 1,                  // martingale step 1..4
-  stats: { placed:0, win:0, loss:0, push:0 }, // only when armed
+  rankCounts: null,
+  history: [],
+  armed: false,      // 你有沒有“授權下注下一局”
+  plannedSide: "PASS",
 };
-
 let S = loadState() || initState();
 let backupState = null;
 
 function initCounts(decks=8){
   const c = {};
-  for(let r=1;r<=13;r++) c[r] = 4*decks;
+  for(let r=1;r<=13;r++) c[r]=4*decks;
   return c;
 }
 function initState(){
@@ -574,113 +453,110 @@ function initState(){
   st.rankCounts = initCounts(st.decks);
   return st;
 }
-function saveState(){
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){}
-}
+function saveState(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){} }
 function loadState(){
   try{
     const t = localStorage.getItem(STORE_KEY);
     if(!t) return null;
     const obj = JSON.parse(t);
-    // minimal validation
     if(!obj.rankCounts || !obj.history) return null;
-    return Object.assign(structuredClone(DEFAULTS), obj);
+    return Object.assign(structClone(DEFAULTS), obj);
   }catch(e){ return null; }
 }
-function snapshot(){
-  backupState = structuredClone(S);
-}
+function structClone(x){ return JSON.parse(JSON.stringify(x)); }
+function snapshot(){ backupState = structClone(S); }
 
-/* =========================
-   B) DOM refs
-========================= */
 const $ = (id)=>document.getElementById(id);
 
 const ui = {
-  totalCards: $("totalCards"),
-  roundCount: $("roundCount"),
-  armedFlag: $("armedFlag"),
   simInfo: $("simInfo"),
-
   bankerOdds: $("bankerOdds"),
   playerOdds: $("playerOdds"),
   tieOdds: $("tieOdds"),
   evBanker: $("evBanker"),
   evPlayer: $("evPlayer"),
-
-  dragonRadar: $("dragonRadar"),
-  dragonText: $("dragonText"),
-  dragonCount: $("dragonCount"),
-
-  decisionPanel: $("decisionPanel"),
-  mainSignal: $("mainSignal"),
-  subSignal: $("subSignal"),
-
   askB: $("askB-dots"),
   askP: $("askP-dots"),
   breakAlert: $("breakAlert"),
-
-  modeText: $("modeText"),
-  suggestText: $("suggestText"),
-  betAmount: $("betAmount"),
-  hitRate: $("hitRate"),
-  armBtn: $("armBtn"),
-
   autoGuideToggle: $("autoGuideToggle"),
   submitBtn: $("submitBtn"),
-
   keypad: $("keypad"),
-
-  // settings
-  setMode: $("setMode"),
-  setTrendGate: $("setTrendGate"),
-  setDragonGuard: $("setDragonGuard"),
-  setTrials: $("setTrials"),
-  setCommission: $("setCommission"),
-  setBetMode: $("setBetMode"),
-  setFlatBet: $("setFlatBet"),
-  setAutoGuide: $("setAutoGuide"),
-
   gridBig: $("grid-big"),
   gridEye: $("grid-eye"),
   gridSmall: $("grid-small"),
   gridRoach: $("grid-roach"),
+
+  // HUD
+  hud: $("hud"),
+  hudMain: $("hudMain"),
+  hudSub: $("hudSub"),
+  hudBadge: $("hudBadge"),
+  hudRemain: $("hudRemain"),
+  hudRound: $("hudRound"),
+  hudArmed: $("hudArmed"),
+  hudSim: $("hudSim"),
+  hudPB: $("hudPB"),
+  hudPP: $("hudPP"),
+  hudPT: $("hudPT"),
+  hudEVB: $("hudEVB"),
+  hudEVP: $("hudEVP"),
+  hudCom: $("hudCom"),
 };
 
-/* =========================
-   C) UI：鍵盤（含退格）
-========================= */
+let hudExpanded = false;
+function toggleHud(){
+  hudExpanded = !hudExpanded;
+  ui.hud.classList.toggle("expanded", hudExpanded);
+  ui.hudBadge.textContent = hudExpanded ? "點我收合" : "點我展開";
+}
+
+/* ===== 鍵盤 + 輸入 ===== */
 const slotOrder = ["p1","b1","p2","b2","p3","b3"];
 let currentSlotIdx = 0;
 
 function rankToDisplay(n){
-  n = parseInt(n,10);
-  if (n===1) return "A";
-  if (n===11) return "J";
-  if (n===12) return "Q";
-  if (n===13) return "K";
+  n=parseInt(n,10);
+  if(n===1) return "A";
+  if(n===11) return "J";
+  if(n===12) return "Q";
+  if(n===13) return "K";
   return String(n);
 }
 function baccaratValFromRank(n){
-  n = parseInt(n,10);
+  n=parseInt(n,10);
   return (n>=10)?0:n;
 }
-function getSlotRank(id){
-  return $(`slot-${id}`).dataset.rank || "";
-}
+function getSlotRank(id){ return $(`slot-${id}`).dataset.rank || ""; }
 function setSlotRank(id, rank){
   const el = $(`slot-${id}`);
   el.dataset.rank = rank ? String(rank) : "";
   el.textContent = rank ? rankToDisplay(rank) : "";
   el.classList.toggle("filled", !!rank);
 }
+function setActiveSlot(slotId){
+  const el=$(`slot-${slotId}`);
+  if(el.classList.contains("disabled")) return;
+  document.querySelectorAll(".playing-card").forEach(x=>x.classList.remove("active"));
+  el.classList.add("active");
+  currentSlotIdx = slotOrder.indexOf(slotId);
+}
+function pendingCounts(){
+  const p={}; for(let r=1;r<=13;r++) p[r]=0;
+  slotOrder.forEach(id=>{ const rk=getSlotRank(id); if(rk) p[parseInt(rk,10)]++; });
+  return p;
+}
+function updateKeypadCounts(){
+  const pend = pendingCounts();
+  for(let r=1;r<=13;r++){
+    const el = document.getElementById(`kcnt-${r}`);
+    if(!el) continue;
+    const remain = (S.rankCounts[r]||0) - (pend[r]||0);
+    el.textContent = String(remain);
+    el.className = "key-count" + (remain < 10 ? " low" : "");
+  }
+}
 function clearAllSlots(){
-  slotOrder.forEach(id=>{
-    const el = $(`slot-${id}`);
-    el.dataset.rank = "";
-    el.textContent = "";
-    el.classList.remove("filled");
-  });
+  slotOrder.forEach(id=> setSlotRank(id,""));
   currentSlotIdx = 0;
   setActiveSlot("p1");
   evaluateDrawRules();
@@ -688,10 +564,10 @@ function clearAllSlots(){
 }
 function backspace(){
   for(let i=slotOrder.length-1;i>=0;i--){
-    const id = slotOrder[i];
+    const id=slotOrder[i];
     if(getSlotRank(id)){
-      setSlotRank(id, "");
-      currentSlotIdx = i;
+      setSlotRank(id,"");
+      currentSlotIdx=i;
       setActiveSlot(id);
       evaluateDrawRules();
       updateKeypadCounts();
@@ -699,139 +575,112 @@ function backspace(){
     }
   }
 }
-
-function pendingCounts(){
-  const p = {};
-  for(let r=1;r<=13;r++) p[r]=0;
-  slotOrder.forEach(id=>{
-    const rk = getSlotRank(id);
-    if(rk) p[parseInt(rk,10)]++;
-  });
-  return p;
-}
-
 function buildKeypad(){
   const keys = [
-    {v:"1",  t:"A"},
-    {v:"2",  t:"2"},
-    {v:"3",  t:"3"},
-    {v:"4",  t:"4"},
-    {v:"5",  t:"5"},
-    {v:"6",  t:"6"},
-    {v:"7",  t:"7"},
-    {v:"8",  t:"8"},
-    {v:"9",  t:"9"},
-    {v:"10", t:"10"},
-    {v:"11", t:"J"},
-    {v:"12", t:"Q"},
-    {v:"13", t:"K"},
+    {v:"1",t:"A"},{v:"2",t:"2"},{v:"3",t:"3"},{v:"4",t:"4"},{v:"5",t:"5"},
+    {v:"6",t:"6"},{v:"7",t:"7"},{v:"8",t:"8"},{v:"9",t:"9"},{v:"10",t:"10"},
+    {v:"11",t:"J"},{v:"12",t:"Q"},{v:"13",t:"K"},
   ];
-
   ui.keypad.innerHTML = "";
   keys.forEach(k=>{
-    const btn = document.createElement("div");
-    btn.className = "key";
+    const btn=document.createElement("div");
+    btn.className="key";
     btn.innerHTML = `<div class="key-val">${k.t}</div><div class="key-count" id="kcnt-${k.v}">--</div>`;
-    btn.onclick = ()=> inputKey(k.v);
+    btn.onclick = ()=>inputKey(k.v);
     ui.keypad.appendChild(btn);
   });
 
-  const back = document.createElement("div");
-  back.className = "key action-back";
-  back.innerHTML = `<span>⌫</span> 退格`;
-  back.onclick = ()=> backspace();
+  const back=document.createElement("div");
+  back.className="key action-back";
+  back.innerHTML=`<span>⌫</span> 退格`;
+  back.onclick = ()=>backspace();
   ui.keypad.appendChild(back);
 
-  const clr = document.createElement("div");
-  clr.className = "key action-clear";
-  clr.innerHTML = `<span>🗑️</span> 清空`;
-  clr.onclick = ()=> clearAllSlots();
+  const clr=document.createElement("div");
+  clr.className="key action-clear";
+  clr.innerHTML=`<span>🗑️</span> 清空`;
+  clr.onclick = ()=>clearAllSlots();
   ui.keypad.appendChild(clr);
 }
 
-function updateKeypadCounts(){
+function inputKey(val){
   const pend = pendingCounts();
-  for(let r=1;r<=13;r++){
-    const el = $(`kcnt-${r}`);
-    if(!el) continue;
-    const remain = (S.rankCounts[r]||0) - (pend[r]||0);  // ✅ 修正：扣掉本局已輸入同牌
-    el.textContent = String(remain);
-    el.className = "key-count" + (remain < 10 ? " low" : "");
+  const r = parseInt(val,10);
+  const remain = (S.rankCounts[r]||0) - (pend[r]||0);
+  if(remain<=0){
+    alert(`庫存不足：${rankToDisplay(r)}（含本局已輸入）`);
+    return;
   }
+  while(currentSlotIdx < slotOrder.length && $(`slot-${slotOrder[currentSlotIdx]}`).classList.contains("disabled")){
+    currentSlotIdx++;
+  }
+  if(currentSlotIdx >= slotOrder.length) return;
+  const id=slotOrder[currentSlotIdx];
+  setSlotRank(id, val);
+
+  evaluateDrawRules();
+  updateKeypadCounts();
+
+  currentSlotIdx++;
+  while(currentSlotIdx < slotOrder.length && $(`slot-${slotOrder[currentSlotIdx]}`).classList.contains("disabled")){
+    currentSlotIdx++;
+  }
+  if(currentSlotIdx < slotOrder.length) setActiveSlot(slotOrder[currentSlotIdx]);
+  else document.querySelectorAll(".playing-card").forEach(x=>x.classList.remove("active"));
 }
 
-/* =========================
-   D) 補牌防呆（嚴格 Tableau）
-========================= */
+/* ===== 補牌防呆（嚴格） ===== */
 function getBaccaratValFromSlot(id){
-  const rk = getSlotRank(id);
+  const rk=getSlotRank(id);
   if(!rk) return null;
   return baccaratValFromRank(rk);
 }
-
-function setActiveSlot(slotId){
-  const el = $(`slot-${slotId}`);
-  if(el.classList.contains("disabled")) return;
-  document.querySelectorAll(".playing-card").forEach(x=>x.classList.remove("active"));
-  el.classList.add("active");
-  currentSlotIdx = slotOrder.indexOf(slotId);
+function totalRemaining(){
+  let t=0; for(let r=1;r<=13;r++) t += (S.rankCounts[r]||0);
+  return t;
 }
-
 function evaluateDrawRules(){
-  const strict = (S.autoGuide === "on") && ui.autoGuideToggle.checked;
-
+  const strict = ui.autoGuideToggle.checked;
   const p3El = $("slot-p3");
   const b3El = $("slot-b3");
   const btn  = ui.submitBtn;
 
-  if(!strict){
-    p3El.classList.remove("disabled");
-    b3El.classList.remove("disabled");
-    // manual: require at least p1,p2,b1,b2
-    const ok = !!getSlotRank("p1") && !!getSlotRank("p2") && !!getSlotRank("b1") && !!getSlotRank("b2");
-    if(ok){
-      btn.disabled = false;
-      btn.className = "submit-btn ready";
-      btn.textContent = "送出結算（手動覆寫模式）";
-    }else{
-      btn.disabled = true;
-      btn.className = "submit-btn";
-      btn.textContent = "至少輸入莊閒各 2 張";
-    }
-    return;
-  }
-
-  const p1 = getBaccaratValFromSlot("p1");
-  const p2 = getBaccaratValFromSlot("p2");
-  const b1 = getBaccaratValFromSlot("b1");
-  const b2 = getBaccaratValFromSlot("b2");
+  const p1=getBaccaratValFromSlot("p1");
+  const p2=getBaccaratValFromSlot("p2");
+  const b1=getBaccaratValFromSlot("b1");
+  const b2=getBaccaratValFromSlot("b2");
 
   if(p1===null || p2===null || b1===null || b2===null){
     p3El.classList.add("disabled");
     b3El.classList.add("disabled");
-    btn.disabled = true;
-    btn.className = "submit-btn";
-    btn.textContent = "等待完成前四張牌...";
+    btn.disabled=true;
+    btn.className="submit-btn";
+    btn.textContent="等待完成前四張牌...";
     return;
   }
 
-  const pTotal = (p1+p2)%10;
-  const bTotal = (b1+b2)%10;
-  const isNatural = (pTotal>=8 || bTotal>=8);
+  if(!strict){
+    p3El.classList.remove("disabled");
+    b3El.classList.remove("disabled");
+    btn.disabled=false;
+    btn.className="submit-btn ready";
+    btn.textContent="送出結算（手動覆寫）";
+    return;
+  }
 
-  let needP3 = false;
-  let needB3 = false;
+  const pTotal=(p1+p2)%10;
+  const bTotal=(b1+b2)%10;
+  const isNatural=(pTotal>=8 || bTotal>=8);
 
+  let needP3=false, needB3=false;
   const p3Val = getBaccaratValFromSlot("p3");
   const b3Val = getBaccaratValFromSlot("b3");
 
   if(!isNatural){
-    if(pTotal<=5) needP3 = true;
-
+    if(pTotal<=5) needP3=true;
     if(!needP3){
-      if(bTotal<=5) needB3 = true;
+      if(bTotal<=5) needB3=true;
     }else{
-      // banker depends on p3
       if(p3Val!==null){
         if (bTotal <= 2) needB3 = true;
         else if (bTotal === 3 && p3Val !== 8) needB3 = true;
@@ -842,145 +691,73 @@ function evaluateDrawRules(){
     }
   }
 
-  // lock/unlock
   if(isNatural){
     p3El.classList.add("disabled");
     b3El.classList.add("disabled");
   }else{
     if(needP3) p3El.classList.remove("disabled"); else p3El.classList.add("disabled");
-    // banker third lock until player third present when required
-    if(needP3 && p3Val===null){
-      b3El.classList.add("disabled");
-    }else{
-      if(needB3) b3El.classList.remove("disabled"); else b3El.classList.add("disabled");
-    }
+    if(needP3 && p3Val===null) b3El.classList.add("disabled");
+    else { if(needB3) b3El.classList.remove("disabled"); else b3El.classList.add("disabled"); }
   }
 
-  // validate
-  let valid = true;
-  let msg = "✓ 牌局合法，點擊送出結算";
-
+  let valid=true;
+  let msg="✓ 牌局合法，點擊送出結算";
   if(isNatural && (p3Val!==null || b3Val!==null)) { valid=false; msg="錯誤：天牌不可補牌"; }
-  if(valid && needP3 && p3Val===null)            { valid=false; msg="錯誤：閒家必須補牌"; }
-  if(valid && !needP3 && p3Val!==null)           { valid=false; msg="錯誤：閒家不可補牌"; }
-
+  if(valid && needP3 && p3Val===null)             { valid=false; msg="錯誤：閒家必須補牌"; }
+  if(valid && !needP3 && p3Val!==null)            { valid=false; msg="錯誤：閒家不可補牌"; }
   if(valid && needP3 && p3Val!==null){
-    if(needB3 && b3Val===null)                   { valid=false; msg="錯誤：莊家必須補牌"; }
-    if(!needB3 && b3Val!==null)                  { valid=false; msg="錯誤：莊家不可補牌"; }
+    if(needB3 && b3Val===null)                    { valid=false; msg="錯誤：莊家必須補牌"; }
+    if(!needB3 && b3Val!==null)                   { valid=false; msg="錯誤：莊家不可補牌"; }
   }
   if(valid && !needP3){
-    if(needB3 && b3Val===null)                   { valid=false; msg="錯誤：莊家必須補牌"; }
-    if(!needB3 && b3Val!==null)                  { valid=false; msg="錯誤：莊家不可補牌"; }
+    if(needB3 && b3Val===null)                    { valid=false; msg="錯誤：莊家必須補牌"; }
+    if(!needB3 && b3Val!==null)                   { valid=false; msg="錯誤：莊家不可補牌"; }
   }
+  if(totalRemaining() < 6){ valid=false; msg="靴底不足（請換靴）"; }
 
-  if(totalRemaining() < 6){
-    valid = false;
-    msg = "靴底不足（請換靴）";
-  }
-
-  btn.disabled = !valid;
+  btn.disabled=!valid;
   btn.className = valid ? "submit-btn ready" : "submit-btn";
-  btn.textContent = valid ? msg : msg;
+  btn.textContent = msg;
 }
 
-function inputKey(val){
-  // ✅ 修正：庫存檢查需扣掉本局已輸入
-  const pend = pendingCounts();
-  const remain = (S.rankCounts[parseInt(val,10)]||0) - (pend[parseInt(val,10)]||0);
-  if(remain <= 0){
-    alert(`庫存異常！牌面 ${rankToDisplay(val)} 已無可用張數（含本局已輸入）。`);
-    return;
-  }
-
-  // skip disabled slots
-  while(currentSlotIdx < slotOrder.length && $(`slot-${slotOrder[currentSlotIdx]}`).classList.contains("disabled")){
-    currentSlotIdx++;
-  }
-  if(currentSlotIdx >= slotOrder.length) return;
-
-  const id = slotOrder[currentSlotIdx];
-  const el = $(`slot-${id}`);
-
-  el.textContent = rankToDisplay(val);
-  el.dataset.rank = val;
-  el.classList.add("filled");
-
-  evaluateDrawRules();
-  updateKeypadCounts();
-
-  currentSlotIdx++;
-  while(currentSlotIdx < slotOrder.length && $(`slot-${slotOrder[currentSlotIdx]}`).classList.contains("disabled")){
-    currentSlotIdx++;
-  }
-  if(currentSlotIdx < slotOrder.length){
-    setActiveSlot(slotOrder[currentSlotIdx]);
-  }else{
-    document.querySelectorAll(".playing-card").forEach(x=>x.classList.remove("active"));
-  }
-}
-
-/* =========================
-   E) 勝負判定 + 扣牌
-========================= */
+/* ===== 勝負判定 + 扣牌 ===== */
 function cardsConsumed(){
-  const arr = [];
-  ["p1","p2","p3","b1","b2","b3"].forEach(id=>{
-    const rk = getSlotRank(id);
-    if(rk) arr.push(parseInt(rk,10));
-  });
+  const arr=[];
+  slotOrder.forEach(id=>{ const rk=getSlotRank(id); if(rk) arr.push(parseInt(rk,10)); });
   return arr;
 }
 function computeWinner(){
-  let pSum=0, bSum=0;
-  ["p1","p2","p3"].forEach(id=>{
-    const rk = getSlotRank(id);
-    if(rk) pSum += baccaratValFromRank(rk);
-  });
-  ["b1","b2","b3"].forEach(id=>{
-    const rk = getSlotRank(id);
-    if(rk) bSum += baccaratValFromRank(rk);
-  });
-  const pF = pSum % 10;
-  const bF = bSum % 10;
+  let pSum=0,bSum=0;
+  ["p1","p2","p3"].forEach(id=>{ const rk=getSlotRank(id); if(rk) pSum += baccaratValFromRank(rk); });
+  ["b1","b2","b3"].forEach(id=>{ const rk=getSlotRank(id); if(rk) bSum += baccaratValFromRank(rk); });
+  const pF=pSum%10, bF=bSum%10;
   if(pF>bF) return "P";
   if(bF>pF) return "B";
   return "T";
 }
-function totalRemaining(){
-  let t=0;
-  for(let r=1;r<=13;r++) t += (S.rankCounts[r]||0);
-  return t;
-}
 
-/* =========================
-   F) Monte Carlo：無放回抽牌 + 標準補牌規則
-========================= */
-function drawRankFromCounts(counts, total){
+/* ===== Monte Carlo（SIM） ===== */
+function drawRankFromCounts(counts,total){
   const x = Math.floor(Math.random()*total);
   let acc=0;
   for(let r=1;r<=13;r++){
     acc += counts[r];
-    if(x < acc){
-      counts[r]--;
-      return r;
-    }
+    if(x < acc){ counts[r]--; return r; }
   }
-  counts[13]--;
-  return 13;
+  counts[13]--; return 13;
 }
-
 function simulateOneHand(countsBase){
-  const counts = new Array(14).fill(0);
+  const counts=new Array(14).fill(0);
   let total=0;
   for(let r=1;r<=13;r++){ counts[r]=countsBase[r]; total+=counts[r]; }
 
-  const p1 = drawRankFromCounts(counts,total--);
-  const b1 = drawRankFromCounts(counts,total--);
-  const p2 = drawRankFromCounts(counts,total--);
-  const b2 = drawRankFromCounts(counts,total--);
+  const p1=drawRankFromCounts(counts,total--);
+  const b1=drawRankFromCounts(counts,total--);
+  const p2=drawRankFromCounts(counts,total--);
+  const b2=drawRankFromCounts(counts,total--);
 
-  const pT = (baccaratValFromRank(p1)+baccaratValFromRank(p2))%10;
-  const bT = (baccaratValFromRank(b1)+baccaratValFromRank(b2))%10;
+  const pT=(baccaratValFromRank(p1)+baccaratValFromRank(p2))%10;
+  const bT=(baccaratValFromRank(b1)+baccaratValFromRank(b2))%10;
 
   if(pT>=8 || bT>=8){
     if(pT>bT) return "P";
@@ -988,539 +765,254 @@ function simulateOneHand(countsBase){
     return "T";
   }
 
-  let p3=null, b3=null;
+  let p3=null,b3=null;
+  if(pT<=5) p3=drawRankFromCounts(counts,total--);
 
-  if(pT<=5){
-    p3 = drawRankFromCounts(counts,total--);
-  }
-
-  // banker rule
   if(p3===null){
-    if(bT<=5) b3 = drawRankFromCounts(counts,total--);
+    if(bT<=5) b3=drawRankFromCounts(counts,total--);
   }else{
-    const p3v = baccaratValFromRank(p3);
+    const p3v=baccaratValFromRank(p3);
     let needB3=false;
     if (bT <= 2) needB3 = true;
     else if (bT === 3 && p3v !== 8) needB3 = true;
     else if (bT === 4 && p3v >= 2 && p3v <= 7) needB3 = true;
     else if (bT === 5 && p3v >= 4 && p3v <= 7) needB3 = true;
     else if (bT === 6 && (p3v === 6 || p3v === 7)) needB3 = true;
-
-    if(needB3) b3 = drawRankFromCounts(counts,total--);
+    if(needB3) b3=drawRankFromCounts(counts,total--);
   }
 
-  const pF = (baccaratValFromRank(p1)+baccaratValFromRank(p2)+(p3?baccaratValFromRank(p3):0))%10;
-  const bF = (baccaratValFromRank(b1)+baccaratValFromRank(b2)+(b3?baccaratValFromRank(b3):0))%10;
+  const pF=(baccaratValFromRank(p1)+baccaratValFromRank(p2)+(p3?baccaratValFromRank(p3):0))%10;
+  const bF=(baccaratValFromRank(b1)+baccaratValFromRank(b2)+(b3?baccaratValFromRank(b3):0))%10;
 
   if(pF>bF) return "P";
   if(bF>pF) return "B";
   return "T";
 }
-
 function simulateProbs(trials){
-  const base = new Array(14).fill(0);
+  const base=new Array(14).fill(0);
   for(let r=1;r<=13;r++) base[r]=S.rankCounts[r];
 
   let B=0,P=0,T=0;
   for(let i=0;i<trials;i++){
-    const w = simulateOneHand(base);
+    const w=simulateOneHand(base);
     if(w==="B") B++; else if(w==="P") P++; else T++;
   }
   return {pB:B/trials, pP:P/trials, pT:T/trials};
 }
+function fmtPct(x){ return (x*100).toFixed(2)+"%"; }
 
-/* =========================
-   G) 路單 + 問路（沿用你既有生成）
-========================= */
-function genericMatrixMapper(arr, supportTie) {
-  let gridMap = {};
-  let lastRes = null;
-  let sc = 0, cc = 0, cr = 0, mc = 0;
-  let lastCrd = null;
-  let pendingTies = 0;
-
-  for (let i = 0; i < arr.length; i++) {
-    let res = arr[i];
-
-    if (supportTie && res === 'T') {
-      if (lastCrd && gridMap[lastCrd]) gridMap[lastCrd].tie++;
+/* ===== 路單（簡化：只保留大路與三路渲染）===== */
+function genericMatrixMapper(arr,supportTie){
+  let gridMap={}, lastRes=null, sc=0, cc=0, cr=0, mc=0, lastCrd=null, pendingTies=0;
+  for(let i=0;i<arr.length;i++){
+    let res=arr[i];
+    if(supportTie && res==="T"){
+      if(lastCrd && gridMap[lastCrd]) gridMap[lastCrd].tie++;
       else pendingTies++;
       continue;
     }
-
-    if (res === lastRes) {
-      let nr = cr + 1;
-      if (nr <= 5 && !gridMap[`${cc},${nr}`]) cr = nr;
+    if(res===lastRes){
+      let nr=cr+1;
+      if(nr<=5 && !gridMap[`${cc},${nr}`]) cr=nr;
       else cc++;
-    } else {
-      if (lastRes !== null) { sc++; while (gridMap[`${sc},0`]) sc++; }
-      cc = sc; cr = 0;
+    }else{
+      if(lastRes!==null){ sc++; while(gridMap[`${sc},0`]) sc++; }
+      cc=sc; cr=0;
     }
-
-    lastCrd = `${cc},${cr}`;
-    gridMap[lastCrd] = { val: res, tie: pendingTies };
-    pendingTies = 0;
-    lastRes = res;
-    if (cc > mc) mc = cc;
+    lastCrd=`${cc},${cr}`;
+    gridMap[lastCrd]={val:res, tie:pendingTies};
+    pendingTies=0; lastRes=res; if(cc>mc) mc=cc;
   }
-  return { grid: gridMap, maxCol: mc };
+  return {grid:gridMap, maxCol:mc};
 }
-
-function generateDerivedArrays(hist) {
-  let pHist = hist.filter(x => x !== 'T');
-  let pCols = [];
-  let cCol = [];
-  let lRes = null;
-
-  for (let r of pHist) {
-    if (r === lRes) cCol.push(r);
-    else { if (cCol.length > 0) pCols.push(cCol); cCol = [r]; lRes = r; }
+function generateDerivedArrays(hist){
+  let pHist=hist.filter(x=>x!=="T");
+  let pCols=[], cCol=[], lRes=null;
+  for(let r of pHist){
+    if(r===lRes) cCol.push(r);
+    else { if(cCol.length>0) pCols.push(cCol); cCol=[r]; lRes=r; }
   }
-  if (cCol.length > 0) pCols.push(cCol);
+  if(cCol.length>0) pCols.push(cCol);
 
-  let eye = [], sm = [], roach = [];
-  for (let c = 0; c < pCols.length; c++) {
-    for (let r = 0; r < pCols[c].length; r++) {
-
-      if (c >= 1) {
-        if (r === 0 && c >= 2) eye.push(pCols[c - 1].length === pCols[c - 2].length ? 'R' : 'Blue');
-        else if (r > 0) eye.push((pCols[c - 1] && pCols[c - 1].length > r) ? 'R' : 'Blue');
+  let eye=[], sm=[], roach=[];
+  for(let c=0;c<pCols.length;c++){
+    for(let r=0;r<pCols[c].length;r++){
+      if(c>=1){
+        if(r===0 && c>=2) eye.push(pCols[c-1].length===pCols[c-2].length?'R':'Blue');
+        else if(r>0) eye.push((pCols[c-1] && pCols[c-1].length>r)?'R':'Blue');
       }
-
-      if (c >= 2) {
-        if (r === 0 && c >= 3) sm.push(pCols[c - 1].length === pCols[c - 3].length ? 'R' : 'Blue');
-        else if (r > 0) sm.push((pCols[c - 2] && pCols[c - 2].length > r) ? 'R' : 'Blue');
+      if(c>=2){
+        if(r===0 && c>=3) sm.push(pCols[c-1].length===pCols[c-3].length?'R':'Blue');
+        else if(r>0) sm.push((pCols[c-2] && pCols[c-2].length>r)?'R':'Blue');
       }
-
-      if (c >= 3) {
-        if (r === 0 && c >= 4) roach.push(pCols[c - 1].length === pCols[c - 4].length ? 'R' : 'Blue');
-        else if (r > 0) roach.push((pCols[c - 3] && pCols[c - 3].length > r) ? 'R' : 'Blue');
+      if(c>=3){
+        if(r===0 && c>=4) roach.push(pCols[c-1].length===pCols[c-4].length?'R':'Blue');
+        else if(r>0) roach.push((pCols[c-3] && pCols[c-3].length>r)?'R':'Blue');
       }
     }
   }
-  return { eye, small: sm, roach };
+  return {eye, small:sm, roach};
 }
+function renderGrid(domId,gridMap,maxCol,type){
+  const container=$(domId);
+  container.innerHTML="";
+  const isSm=(type==="small"||type==="roach");
+  const cols=Math.max(isSm?24:16, maxCol+1);
 
-function renderGrid(domId, gridMap, maxCol, type) {
-  const container = $(domId);
-  container.innerHTML = '';
-  const isSm = (type === 'small' || type === 'roach');
-  const cols = Math.max(isSm ? 24 : 16, maxCol + 1);
-
-  for (let c = 0; c < cols; c++) {
-    let colDiv = document.createElement('div');
-    colDiv.className = 'road-col';
-
-    for (let r = 0; r < 6; r++) {
-      let cell = document.createElement('div');
-      cell.className = isSm ? 'cell-sm' : 'cell-lg';
-
-      if (gridMap[`${c},${r}`]) {
-        let data = gridMap[`${c},${r}`];
-        let item = document.createElement('div');
-
-        if (type === 'big' || type === 'eye') {
-          item.className = `circle-hollow ${data.val}`;
-          if (type === 'big' && data.tie > 0) {
-            item.classList.add('tie-line');
-            if (data.tie > 1) {
-              let txt = document.createElement('span');
-              txt.className = 'tie-text';
-              txt.innerText = data.tie;
+  for(let c=0;c<cols;c++){
+    let colDiv=document.createElement("div");
+    colDiv.className="road-col";
+    for(let r=0;r<6;r++){
+      let cell=document.createElement("div");
+      cell.className=isSm?"cell-sm":"cell-lg";
+      if(gridMap[`${c},${r}`]){
+        let data=gridMap[`${c},${r}`];
+        let item=document.createElement("div");
+        if(type==="big"||type==="eye"){
+          item.className=`circle-hollow ${data.val}`;
+          if(type==="big" && data.tie>0){
+            item.classList.add("tie-line");
+            if(data.tie>1){
+              let txt=document.createElement("span");
+              txt.className="tie-text";
+              txt.textContent=data.tie;
               item.appendChild(txt);
             }
           }
-        } else if (type === 'small') item.className = `circle-solid ${data.val}`;
-        else if (type === 'roach') item.className = `slash ${data.val}`;
-
+        }else if(type==="small") item.className=`circle-solid ${data.val}`;
+        else if(type==="roach") item.className=`slash ${data.val}`;
         cell.appendChild(item);
       }
-
       colDiv.appendChild(cell);
     }
     container.appendChild(colDiv);
   }
-
   container.parentElement.scrollLeft = container.parentElement.scrollWidth;
 }
+function renderAllRoads(){
+  const big=genericMatrixMapper(S.history,true);
+  renderGrid("grid-big",big.grid,big.maxCol,"big");
 
-function renderAllRoads() {
-  let bigMap = genericMatrixMapper(S.history, true);
-  let derived = generateDerivedArrays(S.history);
-
-  renderGrid('grid-big', bigMap.grid, bigMap.maxCol, 'big');
-
-  const eyeMap = genericMatrixMapper(derived.eye, false);
-  const smMap  = genericMatrixMapper(derived.small, false);
-  const roMap  = genericMatrixMapper(derived.roach, false);
-
-  renderGrid('grid-eye', eyeMap.grid, eyeMap.maxCol, 'eye');
-  renderGrid('grid-small', smMap.grid, smMap.maxCol, 'small');
-  renderGrid('grid-roach', roMap.grid, roMap.maxCol, 'roach');
+  const d=generateDerivedArrays(S.history);
+  const eye=genericMatrixMapper(d.eye,false);
+  const sm=genericMatrixMapper(d.small,false);
+  const ro=genericMatrixMapper(d.roach,false);
+  renderGrid("grid-eye",eye.grid,eye.maxCol,"eye");
+  renderGrid("grid-small",sm.grid,sm.maxCol,"small");
+  renderGrid("grid-roach",ro.grid,ro.maxCol,"roach");
 }
 
-/* =========================
-   H) 決策引擎（勝率/EV + 過濾器）
-========================= */
-function streakInfo(){
-  const pure = S.history.filter(x=>x!=="T");
-  if(pure.length===0) return {side:null, len:0};
-  const side = pure[pure.length-1];
-  let len=0;
-  for(let i=pure.length-1;i>=0;i--){
-    if(pure[i]===side) len++;
-    else break;
+/* ===== HUD 更新（核心） ===== */
+function setHudState(state){
+  ui.hud.classList.remove("pass","banker","player");
+  if(state==="B") ui.hud.classList.add("banker");
+  else if(state==="P") ui.hud.classList.add("player");
+  else ui.hud.classList.add("pass");
+}
+function recalcAndRender(){
+  const total = totalRemaining();
+  const trials = S.trials;
+
+  ui.simInfo.textContent = `SIM: ${trials}`;
+  ui.hudRemain.textContent = String(total);
+  ui.hudRound.textContent  = String(S.history.length);
+  ui.hudArmed.textContent  = S.armed ? "是" : "否";
+  ui.hudSim.textContent    = String(trials);
+  ui.hudCom.textContent    = (S.commission*100).toFixed(1) + "%";
+
+  const probs = simulateProbs(trials);
+
+  ui.bankerOdds.textContent = fmtPct(probs.pB);
+  ui.playerOdds.textContent = fmtPct(probs.pP);
+  ui.tieOdds.textContent    = fmtPct(probs.pT);
+
+  ui.hudPB.textContent = fmtPct(probs.pB);
+  ui.hudPP.textContent = fmtPct(probs.pP);
+  ui.hudPT.textContent = fmtPct(probs.pT);
+
+  const evB = (probs.pB*(1-S.commission)) - probs.pP;
+  const evP = probs.pP - probs.pB;
+
+  ui.evBanker.textContent = (evB*100).toFixed(2)+"%";
+  ui.evPlayer.textContent = (evP*100).toFixed(2)+"%";
+
+  ui.hudEVB.textContent = (evB*100).toFixed(2)+"%";
+  ui.hudEVP.textContent = (evP*100).toFixed(2)+"%";
+  ui.hudEVB.style.color = evB>0 ? "var(--t)" : "var(--muted)";
+  ui.hudEVP.style.color = evP>0 ? "var(--t)" : "var(--muted)";
+
+  // HUD 主指揮（這裡只做示範：以 EV 最大者為主，EV<=0 則觀望）
+  let state="PASS", main="觀望", sub="EV ≤ 0（僅顯示條件機率）";
+  if(Math.max(evB,evP) > 0){
+    if(evB>=evP){ state="B"; main="🔥 押莊"; sub="EV(B) > 0"; }
+    else { state="P"; main="🔥 押閒"; sub="EV(P) > 0"; }
   }
-  return {side, len};
-}
+  setHudState(state);
+  ui.hudMain.innerHTML = `${main} <span class="badge" id="hudBadge">${hudExpanded?"點我收合":"點我展開"}</span>`;
+  ui.hudSub.textContent = sub;
 
-function updateAskDots(askB, askP){
+  // 問路 dots（保留）
+  const dB = generateDerivedArrays([...S.history,"B"]);
+  const dP = generateDerivedArrays([...S.history,"P"]);
+  const last = (a)=>a.length?a[a.length-1]:null;
+  const askB = [last(dB.eye), last(dB.small), last(dB.roach)];
+  const askP = [last(dP.eye), last(dP.small), last(dP.roach)];
+
   function setDots(el, arr){
-    el.innerHTML = "";
+    el.innerHTML="";
     arr.forEach(x=>{
-      const d = document.createElement("div");
-      d.className = "dot " + (x==="R"?"r":x==="Blue"?"b":"e");
-      el.appendChild(d);
+      const dot=document.createElement("div");
+      dot.className="dot " + (x==="R"?"r":x==="Blue"?"b":"e");
+      el.appendChild(dot);
     });
   }
   setDots(ui.askB, askB);
   setDots(ui.askP, askP);
+
+  renderAllRoads();
+  updateKeypadCounts();
+  evaluateDrawRules();
 }
 
-function getLast3(arrObj){
-  // last colors of eye/small/roach after appending hypothetical result
-  const last = (a)=>a.length ? a[a.length-1] : null;
-  return [ last(arrObj.eye), last(arrObj.small), last(arrObj.roach) ];
-}
-
-function decide(probs){
-  // EV
-  const com = S.commission;
-  const evB = (probs.pB * (1-com)) - probs.pP;
-  const evP = probs.pP - probs.pB;
-
-  // Winrate (exclude ties)
-  const denom = Math.max(1e-9, probs.pB + probs.pP);
-  const winB = probs.pB / denom;
-  const winP = probs.pP / denom;
-
-  // ask-road
-  const dB = generateDerivedArrays([...S.history, "B"]);
-  const dP = generateDerivedArrays([...S.history, "P"]);
-  const askB = getLast3(dB);
-  const askP = getLast3(dP);
-
-  const bRed = askB.filter(x=>x==="R").length;
-  const pRed = askP.filter(x=>x==="R").length;
-
-  updateAskDots(askB, askP);
-
-  // break alert
-  const s = streakInfo();
-  ui.breakAlert.style.display = "none";
-  if(s.side && s.len>=3){
-    ui.breakAlert.style.display = "block";
-    const breakSide = (s.side==="B") ? "P" : "B";
-    const breakAsk = (breakSide==="B") ? askB : askP;
-    const blues = breakAsk.filter(x=>x==="Blue").length;
-    ui.breakAlert.textContent = blues>=2
-      ? "變路沙盤：若下一把反向（斷龍）→ 下三路偏藍（結構轉折）"
-      : "變路沙盤：若下一把反向（斷龍）→ 下三路未明顯轉藍（動能仍在）";
-  }
-
-  // dragon radar
-  if(S.dragonGuard==="on" && s.side && s.len>=4){
-    ui.dragonRadar.className = "dragon-radar active";
-    ui.dragonText.textContent = `⚠️ 動能過熱：${s.side==="B"?"莊":"閒"}長龍持續中（避免逆勢）`;
-    ui.dragonCount.textContent = `連 ${s.len}`;
-  }else{
-    ui.dragonRadar.className = "dragon-radar";
-  }
-
-  // mode
-  ui.modeText.textContent =
-    (S.mode==="winrate") ? "勝率模式" :
-    (S.mode==="ev") ? "EV 模式" : "只顯示";
-
-  // choose baseSide
-  if(S.mode==="display"){
-    return { state:"PASS", main:"觀望", sub:"只顯示模式" };
-  }
-
-  let baseSide = "B";
-  if(S.mode==="ev"){
-    if(Math.max(evB, evP) <= 0){
-      return { state:"PASS", main:"觀望", sub:"EV ≤ 0（依設定不出手）" };
-    }
-    baseSide = (evB >= evP) ? "B" : "P";
-  }else{
-    baseSide = (winB >= winP) ? "B" : "P";
-  }
-
-  // trend gate
-  const gate = S.trendGate;
-  if(gate !== "off"){
-    const need = parseInt(gate,10);
-    if(baseSide==="B" && bRed < need) return { state:"PASS", main:"觀望", sub:`問路未達門檻（莊需≥${need}紅）` };
-    if(baseSide==="P" && pRed < need) return { state:"PASS", main:"觀望", sub:`問路未達門檻（閒需≥${need}紅）` };
-  }
-
-  // dragon guard: block contrarian when long streak
-  if(S.dragonGuard==="on" && s.side && s.len>=4){
-    if(baseSide !== s.side){
-      return { state:"PASS", main:"觀望", sub:`長龍過熱（連${s.len}）｜避免逆勢接刀` };
-    }
-  }
-
-  // final
-  if(baseSide==="B"){
-    return { state:"B", main:"🔥 押莊", sub:(S.mode==="ev" ? "EV>0 且過濾器達標" : "勝率優先 且過濾器達標") };
-  }else{
-    return { state:"P", main:"🔥 押閒", sub:(S.mode==="ev" ? "EV>0 且過濾器達標" : "勝率優先 且過濾器達標") };
-  }
-}
-
-/* =========================
-   I) 下注 Opt-in + 統計
-========================= */
-function currentBet(){
-  if(S.betMode==="flat") return Math.max(1, parseInt(S.flatBet,10)||100);
-  const steps = [0,100,200,400,800];
-  return steps[Math.max(1, Math.min(4, S.step))];
-}
-
-function updateHitRate(){
-  const nonPush = Math.max(1, S.stats.win + S.stats.loss);
-  if(S.stats.placed<=0){ ui.hitRate.textContent="--"; return; }
-  ui.hitRate.textContent = ((S.stats.win/nonPush)*100).toFixed(1) + "%（不含和局）";
-}
-
-function toggleArm(){
-  // if PASS, lock
-  if(ui.suggestText.dataset.state === "PASS" || S.mode==="display"){
-    return;
-  }
-  S.armed = !S.armed;
-  S.plannedSide = S.armed ? ui.suggestText.dataset.state : "PASS";
-  saveState();
-  refreshBetPanel();
-}
-
-function settleBet(winner){
-  if(!S.armed) return;
-
-  const side = S.plannedSide; // B/P
-  const amt = currentBet();
-  const com = S.commission;
-
-  S.stats.placed++;
-
-  if(winner==="T"){
-    S.stats.push++;
-  }else if(winner===side){
-    S.stats.win++;
-    if(S.betMode==="martingale") S.step = 1;
-  }else{
-    S.stats.loss++;
-    if(S.betMode==="martingale"){
-      S.step++;
-      if(S.step>4) S.step = 1;
-    }
-  }
-
-  // reset arm
-  S.armed = false;
-  S.plannedSide = "PASS";
-}
-
-function refreshBetPanel(){
-  ui.armedFlag.textContent = S.armed ? "是" : "否";
-  ui.betAmount.textContent = String(currentBet());
-
-  updateHitRate();
-
-  if(ui.suggestText.dataset.state === "PASS" || S.mode==="display"){
-    ui.armBtn.className = "arm-btn locked";
-    ui.armBtn.textContent = "🔒 本局不建議（不可授權）";
-    return;
-  }
-
-  ui.armBtn.className = "arm-btn" + (S.armed ? " armed" : "");
-  ui.armBtn.textContent = S.armed ? "✅ 已授權（再按取消）" : "💰 決定下注下一局";
-}
-
-/* =========================
-   J) 主流程：送出、撤銷、換靴
-========================= */
+/* ===== 送出 / 撤銷 / 換靴 ===== */
 function submitData(){
   if(ui.submitBtn.disabled) return;
-
-  // 最終庫存檢查
-  const pend = pendingCounts();
-  for(let r=1;r<=13;r++){
-    if(pend[r] > (S.rankCounts[r]||0)){
-      alert(`庫存異常：${rankToDisplay(r)} 不足，拒絕寫入。`);
-      return;
-    }
-  }
 
   snapshot();
 
   const winner = computeWinner();
-
-  // settle bet (only if armed)
-  settleBet(winner);
-
-  // write history
   S.history.push(winner);
 
-  // deduct deck
   const consumed = cardsConsumed();
-  consumed.forEach(r=>{
-    S.rankCounts[r]--;
-  });
+  consumed.forEach(r=>{ S.rankCounts[r]--; });
 
-  // clear
   clearAllSlots();
-
-  // save + recalc
   saveState();
   recalcAndRender();
 }
-
 function undoLastRound(){
-  if(!backupState){
-    alert("目前沒有可撤銷的上一局。");
-    return;
-  }
-  S = structuredClone(backupState);
+  if(!backupState){ alert("沒有可撤銷的上一局。"); return; }
+  S = structClone(backupState);
   backupState = null;
   saveState();
   clearAllSlots();
   recalcAndRender();
 }
-
 function resetSystem(){
-  if(!confirm("確定換靴？（重置牌庫與路單；下注統計不清除）")) return;
+  if(!confirm("確定換靴？（重置牌庫與路單）")) return;
   snapshot();
   S.rankCounts = initCounts(S.decks);
   S.history = [];
-  S.armed = false;
-  S.plannedSide = "PASS";
-  S.step = 1;
   saveState();
   clearAllSlots();
   recalcAndRender();
 }
 
-/* =========================
-   K) 設定套用
-========================= */
-function applySettings(){
-  S.mode = ui.setMode.value;
-  S.trendGate = ui.setTrendGate.value;
-  S.dragonGuard = ui.setDragonGuard.value;
-  S.trials = parseInt(ui.setTrials.value,10) || 12000;
-
-  let com = parseFloat(ui.setCommission.value);
-  if(Number.isFinite(com) && com>=0 && com<=0.1) S.commission = com;
-  else S.commission = 0.05;
-
-  S.betMode = ui.setBetMode.value;
-  S.flatBet = parseInt(ui.setFlatBet.value,10) || 100;
-  S.autoGuide = ui.setAutoGuide.value;
-
-  ui.autoGuideToggle.checked = (S.autoGuide==="on");
-
-  // display mode -> disarm
-  if(S.mode==="display"){
-    S.armed = false;
-    S.plannedSide = "PASS";
-  }
-
-  saveState();
-  recalcAndRender();
-}
-
-/* =========================
-   L) 核心：重算與渲染
-========================= */
-function fmtPct(x){ return (x*100).toFixed(2) + "%"; }
-
-function recalcAndRender(){
-  const total = totalRemaining();
-  ui.totalCards.textContent = String(total);
-  ui.roundCount.textContent = String(S.history.length);
-  ui.simInfo.textContent = `SIM: ${S.trials}`;
-
-  // probabilities via Monte Carlo
-  const probs = simulateProbs(S.trials);
-
-  ui.bankerOdds.textContent = fmtPct(probs.pB);
-  ui.playerOdds.textContent = fmtPct(probs.pP);
-  ui.tieOdds.textContent = fmtPct(probs.pT);
-
-  // EV
-  const evB = (probs.pB * (1-S.commission)) - probs.pP;
-  const evP = probs.pP - probs.pB;
-
-  ui.evBanker.textContent = (evB*100).toFixed(2) + "%";
-  ui.evPlayer.textContent = (evP*100).toFixed(2) + "%";
-  ui.evBanker.style.color = (evB>0) ? "var(--tie-green)" : "var(--text-muted)";
-  ui.evPlayer.style.color = (evP>0) ? "var(--tie-green)" : "var(--text-muted)";
-
-  // decision
-  const d = decide(probs);
-
-  // store suggested state in DOM for arm button
-  ui.suggestText.dataset.state = d.state;
-
-  if(d.state==="B"){
-    ui.decisionPanel.className = "oracle-panel banker";
-    ui.mainSignal.textContent = d.main;
-  }else if(d.state==="P"){
-    ui.decisionPanel.className = "oracle-panel player";
-    ui.mainSignal.textContent = d.main;
-  }else{
-    ui.decisionPanel.className = "oracle-panel pass";
-    ui.mainSignal.textContent = d.main;
-  }
-  ui.subSignal.textContent = d.sub;
-
-  ui.suggestText.textContent = (d.state==="B") ? "押莊" : (d.state==="P") ? "押閒" : "觀望";
-  ui.suggestText.className = "v " + (d.state==="B"?"b":d.state==="P"?"p":"");
-
-  // bet panel
-  refreshBetPanel();
-
-  // roads
-  renderAllRoads();
-
-  // keypad counts + submit validity
-  updateKeypadCounts();
-  evaluateDrawRules();
-}
-
-/* =========================
-   M) 初始化
-========================= */
-function syncSettingsUI(){
-  ui.setMode.value = S.mode;
-  ui.setTrendGate.value = S.trendGate;
-  ui.setDragonGuard.value = S.dragonGuard;
-  ui.setTrials.value = String(S.trials);
-  ui.setCommission.value = String(S.commission);
-  ui.setBetMode.value = S.betMode;
-  ui.setFlatBet.value = String(S.flatBet);
-  ui.setAutoGuide.value = S.autoGuide;
-  ui.autoGuideToggle.checked = (S.autoGuide==="on");
-}
-
+/* ===== 初始化 ===== */
 buildKeypad();
-syncSettingsUI();
 setActiveSlot("p1");
 recalcAndRender();
-
 </script>
+
 </body>
 </html>
