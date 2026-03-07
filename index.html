@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂決策支援系統 - Pro App 版</title>
+    <title>百家樂決策支援系統 - 動能監控版</title>
     <style>
-        /* --- 系統級設計變數與基礎設定 --- */
+        /* --- 系統級設計變數 --- */
         :root {
             --bg-color: #0d0d12;
             --card-bg: #1c1c1e;
@@ -17,78 +17,56 @@
             --tie-green: #32d74b;
             --highlight: #ffd60a;
             --danger: #ff3b30;
+            --warning: #ff9f0a;
         }
 
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; 
-            -webkit-font-smoothing: antialiased;
-            background-color: var(--bg-color); 
-            color: var(--text-main); 
-            margin: 0; 
-            padding: 8px 6px; 
-            user-select: none;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 8px 6px; user-select: none; }
+        .module-card { background: var(--card-bg); border-radius: 16px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--card-border); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 
-        /* 模組化卡片 */
-        .module-card { 
-            background: var(--card-bg); 
-            border-radius: 16px; 
-            padding: 12px; 
-            margin-bottom: 8px; 
-            border: 1px solid var(--card-border); 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-
-        /* --- 頂部導航列 --- */
+        /* --- 頂部導航 --- */
         .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding: 0 4px; }
         .shoe-info { font-size: 13px; font-weight: 600; color: var(--text-muted); display: flex; gap: 10px; }
         .shoe-info span { color: var(--text-main); font-variant-numeric: tabular-nums; }
         .action-btns { display: flex; gap: 6px; }
-        .btn-icon { 
-            background: #2c2c2e; color: var(--text-main); border: none; border-radius: 8px; 
-            padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; 
-        }
+        .btn-icon { background: #2c2c2e; color: var(--text-main); border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-icon:active { transform: scale(0.92); background: #3c3c3e; }
-        .btn-undo { color: #ff9f0a; }
+        .btn-undo { color: var(--warning); }
 
-        /* --- 👑 核心決策面板 (The Oracle) --- */
-        .oracle-panel { 
-            text-align: center; padding: 16px 10px; border-radius: 12px; margin-bottom: 8px; 
-            background: #222; border: 1px solid #333; transition: all 0.3s ease; 
-        }
+        /* --- 🐉 長龍雷達 (Dragon Radar) --- */
+        .dragon-radar { background: rgba(255, 159, 10, 0.1); border: 1px solid rgba(255, 159, 10, 0.3); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; display: none; }
+        .dragon-radar.active { display: flex; animation: radar-pulse 2s infinite alternate; }
+        @keyframes radar-pulse { from { box-shadow: 0 0 5px rgba(255, 159, 10, 0.1); } to { box-shadow: 0 0 15px rgba(255, 159, 10, 0.4); } }
+        .dragon-text { font-size: 12px; font-weight: 800; color: var(--warning); }
+        .dragon-count { font-size: 14px; font-weight: 900; background: var(--warning); color: #000; padding: 2px 8px; border-radius: 12px; }
+
+        /* --- 👑 決策面板 --- */
+        .oracle-panel { text-align: center; padding: 16px 10px; border-radius: 12px; margin-bottom: 8px; background: #222; border: 1px solid #333; transition: all 0.3s ease; }
         .oracle-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px; }
         .oracle-subtitle { font-size: 12px; color: var(--text-muted); font-weight: 500; }
         
-        /* 狀態樣式 */
         .oracle-panel.pass { border-color: #555; }
-        .oracle-panel.banker { 
-            background: linear-gradient(145deg, rgba(255,69,58,0.15) 0%, rgba(255,69,58,0.05) 100%);
-            border-color: rgba(255,69,58,0.4); box-shadow: 0 0 15px rgba(255,69,58,0.2); 
-        }
+        .oracle-panel.banker { background: linear-gradient(145deg, rgba(255,69,58,0.15) 0%, rgba(255,69,58,0.05) 100%); border-color: rgba(255,69,58,0.4); box-shadow: 0 0 15px rgba(255,69,58,0.2); }
         .oracle-panel.banker .oracle-title { color: var(--banker-red); }
-        .oracle-panel.player { 
-            background: linear-gradient(145deg, rgba(10,132,255,0.15) 0%, rgba(10,132,255,0.05) 100%);
-            border-color: rgba(10,132,255,0.4); box-shadow: 0 0 15px rgba(10,132,255,0.2); 
-        }
+        .oracle-panel.player { background: linear-gradient(145deg, rgba(10,132,255,0.15) 0%, rgba(10,132,255,0.05) 100%); border-color: rgba(10,132,255,0.4); box-shadow: 0 0 15px rgba(10,132,255,0.2); }
         .oracle-panel.player .oracle-title { color: var(--player-blue); }
 
-        /* --- 數據儀表板 (Data Dashboard) --- */
+        /* --- 數據儀表板 --- */
         .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .dash-box { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px; border: 1px solid #2c2c2e; }
         .dash-header { font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; }
         
-        /* EV 顯示 */
         .ev-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .ev-label { font-size: 13px; font-weight: bold; }
         .ev-label.b { color: var(--banker-red); } .ev-label.p { color: var(--player-blue); }
         .ev-val { font-size: 13px; font-variant-numeric: tabular-nums; }
         
-        /* 趨勢圓點 */
+        /* 變路推演 UI */
         .trend-dots { display: flex; gap: 4px; }
         .dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); }
         .dot.r { background: var(--banker-red); box-shadow: inset 0 1px 3px rgba(255,255,255,0.3); } 
         .dot.b { background: var(--player-blue); box-shadow: inset 0 1px 3px rgba(255,255,255,0.3); } 
         .dot.e { background: #333; }
+        .break-trend-alert { font-size: 9px; color: var(--warning); margin-top: 4px; text-align: right; }
 
         /* --- 🃏 實體手牌輸入區 --- */
         .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -102,60 +80,40 @@
         .side-label.b { background: rgba(255,69,58,0.2); color: var(--banker-red); }
         
         .cards-row { display: flex; justify-content: space-between; gap: 4px; }
-        /* 擬真撲克牌設計 */
-        .playing-card { 
-            flex: 1; aspect-ratio: 2/3; background: #2c2c2e; border-radius: 6px; border: 1px solid #444; 
-            display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; 
-            color: #fff; cursor: pointer; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        }
-        .playing-card.active { 
-            background: #3a3a3c; border-color: var(--highlight); transform: translateY(-2px); 
-            box-shadow: 0 4px 8px rgba(255, 214, 10, 0.3); color: var(--highlight); 
-        }
+        .playing-card { flex: 1; aspect-ratio: 2/3; background: #2c2c2e; border-radius: 6px; border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #fff; cursor: pointer; transition: all 0.2s ease; }
+        .playing-card.active { background: #3a3a3c; border-color: var(--highlight); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(255, 214, 10, 0.3); color: var(--highlight); }
         .playing-card.filled { background: #e5e5ea; color: #000; border-color: #fff; }
         .playing-card.disabled { background: #1c1c1e !important; border-color: #2c2c2e; opacity: 0.4; pointer-events: none; }
 
-        /* --- ⌨️ 人體工學極速鍵盤 --- */
+        /* --- ⌨️ 鍵盤 --- */
         .keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
-        .key { 
-            background: #2c2c2e; border-radius: 10px; padding: 8px 0; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            cursor: pointer; box-shadow: 0 2px 0 #111; transition: 0.1s; 
-        }
+        .key { background: #2c2c2e; border-radius: 10px; padding: 8px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 0 #111; transition: 0.1s; }
         .key:active { transform: translateY(2px); box-shadow: 0 0 0 #111; background: #3c3c3e; }
         .key-val { font-size: 20px; font-weight: 800; color: #fff; line-height: 1; }
         .key-count { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
         .key-count.low { color: var(--danger); }
-        .key.action-clear { background: rgba(255,159,10,0.15); color: #ff9f0a; border: 1px solid rgba(255,159,10,0.3); grid-column: span 2; flex-direction: row; font-size: 14px; font-weight: 700; }
+        .key.action-clear { background: rgba(255,159,10,0.15); color: var(--warning); border: 1px solid rgba(255,159,10,0.3); grid-column: span 2; flex-direction: row; font-size: 14px; font-weight: 700; }
 
-        /* 提交按鈕 */
-        .submit-btn { 
-            width: 100%; padding: 16px; background: #2c2c2e; color: #666; font-size: 16px; font-weight: 800; 
-            border: none; border-radius: 12px; margin-top: 12px; transition: all 0.3s ease; 
-        }
+        .submit-btn { width: 100%; padding: 16px; background: #2c2c2e; color: #666; font-size: 16px; font-weight: 800; border: none; border-radius: 12px; margin-top: 12px; transition: all 0.3s ease; }
         .submit-btn.ready { background: var(--tie-green); color: #000; box-shadow: 0 0 15px rgba(50,215,75,0.4); cursor: pointer; }
         .submit-btn.ready:active { transform: scale(0.98); }
         .submit-btn:disabled { pointer-events: none; }
 
-        /* --- 📊 歷史路單 (極簡視覺版) --- */
+        /* --- 📊 歷史路單 --- */
         .road-container { width: 100%; overflow-x: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 4px; box-sizing: border-box; }
         .road-grid { display: flex; min-width: max-content; }
         .road-col { display: flex; flex-direction: column; }
         .cell-lg { width: 16px; height: 16px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; position: relative; }
         .cell-sm { width: 8px; height: 8px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; position: relative; }
-        
         .circle-hollow { width: 12px; height: 12px; border-radius: 50%; border: 2px solid transparent; box-sizing: border-box; }
-        .circle-hollow.B, .circle-hollow.R { border-color: var(--banker-red); } 
-        .circle-hollow.P, .circle-hollow.Blue { border-color: var(--player-blue); }
+        .circle-hollow.B, .circle-hollow.R { border-color: var(--banker-red); } .circle-hollow.P, .circle-hollow.Blue { border-color: var(--player-blue); }
         .tie-line { background: linear-gradient(to top right, transparent 45%, var(--tie-green) 45%, var(--tie-green) 55%, transparent 55%); }
         .tie-text { position: absolute; font-size: 8px; font-weight: bold; color: var(--tie-green); z-index: 2; }
-        
         .circle-solid { width: 6px; height: 6px; border-radius: 50%; }
         .circle-solid.R { background-color: var(--banker-red); } .circle-solid.Blue { background-color: var(--player-blue); }
         .slash { width: 8px; height: 8px; }
         .slash.R { background: linear-gradient(to bottom left, transparent 40%, var(--banker-red) 40%, var(--banker-red) 60%, transparent 60%); }
         .slash.Blue { background: linear-gradient(to bottom left, transparent 40%, var(--player-blue) 40%, var(--player-blue) 60%, transparent 60%); }
-        
         .derived-roads-wrapper { display: flex; gap: 4px; margin-top: 4px; }
         .derived-col { flex: 1; min-width: 0; }
     </style>
@@ -170,6 +128,11 @@
         </div>
     </div>
 
+    <div id="dragonRadar" class="dragon-radar">
+        <div class="dragon-text" id="dragonText">動能過熱：莊長龍持續中</div>
+        <div class="dragon-count" id="dragonCount">連 5</div>
+    </div>
+
     <div id="decisionPanel" class="oracle-panel pass">
         <div class="oracle-title" id="mainSignal">等待數據輸入...</div>
         <div class="oracle-subtitle" id="subSignal">系統嚴格過濾中</div>
@@ -182,7 +145,7 @@
             <div class="ev-row"><span class="ev-label p">閒 Player</span> <span class="ev-val" id="evPlayer" style="color:var(--text-muted)">-1.24%</span></div>
         </div>
         <div class="dash-box">
-            <div class="dash-header">下三路動能共振</div>
+            <div class="dash-header">變路沙盤推演 (問路)</div>
             <div class="ev-row">
                 <span class="ev-label b">若開莊</span>
                 <div class="trend-dots" id="askB-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div>
@@ -191,6 +154,7 @@
                 <span class="ev-label p">若開閒</span>
                 <div class="trend-dots" id="askP-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div>
             </div>
+            <div id="breakAlert" class="break-trend-alert"></div>
         </div>
     </div>
 
@@ -250,7 +214,7 @@
     </div>
 
     <script>
-        // === 核心資料庫 (維持嚴謹數學邏輯) ===
+        // === 核心資料庫 ===
         let totalCards = 416;
         let deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32};
         const countWeights = {1:1, 2:1, 3:2, 4:2, 5:1, 6:-1, 7:-2, 8:-2, 9:-2, 10:0, 11:0, 12:0, 13:0};
@@ -259,26 +223,18 @@
         const baseBankerProb = 0.458597; const basePlayerProb = 0.446247; 
         let historyLog = []; let backupState = null;
         
-        // 依照實體賭桌發牌順序
         const slotOrder = ['p1', 'b1', 'p2', 'b2', 'p3', 'b3']; 
         let currentSlotIdx = 0;
 
         function updateKeypadCounts() {
             for(let i=1; i<=13; i++) {
                 let el = document.getElementById(`kcnt-${i}`);
-                if(el) { 
-                    el.innerText = deck[i]; 
-                    el.className = deck[i] < 10 ? "key-count low" : "key-count"; 
-                }
+                if(el) { el.innerText = deck[i]; el.className = deck[i] < 10 ? "key-count low" : "key-count"; }
             }
         }
 
-        // === 嚴格 Tableau 補牌邏輯驗證 ===
-        function getBaccaratVal(id) { 
-            let v = document.getElementById(`slot-${id}`).dataset.val; 
-            if (!v) return null; 
-            let num = parseInt(v); return num >= 10 ? 0 : num; 
-        }
+        // === 補牌防呆 ===
+        function getBaccaratVal(id) { let v = document.getElementById(`slot-${id}`).dataset.val; if (!v) return null; let num = parseInt(v); return num >= 10 ? 0 : num; }
 
         function evaluateDrawRules() {
             const autoGuide = document.getElementById('autoGuideToggle').checked;
@@ -315,24 +271,12 @@
             if (isNatural && (p3Val !== null || b3Val !== null)) valid = false;
             if (expectedP3 && p3Val === null) valid = false;
             if (!expectedP3 && p3Val !== null) valid = false;
-            
-            if (valid && expectedP3 && p3Val !== null) {
-                if (expectedB3 && b3Val === null) valid = false;
-                if (!expectedB3 && b3Val !== null) valid = false;
-            } else if (valid && !expectedP3) {
-                if (expectedB3 && b3Val === null) valid = false;
-                if (!expectedB3 && b3Val !== null) valid = false;
-            }
+            if (valid && expectedP3 && p3Val !== null) { if (expectedB3 && b3Val === null) valid = false; if (!expectedB3 && b3Val !== null) valid = false; } 
+            else if (valid && !expectedP3) { if (expectedB3 && b3Val === null) valid = false; if (!expectedB3 && b3Val !== null) valid = false; }
 
-            // 控制 UI 鎖定
             if (expectedP3) p3El.classList.remove('disabled'); else p3El.classList.add('disabled');
-            
-            // 莊家第三張的解鎖時機
-            if (expectedP3 && p3Val === null) {
-                b3El.classList.add('disabled'); // 閒還沒補，莊先鎖住
-            } else {
-                if (expectedB3) b3El.classList.remove('disabled'); else b3El.classList.add('disabled');
-            }
+            if (expectedP3 && p3Val === null) b3El.classList.add('disabled'); 
+            else { if (expectedB3) b3El.classList.remove('disabled'); else b3El.classList.add('disabled'); }
 
             if (valid) { submitBtn.className = "submit-btn ready"; submitBtn.disabled = false; submitBtn.innerText = msg; } 
             else { submitBtn.className = "submit-btn"; submitBtn.disabled = true; submitBtn.innerText = "需符合法定發牌規則"; }
@@ -361,10 +305,7 @@
             else { document.querySelectorAll('.playing-card').forEach(e => e.classList.remove('active')); }
         }
 
-        function clearAllSlots() { 
-            slotOrder.forEach(id => { const el = document.getElementById(`slot-${id}`); el.innerText = ''; el.dataset.val = ''; el.classList.remove('filled'); }); 
-            currentSlotIdx = 0; evaluateDrawRules(); setActiveSlot('p1'); 
-        }
+        function clearAllSlots() { slotOrder.forEach(id => { const el = document.getElementById(`slot-${id}`); el.innerText = ''; el.dataset.val = ''; el.classList.remove('filled'); }); currentSlotIdx = 0; evaluateDrawRules(); setActiveSlot('p1'); }
 
         function saveState() { backupState = { totalCards, deck: Object.assign({}, deck), runningCount, historyLog: [...historyLog] }; }
 
@@ -403,8 +344,9 @@
             setTimeout(() => { if(totalCards >= 6) { btn.disabled = true; btn.innerText = "等待完成前四張牌..."; } }, 300);
         }
 
-        // === 雙重引擎算繪 (UI 更新) ===
+        // === 動能監控與決策引擎 ===
         function recalcAndRender() {
+            // 基本面 (EV)
             let decksRemaining = totalCards / 52;
             let trueCount = decksRemaining > 0 ? (runningCount / decksRemaining) : 0;
             let edgeShift = trueCount * 0.0005; 
@@ -416,14 +358,40 @@
 
             document.getElementById('totalCards').innerText = totalCards;
             document.getElementById('roundCount').innerText = historyLog.length;
-            
             document.getElementById('trueCount').innerText = `TC: ${trueCount.toFixed(1)}`;
             
             let evB_el = document.getElementById('evBanker'); evB_el.innerText = (evBanker * 100).toFixed(2) + "%"; evB_el.style.color = evBanker > 0 ? "var(--tie-green)" : "var(--text-muted)";
             let evP_el = document.getElementById('evPlayer'); evP_el.innerText = (evPlayer * 100).toFixed(2) + "%"; evP_el.style.color = evPlayer > 0 ? "var(--tie-green)" : "var(--text-muted)";
             
-            // 問路模擬
-            let derivedCurrent = generateDerivedArrays(historyLog);
+            // --- 新增：長龍雷達 (Dragon Radar) 核心邏輯 ---
+            let pureRounds = historyLog.filter(x => x !== 'T');
+            let currentStreakSide = null;
+            let streakLength = 0;
+            
+            if (pureRounds.length > 0) {
+                currentStreakSide = pureRounds[pureRounds.length - 1];
+                for (let i = pureRounds.length - 1; i >= 0; i--) {
+                    if (pureRounds[i] === currentStreakSide) streakLength++;
+                    else break;
+                }
+            }
+
+            const radar = document.getElementById('dragonRadar');
+            const radarText = document.getElementById('dragonText');
+            const radarCount = document.getElementById('dragonCount');
+            const breakAlert = document.getElementById('breakAlert');
+            
+            // 連續 4 把啟動過熱警示
+            if (streakLength >= 4) {
+                radar.className = "dragon-radar active";
+                let sideName = currentStreakSide === 'B' ? '莊' : '閒';
+                radarText.innerText = `⚠️ 動能過熱：${sideName}長龍持續中，嚴禁逆勢斷龍！`;
+                radarCount.innerText = `連 ${streakLength}`;
+            } else {
+                radar.className = "dragon-radar";
+            }
+
+            // 技術面 (沙盤推演)
             const simulateAsk = (hyp) => { let testArr = [...historyLog, hyp]; let d = generateDerivedArrays(testArr); return [d.eye.pop(), d.small.pop(), d.roach.pop()]; };
             let askB = simulateAsk('B'); let askP = simulateAsk('P');
             let bRedCount = askB.filter(x => x === 'R').length; let pRedCount = askP.filter(x => x === 'R').length;
@@ -434,7 +402,20 @@
             };
             updateDots('askB-dots', askB); updateDots('askP-dots', askP);
 
-            // The Oracle (決策面板更新)
+            // 變路推演文字提示
+            breakAlert.innerText = "";
+            if (streakLength >= 3) {
+                let breakSide = currentStreakSide === 'B' ? 'P' : 'B';
+                let breakAsk = breakSide === 'B' ? askB : askP;
+                let breakBlues = breakAsk.filter(x => x === 'Blue').length;
+                if (breakBlues >= 2) {
+                    breakAlert.innerText = `💡 沙盤推演：若下把斷龍(開${breakSide === 'B'?'莊':'閒'})，下三路將轉藍 (趨勢破裂)`;
+                } else {
+                    breakAlert.innerText = `💡 沙盤推演：若下把斷龍(開${breakSide === 'B'?'莊':'閒'})，下三路依然偏紅 (動能未散)`;
+                }
+            }
+
+            // --- 決策面板 ---
             const dp = document.getElementById('decisionPanel');
             const mainSig = document.getElementById('mainSignal');
             const subSig = document.getElementById('subSignal');
@@ -442,7 +423,15 @@
             let isFundamentalB = evBanker > 0; let isFundamentalP = evPlayer > 0;
             let isTechnicalB = bRedCount >= 2; let isTechnicalP = pRedCount >= 2;
 
-            if (isFundamentalB && isTechnicalB) {
+            // 長龍強制防禦層：絕對不允許系統叫你逆勢接刀
+            let blockBetB = (currentStreakSide === 'P' && streakLength >= 4);
+            let blockBetP = (currentStreakSide === 'B' && streakLength >= 4);
+
+            if (blockBetB && isFundamentalB) {
+                dp.className = "oracle-panel pass"; mainSig.innerText = "🛑 迴避逆勢接刀"; subSig.innerText = "物理機率雖偏向莊，但閒家嚴重過熱，強制觀望";
+            } else if (blockBetP && isFundamentalP) {
+                dp.className = "oracle-panel pass"; mainSig.innerText = "🛑 迴避逆勢接刀"; subSig.innerText = "物理機率雖偏向閒，但莊家嚴重過熱，強制觀望";
+            } else if (isFundamentalB && isTechnicalB) {
                 dp.className = "oracle-panel banker"; mainSig.innerText = "🔥 強烈共振：押注莊家"; subSig.innerText = "數學期望值為正，且趨勢圖形強烈支持";
             } else if (isFundamentalP && isTechnicalP) {
                 dp.className = "oracle-panel player"; mainSig.innerText = "🔥 強烈共振：押注閒家"; subSig.innerText = "數學期望值為正，且趨勢圖形強烈支持";
@@ -450,10 +439,6 @@
                 dp.className = "oracle-panel banker"; mainSig.innerText = "📈 順勢試探：可押莊家"; subSig.innerText = "EV為負 (注意風險)，但技術圖形支持莊家";
             } else if (isTechnicalP && !isFundamentalB) {
                 dp.className = "oracle-panel player"; mainSig.innerText = "📈 順勢試探：可押閒家"; subSig.innerText = "EV為負 (注意風險)，但技術圖形支持閒家";
-            } else if (isFundamentalB && isTechnicalP) {
-                dp.className = "oracle-panel pass"; mainSig.innerText = "⚠️ 指標背離：強制觀望"; subSig.innerText = "機率偏向莊，但趨勢偏向閒，請勿出手";
-            } else if (isFundamentalP && isTechnicalB) {
-                dp.className = "oracle-panel pass"; mainSig.innerText = "⚠️ 指標背離：強制觀望"; subSig.innerText = "機率偏向閒，但趨勢偏向莊，請勿出手";
             } else {
                 dp.className = "oracle-panel pass"; mainSig.innerText = "🛡️ 雙重未達標：鎖定觀望"; subSig.innerText = "無數學優勢，且圖形無明顯動能";
             }
@@ -461,7 +446,7 @@
             updateKeypadCounts(); renderAllRoads();
         }
 
-        // --- 繪圖引擎 ---
+        // --- 路單引擎 ---
         function renderAllRoads() {
             let bigMap = genericMatrixMapper(historyLog, true); let derived = generateDerivedArrays(historyLog);
             renderGrid('grid-big', bigMap.grid, bigMap.maxCol, 'big'); renderGrid('grid-eye', genericMatrixMapper(derived.eye, false).grid, genericMatrixMapper(derived.eye, false).maxCol, 'eye'); renderGrid('grid-small', genericMatrixMapper(derived.small, false).grid, genericMatrixMapper(derived.small, false).maxCol, 'small'); renderGrid('grid-roach', genericMatrixMapper(derived.roach, false).grid, genericMatrixMapper(derived.roach, false).maxCol, 'roach');
