@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂決策支援系統 - 動能監控版</title>
+    <title>百家樂決策系統 - 巨眼指揮版</title>
     <style>
         /* --- 系統級設計變數 --- */
         :root {
@@ -12,11 +12,10 @@
             --card-border: #2c2c2e;
             --text-main: #f2f2f7;
             --text-muted: #8e8e93;
-            --banker-red: #ff453a;
+            --banker-red: #ff3b30;
             --player-blue: #0a84ff;
             --tie-green: #32d74b;
             --highlight: #ffd60a;
-            --danger: #ff3b30;
             --warning: #ff9f0a;
         }
 
@@ -32,71 +31,101 @@
         .btn-icon:active { transform: scale(0.92); background: #3c3c3e; }
         .btn-undo { color: var(--warning); }
 
-        /* --- 🐉 長龍雷達 (Dragon Radar) --- */
-        .dragon-radar { background: rgba(255, 159, 10, 0.1); border: 1px solid rgba(255, 159, 10, 0.3); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; display: none; }
-        .dragon-radar.active { display: flex; animation: radar-pulse 2s infinite alternate; }
-        @keyframes radar-pulse { from { box-shadow: 0 0 5px rgba(255, 159, 10, 0.1); } to { box-shadow: 0 0 15px rgba(255, 159, 10, 0.4); } }
-        .dragon-text { font-size: 12px; font-weight: 800; color: var(--warning); }
-        .dragon-count { font-size: 14px; font-weight: 900; background: var(--warning); color: #000; padding: 2px 8px; border-radius: 12px; }
+        /* --- 🐉 長龍雷達 --- */
+        .dragon-radar { background: rgba(255, 159, 10, 0.15); border: 1px solid rgba(255, 159, 10, 0.4); border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; justify-content: space-between; align-items: center; display: none; }
+        .dragon-radar.active { display: flex; animation: radar-pulse 1.5s infinite alternate; }
+        @keyframes radar-pulse { from { box-shadow: 0 0 5px rgba(255, 159, 10, 0.2); } to { box-shadow: 0 0 20px rgba(255, 159, 10, 0.6); } }
+        .dragon-text { font-size: 13px; font-weight: 800; color: var(--warning); }
+        .dragon-count { font-size: 15px; font-weight: 900; background: var(--warning); color: #000; padding: 2px 10px; border-radius: 12px; }
 
-        /* --- 👑 決策面板 --- */
-        .oracle-panel { text-align: center; padding: 16px 10px; border-radius: 12px; margin-bottom: 8px; background: #222; border: 1px solid #333; transition: all 0.3s ease; }
-        .oracle-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px; }
-        .oracle-subtitle { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+        /* --- 🎯 巨眼決策面板 (The Giant Oracle) --- */
+        .oracle-panel { 
+            text-align: center; padding: 20px 10px; border-radius: 16px; margin-bottom: 12px; 
+            background: #111; border: 2px solid #333; transition: all 0.2s ease-in-out; 
+            display: flex; flex-direction: column; justify-content: center; min-height: 80px;
+        }
+        /* 決策文字巨大化 */
+        .oracle-title { font-size: 30px; font-weight: 900; margin-bottom: 6px; letter-spacing: 1px; line-height: 1.1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .oracle-subtitle { font-size: 14px; font-weight: 600; color: #aaa; }
         
-        .oracle-panel.pass { border-color: #555; }
-        .oracle-panel.banker { background: linear-gradient(145deg, rgba(255,69,58,0.15) 0%, rgba(255,69,58,0.05) 100%); border-color: rgba(255,69,58,0.4); box-shadow: 0 0 15px rgba(255,69,58,0.2); }
-        .oracle-panel.banker .oracle-title { color: var(--banker-red); }
-        .oracle-panel.player { background: linear-gradient(145deg, rgba(10,132,255,0.15) 0%, rgba(10,132,255,0.05) 100%); border-color: rgba(10,132,255,0.4); box-shadow: 0 0 15px rgba(10,132,255,0.2); }
-        .oracle-panel.player .oracle-title { color: var(--player-blue); }
+        /* 觀望狀態：刻意壓暗，降低干擾 */
+        .oracle-panel.pass { border-color: #444; opacity: 0.8; }
+        
+        /* 莊家訊號：狂暴紅光 */
+        .oracle-panel.banker { 
+            background: linear-gradient(180deg, rgba(255,59,48,0.2) 0%, rgba(20,0,0,1) 100%); 
+            border-color: var(--banker-red); 
+            animation: alert-banker 1.2s infinite alternate;
+        }
+        .oracle-panel.banker .oracle-title { color: #fff; text-shadow: 0 0 15px var(--banker-red), 0 0 30px var(--banker-red); }
+        .oracle-panel.banker .oracle-subtitle { color: #ffcccc; }
+        
+        /* 閒家訊號：狂暴藍光 */
+        .oracle-panel.player { 
+            background: linear-gradient(180deg, rgba(10,132,255,0.2) 0%, rgba(0,5,20,1) 100%); 
+            border-color: var(--player-blue); 
+            animation: alert-player 1.2s infinite alternate;
+        }
+        .oracle-panel.player .oracle-title { color: #fff; text-shadow: 0 0 15px var(--player-blue), 0 0 30px var(--player-blue); }
+        .oracle-panel.player .oracle-subtitle { color: #cce0ff; }
+
+        /* 呼吸燈動畫 */
+        @keyframes alert-banker { 
+            0% { box-shadow: 0 0 10px rgba(255,59,48,0.3); transform: scale(1); } 
+            100% { box-shadow: 0 0 35px rgba(255,59,48,0.8), inset 0 0 20px rgba(255,59,48,0.4); transform: scale(1.02); } 
+        }
+        @keyframes alert-player { 
+            0% { box-shadow: 0 0 10px rgba(10,132,255,0.3); transform: scale(1); } 
+            100% { box-shadow: 0 0 35px rgba(10,132,255,0.8), inset 0 0 20px rgba(10,132,255,0.4); transform: scale(1.02); } 
+        }
 
         /* --- 數據儀表板 --- */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .dash-box { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px; border: 1px solid #2c2c2e; }
-        .dash-header { font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; }
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;}
+        .dash-box { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; border: 1px solid #2c2c2e; }
+        .dash-header { font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; }
         
-        .ev-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .ev-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .ev-label { font-size: 13px; font-weight: bold; }
         .ev-label.b { color: var(--banker-red); } .ev-label.p { color: var(--player-blue); }
-        .ev-val { font-size: 13px; font-variant-numeric: tabular-nums; }
+        .ev-val { font-size: 14px; font-weight: bold; font-variant-numeric: tabular-nums; }
         
         /* 變路推演 UI */
         .trend-dots { display: flex; gap: 4px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); }
+        .dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); }
         .dot.r { background: var(--banker-red); box-shadow: inset 0 1px 3px rgba(255,255,255,0.3); } 
         .dot.b { background: var(--player-blue); box-shadow: inset 0 1px 3px rgba(255,255,255,0.3); } 
         .dot.e { background: #333; }
-        .break-trend-alert { font-size: 9px; color: var(--warning); margin-top: 4px; text-align: right; }
+        .break-trend-alert { font-size: 10px; font-weight: bold; color: var(--warning); margin-top: 6px; text-align: center; background: rgba(255,159,10,0.1); padding: 4px; border-radius: 4px; }
 
         /* --- 🃏 實體手牌輸入區 --- */
         .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .input-header span { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-        .toggle-guide { font-size: 11px; color: var(--player-blue); display: flex; align-items: center; gap: 4px; }
+        .toggle-guide { font-size: 12px; font-weight: bold; color: #fff; background: rgba(10,132,255,0.3); padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; gap: 4px; }
         
         .table-layout { display: flex; gap: 8px; }
-        .table-side { flex: 1; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 6px; border: 1px solid #2a2a2c; }
-        .side-label { text-align: center; font-size: 11px; font-weight: 800; margin-bottom: 6px; padding: 2px 0; border-radius: 4px; }
+        .table-side { flex: 1; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 8px; border: 1px solid #2a2a2c; }
+        .side-label { text-align: center; font-size: 12px; font-weight: 800; margin-bottom: 8px; padding: 4px 0; border-radius: 6px; }
         .side-label.p { background: rgba(10,132,255,0.2); color: var(--player-blue); }
-        .side-label.b { background: rgba(255,69,58,0.2); color: var(--banker-red); }
+        .side-label.b { background: rgba(255,59,48,0.2); color: var(--banker-red); }
         
-        .cards-row { display: flex; justify-content: space-between; gap: 4px; }
-        .playing-card { flex: 1; aspect-ratio: 2/3; background: #2c2c2e; border-radius: 6px; border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #fff; cursor: pointer; transition: all 0.2s ease; }
-        .playing-card.active { background: #3a3a3c; border-color: var(--highlight); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(255, 214, 10, 0.3); color: var(--highlight); }
+        .cards-row { display: flex; justify-content: space-between; gap: 6px; }
+        .playing-card { flex: 1; aspect-ratio: 2/3; background: #2c2c2e; border-radius: 8px; border: 1px solid #555; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; color: #fff; cursor: pointer; transition: all 0.2s; }
+        .playing-card.active { background: #3a3a3c; border-color: var(--highlight); transform: translateY(-4px); box-shadow: 0 6px 12px rgba(255, 214, 10, 0.4); color: var(--highlight); border-width: 2px; }
         .playing-card.filled { background: #e5e5ea; color: #000; border-color: #fff; }
-        .playing-card.disabled { background: #1c1c1e !important; border-color: #2c2c2e; opacity: 0.4; pointer-events: none; }
+        .playing-card.disabled { background: #18181a !important; border-color: #222; opacity: 0.3; pointer-events: none; }
 
         /* --- ⌨️ 鍵盤 --- */
         .keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
-        .key { background: #2c2c2e; border-radius: 10px; padding: 8px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 0 #111; transition: 0.1s; }
-        .key:active { transform: translateY(2px); box-shadow: 0 0 0 #111; background: #3c3c3e; }
-        .key-val { font-size: 20px; font-weight: 800; color: #fff; line-height: 1; }
-        .key-count { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
+        .key { background: #2c2c2e; border-radius: 10px; padding: 10px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 3px 0 #111; transition: 0.1s; }
+        .key:active { transform: translateY(3px); box-shadow: 0 0 0 #111; background: #444; }
+        .key-val { font-size: 22px; font-weight: 900; color: #fff; line-height: 1; }
+        .key-count { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 4px; }
         .key-count.low { color: var(--danger); }
-        .key.action-clear { background: rgba(255,159,10,0.15); color: var(--warning); border: 1px solid rgba(255,159,10,0.3); grid-column: span 2; flex-direction: row; font-size: 14px; font-weight: 700; }
+        .key.action-clear { background: rgba(255,159,10,0.15); color: var(--warning); border: 1px solid rgba(255,159,10,0.3); grid-column: span 2; flex-direction: row; font-size: 16px; font-weight: 800; gap: 6px;}
 
-        .submit-btn { width: 100%; padding: 16px; background: #2c2c2e; color: #666; font-size: 16px; font-weight: 800; border: none; border-radius: 12px; margin-top: 12px; transition: all 0.3s ease; }
-        .submit-btn.ready { background: var(--tie-green); color: #000; box-shadow: 0 0 15px rgba(50,215,75,0.4); cursor: pointer; }
-        .submit-btn.ready:active { transform: scale(0.98); }
+        .submit-btn { width: 100%; padding: 18px; background: #2c2c2e; color: #666; font-size: 18px; font-weight: 900; border: none; border-radius: 12px; margin-top: 16px; transition: all 0.3s ease; letter-spacing: 1px;}
+        .submit-btn.ready { background: var(--tie-green); color: #000; box-shadow: 0 0 20px rgba(50,215,75,0.5); cursor: pointer; }
+        .submit-btn.ready:active { transform: scale(0.97); box-shadow: 0 0 10px rgba(50,215,75,0.5); }
         .submit-btn:disabled { pointer-events: none; }
 
         /* --- 📊 歷史路單 --- */
@@ -108,7 +137,6 @@
         .circle-hollow { width: 12px; height: 12px; border-radius: 50%; border: 2px solid transparent; box-sizing: border-box; }
         .circle-hollow.B, .circle-hollow.R { border-color: var(--banker-red); } .circle-hollow.P, .circle-hollow.Blue { border-color: var(--player-blue); }
         .tie-line { background: linear-gradient(to top right, transparent 45%, var(--tie-green) 45%, var(--tie-green) 55%, transparent 55%); }
-        .tie-text { position: absolute; font-size: 8px; font-weight: bold; color: var(--tie-green); z-index: 2; }
         .circle-solid { width: 6px; height: 6px; border-radius: 50%; }
         .circle-solid.R { background-color: var(--banker-red); } .circle-solid.Blue { background-color: var(--player-blue); }
         .slash { width: 8px; height: 8px; }
@@ -134,18 +162,18 @@
     </div>
 
     <div id="decisionPanel" class="oracle-panel pass">
-        <div class="oracle-title" id="mainSignal">等待數據輸入...</div>
-        <div class="oracle-subtitle" id="subSignal">系統嚴格過濾中</div>
+        <div class="oracle-title" id="mainSignal">等待數據</div>
+        <div class="oracle-subtitle" id="subSignal">請點擊鍵盤輸入牌面</div>
     </div>
 
     <div class="dashboard">
         <div class="dash-box">
-            <div class="dash-header"><span>期望值 (EV)</span> <span id="trueCount" style="color:var(--highlight)">TC: 0.0</span></div>
+            <div class="dash-header"><span>基本面 (EV)</span> <span id="trueCount" style="color:var(--highlight)">TC: 0.0</span></div>
             <div class="ev-row"><span class="ev-label b">莊 Banker</span> <span class="ev-val" id="evBanker" style="color:var(--text-muted)">-1.06%</span></div>
             <div class="ev-row"><span class="ev-label p">閒 Player</span> <span class="ev-val" id="evPlayer" style="color:var(--text-muted)">-1.24%</span></div>
         </div>
         <div class="dash-box">
-            <div class="dash-header">變路沙盤推演 (問路)</div>
+            <div class="dash-header">技術面 (下三路)</div>
             <div class="ev-row">
                 <span class="ev-label b">若開莊</span>
                 <div class="trend-dots" id="askB-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div>
@@ -154,14 +182,14 @@
                 <span class="ev-label p">若開閒</span>
                 <div class="trend-dots" id="askP-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div>
             </div>
-            <div id="breakAlert" class="break-trend-alert"></div>
+            <div id="breakAlert" class="break-trend-alert" style="display:none;"></div>
         </div>
     </div>
 
     <div class="module-card">
         <div class="input-header">
-            <span>點擊下方鍵盤依序發牌</span>
-            <label class="toggle-guide"><input type="checkbox" id="autoGuideToggle" checked onchange="evaluateDrawRules()"> 🛡️ 智能補牌防呆</label>
+            <span>依序發牌</span>
+            <label class="toggle-guide"><input type="checkbox" id="autoGuideToggle" checked onchange="evaluateDrawRules()">防呆</label>
         </div>
         <div class="table-layout">
             <div class="table-side">
@@ -198,10 +226,10 @@
             <div class="key" onclick="inputKey('11')"><div class="key-val">J</div><div class="key-count" id="kcnt-11">32</div></div>
             <div class="key" onclick="inputKey('12')"><div class="key-val">Q</div><div class="key-count" id="kcnt-12">32</div></div>
             <div class="key" onclick="inputKey('13')"><div class="key-val">K</div><div class="key-count" id="kcnt-13">32</div></div>
-            <div class="key action-clear" onclick="clearAllSlots()">⌫ 清空重填</div>
+            <div class="key action-clear" onclick="clearAllSlots()"><span>⌫</span> 清空</div>
         </div>
 
-        <button class="submit-btn" id="submitBtn" onclick="submitData()" disabled>需符合法定發牌規則</button>
+        <button class="submit-btn" id="submitBtn" onclick="submitData()" disabled>輸入需符合法定規則</button>
     </div>
 
     <div class="module-card" style="padding: 8px;">
@@ -219,10 +247,8 @@
         let deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32};
         const countWeights = {1:1, 2:1, 3:2, 4:2, 5:1, 6:-1, 7:-2, 8:-2, 9:-2, 10:0, 11:0, 12:0, 13:0};
         let runningCount = 0;
-        
         const baseBankerProb = 0.458597; const basePlayerProb = 0.446247; 
         let historyLog = []; let backupState = null;
-        
         const slotOrder = ['p1', 'b1', 'p2', 'b2', 'p3', 'b3']; 
         let currentSlotIdx = 0;
 
@@ -264,7 +290,7 @@
                 }
             }
 
-            let valid = true; let msg = "✓ 牌局合法，點擊送出結算";
+            let valid = true; let msg = "牌局合法，點擊送出結算";
             let p3Val = p3El.dataset.val ? getBaccaratVal('p3') : null;
             let b3Val = b3El.dataset.val ? getBaccaratVal('b3') : null;
 
@@ -282,7 +308,6 @@
             else { submitBtn.className = "submit-btn"; submitBtn.disabled = true; submitBtn.innerText = "需符合法定發牌規則"; }
         }
 
-        // === UI 交互 ===
         function setActiveSlot(slotId) {
             let el = document.getElementById(`slot-${slotId}`); if (el.classList.contains('disabled')) return; 
             document.querySelectorAll('.playing-card').forEach(e => e.classList.remove('active')); 
@@ -331,7 +356,7 @@
             ['p1', 'p2', 'p3'].forEach(id => { let v = document.getElementById(`slot-${id}`).dataset.val; if(v) { let rv = parseInt(v); pRaw.push(rv); cardsConsumed.push(rv); pPts += (rv >= 10 ? 0 : rv); } });
             ['b1', 'b2', 'b3'].forEach(id => { let v = document.getElementById(`slot-${id}`).dataset.val; if(v) { let rv = parseInt(v); bRaw.push(rv); cardsConsumed.push(rv); bPts += (rv >= 10 ? 0 : rv); } });
             
-            btn.disabled = true; btn.innerText = "精算中...";
+            btn.disabled = true; btn.innerText = "資料演算中...";
             saveState();
 
             let fP = pPts % 10, fB = bPts % 10, winner = 'T';
@@ -346,7 +371,6 @@
 
         // === 動能監控與決策引擎 ===
         function recalcAndRender() {
-            // 基本面 (EV)
             let decksRemaining = totalCards / 52;
             let trueCount = decksRemaining > 0 ? (runningCount / decksRemaining) : 0;
             let edgeShift = trueCount * 0.0005; 
@@ -363,7 +387,6 @@
             let evB_el = document.getElementById('evBanker'); evB_el.innerText = (evBanker * 100).toFixed(2) + "%"; evB_el.style.color = evBanker > 0 ? "var(--tie-green)" : "var(--text-muted)";
             let evP_el = document.getElementById('evPlayer'); evP_el.innerText = (evPlayer * 100).toFixed(2) + "%"; evP_el.style.color = evPlayer > 0 ? "var(--tie-green)" : "var(--text-muted)";
             
-            // --- 新增：長龍雷達 (Dragon Radar) 核心邏輯 ---
             let pureRounds = historyLog.filter(x => x !== 'T');
             let currentStreakSide = null;
             let streakLength = 0;
@@ -377,21 +400,17 @@
             }
 
             const radar = document.getElementById('dragonRadar');
-            const radarText = document.getElementById('dragonText');
-            const radarCount = document.getElementById('dragonCount');
             const breakAlert = document.getElementById('breakAlert');
             
-            // 連續 4 把啟動過熱警示
             if (streakLength >= 4) {
                 radar.className = "dragon-radar active";
                 let sideName = currentStreakSide === 'B' ? '莊' : '閒';
-                radarText.innerText = `⚠️ 動能過熱：${sideName}長龍持續中，嚴禁逆勢斷龍！`;
-                radarCount.innerText = `連 ${streakLength}`;
+                document.getElementById('dragonText').innerText = `⚠️ 動能過熱：${sideName}長龍持續中`;
+                document.getElementById('dragonCount').innerText = `連 ${streakLength}`;
             } else {
                 radar.className = "dragon-radar";
             }
 
-            // 技術面 (沙盤推演)
             const simulateAsk = (hyp) => { let testArr = [...historyLog, hyp]; let d = generateDerivedArrays(testArr); return [d.eye.pop(), d.small.pop(), d.roach.pop()]; };
             let askB = simulateAsk('B'); let askP = simulateAsk('P');
             let bRedCount = askB.filter(x => x === 'R').length; let pRedCount = askP.filter(x => x === 'R').length;
@@ -402,20 +421,22 @@
             };
             updateDots('askB-dots', askB); updateDots('askP-dots', askP);
 
-            // 變路推演文字提示
-            breakAlert.innerText = "";
+            // 變路推演
             if (streakLength >= 3) {
+                breakAlert.style.display = "block";
                 let breakSide = currentStreakSide === 'B' ? 'P' : 'B';
                 let breakAsk = breakSide === 'B' ? askB : askP;
                 let breakBlues = breakAsk.filter(x => x === 'Blue').length;
                 if (breakBlues >= 2) {
-                    breakAlert.innerText = `💡 沙盤推演：若下把斷龍(開${breakSide === 'B'?'莊':'閒'})，下三路將轉藍 (趨勢破裂)`;
+                    breakAlert.innerText = `💡 沙盤推演：若下把斷龍，下三路將轉藍 (破裂)`;
                 } else {
-                    breakAlert.innerText = `💡 沙盤推演：若下把斷龍(開${breakSide === 'B'?'莊':'閒'})，下三路依然偏紅 (動能未散)`;
+                    breakAlert.innerText = `💡 沙盤推演：若下把斷龍，下三路依然偏紅 (動能未散)`;
                 }
+            } else {
+                breakAlert.style.display = "none";
             }
 
-            // --- 決策面板 ---
+            // 🎯 The Giant Oracle 決策輸出
             const dp = document.getElementById('decisionPanel');
             const mainSig = document.getElementById('mainSignal');
             const subSig = document.getElementById('subSignal');
@@ -423,30 +444,28 @@
             let isFundamentalB = evBanker > 0; let isFundamentalP = evPlayer > 0;
             let isTechnicalB = bRedCount >= 2; let isTechnicalP = pRedCount >= 2;
 
-            // 長龍強制防禦層：絕對不允許系統叫你逆勢接刀
             let blockBetB = (currentStreakSide === 'P' && streakLength >= 4);
             let blockBetP = (currentStreakSide === 'B' && streakLength >= 4);
 
             if (blockBetB && isFundamentalB) {
-                dp.className = "oracle-panel pass"; mainSig.innerText = "🛑 迴避逆勢接刀"; subSig.innerText = "物理機率雖偏向莊，但閒家嚴重過熱，強制觀望";
+                dp.className = "oracle-panel pass"; mainSig.innerText = "🛑 迴避逆勢接刀"; subSig.innerText = "機率偏莊，但閒家嚴重過熱，強制觀望";
             } else if (blockBetP && isFundamentalP) {
-                dp.className = "oracle-panel pass"; mainSig.innerText = "🛑 迴避逆勢接刀"; subSig.innerText = "物理機率雖偏向閒，但莊家嚴重過熱，強制觀望";
+                dp.className = "oracle-panel pass"; mainSig.innerText = "🛑 迴避逆勢接刀"; subSig.innerText = "機率偏閒，但莊家嚴重過熱，強制觀望";
             } else if (isFundamentalB && isTechnicalB) {
-                dp.className = "oracle-panel banker"; mainSig.innerText = "🔥 強烈共振：押注莊家"; subSig.innerText = "數學期望值為正，且趨勢圖形強烈支持";
+                dp.className = "oracle-panel banker"; mainSig.innerText = "🔥 押注莊家"; subSig.innerText = "數學期望值為正 ＋ 趨勢圖形強烈支持";
             } else if (isFundamentalP && isTechnicalP) {
-                dp.className = "oracle-panel player"; mainSig.innerText = "🔥 強烈共振：押注閒家"; subSig.innerText = "數學期望值為正，且趨勢圖形強烈支持";
+                dp.className = "oracle-panel player"; mainSig.innerText = "🔥 押注閒家"; subSig.innerText = "數學期望值為正 ＋ 趨勢圖形強烈支持";
             } else if (isTechnicalB && !isFundamentalP) {
-                dp.className = "oracle-panel banker"; mainSig.innerText = "📈 順勢試探：可押莊家"; subSig.innerText = "EV為負 (注意風險)，但技術圖形支持莊家";
+                dp.className = "oracle-panel banker"; mainSig.innerText = "📈 順勢押莊家"; subSig.innerText = "EV為負 (注意風險)，但技術圖形強烈支持";
             } else if (isTechnicalP && !isFundamentalB) {
-                dp.className = "oracle-panel player"; mainSig.innerText = "📈 順勢試探：可押閒家"; subSig.innerText = "EV為負 (注意風險)，但技術圖形支持閒家";
+                dp.className = "oracle-panel player"; mainSig.innerText = "📈 順勢押閒家"; subSig.innerText = "EV為負 (注意風險)，但技術圖形強烈支持";
             } else {
-                dp.className = "oracle-panel pass"; mainSig.innerText = "🛡️ 雙重未達標：鎖定觀望"; subSig.innerText = "無數學優勢，且圖形無明顯動能";
+                dp.className = "oracle-panel pass"; mainSig.innerText = "🛡️ 鎖定觀望"; subSig.innerText = "無數學優勢，且圖形無明顯動能方向";
             }
 
             updateKeypadCounts(); renderAllRoads();
         }
 
-        // --- 路單引擎 ---
         function renderAllRoads() {
             let bigMap = genericMatrixMapper(historyLog, true); let derived = generateDerivedArrays(historyLog);
             renderGrid('grid-big', bigMap.grid, bigMap.maxCol, 'big'); renderGrid('grid-eye', genericMatrixMapper(derived.eye, false).grid, genericMatrixMapper(derived.eye, false).maxCol, 'eye'); renderGrid('grid-small', genericMatrixMapper(derived.small, false).grid, genericMatrixMapper(derived.small, false).maxCol, 'small'); renderGrid('grid-roach', genericMatrixMapper(derived.roach, false).grid, genericMatrixMapper(derived.roach, false).maxCol, 'roach');
