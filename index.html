@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂決策系統 - 巨眼指揮版（嚴謹模擬 + HUD）</title>
-
+  <title>百家樂 DSS（即時監控＋線上學習版）</title>
   <style>
     :root{
       --bg:#0d0d12;
@@ -18,100 +17,93 @@
       --y:#ffd60a;
       --w:#ff9f0a;
       --danger:#ff3b30;
+      --glass: rgba(17,17,17,0.86);
     }
-
     body{
       font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
       background:var(--bg);
       color:var(--text);
       margin:0;
-      padding: 8px 6px 10px;
+      padding: 8px 6px 14px;
       user-select:none;
       -webkit-font-smoothing:antialiased;
-
-      /* ✅ 重要：給固定 HUD 讓位（避免被蓋住） */
-      padding-top: calc(env(safe-area-inset-top) + 98px);
+      padding-top: calc(env(safe-area-inset-top) + 116px);
     }
-
     .module-card{
       background:var(--card);
-      border-radius:16px;
+      border-radius:18px;
       padding:12px;
-      margin-bottom:8px;
+      margin-bottom:10px;
       border:1px solid var(--border);
-      box-shadow:0 4px 12px rgba(0,0,0,.3);
+      box-shadow:0 4px 14px rgba(0,0,0,.35);
     }
 
-    /* =========================
-       ✅ 固定 HUD（永遠看得到）
-    ========================= */
+    /* ===== 固定 HUD（不滑動也看得到） ===== */
     .hud{
       position: fixed;
       top: env(safe-area-inset-top);
       left: 6px;
       right: 6px;
       z-index: 9999;
-
       border-radius: 18px;
       border: 2px solid #333;
-      background: rgba(17,17,17,0.86);
+      background: var(--glass);
       backdrop-filter: blur(10px);
-
       box-shadow: 0 10px 30px rgba(0,0,0,0.45);
       overflow: hidden;
-
       transition: 0.18s ease;
     }
-
     .hud.pass{ border-color:#444; }
     .hud.banker{
       border-color: var(--b);
       box-shadow: 0 0 26px rgba(255,59,48,.35), 0 10px 30px rgba(0,0,0,0.45);
-      background: linear-gradient(180deg, rgba(255,59,48,0.18) 0%, rgba(17,17,17,0.86) 70%);
+      background: linear-gradient(180deg, rgba(255,59,48,0.18) 0%, var(--glass) 70%);
     }
     .hud.player{
       border-color: var(--p);
       box-shadow: 0 0 26px rgba(10,132,255,.35), 0 10px 30px rgba(0,0,0,0.45);
-      background: linear-gradient(180deg, rgba(10,132,255,0.18) 0%, rgba(17,17,17,0.86) 70%);
+      background: linear-gradient(180deg, rgba(10,132,255,0.18) 0%, var(--glass) 70%);
     }
-
     .hud-top{
       display:flex;
       justify-content: space-between;
       align-items:center;
       gap:10px;
       padding: 10px 12px;
-      cursor: pointer; /* 點 HUD 可展開/收合 */
+      cursor: pointer;
     }
-
+    .hud-left{ min-width: 0; }
     .hud-title{
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 1000;
       line-height: 1.1;
       letter-spacing: .5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .hud-sub{
-      margin-top: 4px;
+      margin-top: 5px;
       font-size: 12px;
       font-weight: 900;
       color: #c7c7cc;
-      opacity: .9;
+      opacity: .92;
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
     }
-
-    .hud-left{ min-width: 0; }
-    .hud-title span.badge{
+    .badge{
       display:inline-block;
       margin-left:8px;
-      padding: 3px 8px;
+      padding: 3px 9px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 1000;
       background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.12);
       color: var(--text);
       vertical-align: middle;
     }
-
     .hud-actions{
       display:flex;
       gap:6px;
@@ -133,8 +125,6 @@
     .hud-btn:active{ transform: translateY(2px); box-shadow:none; }
     .hud-btn.undo{ color: var(--w); }
     .hud-btn.reset{ color: #ff5c5c; }
-
-    /* HUD 縮略資訊列（永遠顯示） */
     .hud-mini{
       display:flex;
       justify-content: space-between;
@@ -154,7 +144,6 @@
     .mini-item b.p{ color: var(--p); }
     .mini-item b.g{ color: var(--t); }
 
-    /* 展開區（預設收起） */
     .hud-details{
       display:none;
       padding: 10px 12px 12px;
@@ -162,7 +151,6 @@
       background: rgba(0,0,0,0.10);
     }
     .hud.expanded .hud-details{ display:block; }
-
     .detail-grid{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -189,133 +177,160 @@
     .row .v.p{ color: var(--p); }
     .row .v.g{ color: var(--t); }
 
-    /* =========================
-       其餘原本 UI（保留）
-    ========================= */
-
-    .dashboard{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px; }
-    .dash-box{ background: rgba(0,0,0,0.3); border-radius:12px; padding:10px; border:1px solid #2c2c2e; }
-    .dash-header{ font-size:11px; color:var(--muted); font-weight:1000; text-transform:uppercase; margin-bottom:8px; display:flex; justify-content:space-between; }
-    .ev-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-    .ev-label{ font-size:13px; font-weight:1100; }
-    .ev-label.b{ color:var(--b); } .ev-label.p{ color:var(--p); }
-    .ev-val{ font-size:14px; font-weight:1100; font-variant-numeric:tabular-nums; }
-
-    .trend-dots{ display:flex; gap:4px; }
-    .dot{ width:14px; height:14px; border-radius:50%; border:1px solid rgba(255,255,255,0.1); }
-    .dot.r{ background:var(--b); } .dot.b{ background:var(--p); } .dot.e{ background:#333; }
-    .break-trend-alert{
-      font-size:11px; font-weight:1100; color:var(--w);
-      margin-top:8px; text-align:center;
-      background: rgba(255,159,10,0.12);
-      padding: 6px 8px; border-radius: 12px;
-      border: 1px solid rgba(255,159,10,0.25);
-      display:none;
+    /* ===== 控制列 ===== */
+    .controls{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-bottom:10px;
     }
+    .ctrl{
+      background: rgba(0,0,0,0.30);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 16px;
+      padding:10px;
+    }
+    .ctrl h3{
+      margin:0 0 8px 0;
+      font-size: 12px;
+      font-weight: 1000;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+    .ctrl .line{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-top:8px;
+      font-variant-numeric: tabular-nums;
+    }
+    .ctrl label{
+      font-size: 12px;
+      font-weight: 900;
+      color: #c7c7cc;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .ctrl input[type="checkbox"]{ transform: scale(1.2); }
+    .ctrl input[type="range"]{ width: 160px; }
+    .ctrl input[type="number"]{
+      width: 90px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 8px;
+      font-weight: 1000;
+    }
+    .btn{
+      border:none;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 1000;
+      cursor:pointer;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.45);
+    }
+    .btn:active{ transform: translateY(2px); box-shadow:none; }
+    .btn.good{ background: rgba(50,215,75,0.15); border-color: rgba(50,215,75,0.30); color: var(--t); }
+    .btn.warn{ background: rgba(255,159,10,0.12); border-color: rgba(255,159,10,0.26); color: var(--w); }
+    .btn.bad{ background: rgba(255,59,48,0.12); border-color: rgba(255,59,48,0.26); color: #ff6b6b; }
 
-    .input-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    /* ===== 輸入區 ===== */
+    .input-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
     .input-header span{ font-size:12px; font-weight:900; color:var(--muted); }
-    .toggle-guide{ font-size:12px; font-weight:1100; color:#fff; background: rgba(10,132,255,0.3); padding: 6px 10px; border-radius: 12px; display:flex; align-items:center; gap:6px; }
+    .toggle-guide{
+      font-size:12px; font-weight:1100; color:#fff;
+      background: rgba(10,132,255,0.30);
+      padding: 6px 10px;
+      border-radius: 12px;
+      display:flex; align-items:center; gap:6px;
+    }
     .toggle-guide input{ transform: scale(1.1); }
 
-    .table-layout{ display:flex; gap:8px; }
-    .table-side{ flex:1; background: rgba(0,0,0,0.3); border-radius:12px; padding:8px; border:1px solid #2a2a2c; }
-    .side-label{ text-align:center; font-size:12px; font-weight:1100; margin-bottom:8px; padding: 6px 0; border-radius: 12px; letter-spacing:.8px; }
-    .side-label.p{ background: rgba(10,132,255,0.2); color: var(--p); }
-    .side-label.b{ background: rgba(255,59,48,0.2); color: var(--b); }
-    .cards-row{ display:flex; justify-content:space-between; gap:6px; }
+    .table-layout{ display:flex; gap:10px; }
+    .table-side{ flex:1; background: rgba(0,0,0,0.30); border-radius:16px; padding:10px; border:1px solid rgba(255,255,255,0.10); }
+    .side-label{ text-align:center; font-size:12px; font-weight:1100; margin-bottom:10px; padding: 8px 0; border-radius: 12px; letter-spacing:.8px; }
+    .side-label.p{ background: rgba(10,132,255,0.18); color: var(--p); }
+    .side-label.b{ background: rgba(255,59,48,0.18); color: var(--b); }
 
+    .cards-row{ display:flex; justify-content:space-between; gap:10px; }
     .playing-card{
       flex:1; aspect-ratio: 2/3;
-      background: #2c2c2e;
-      border-radius: 12px;
-      border: 1px solid #555;
+      background: rgba(255,255,255,0.06);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.16);
       display:flex; align-items:center; justify-content:center;
-      font-size: 22px; font-weight: 1200;
+      font-size: 24px; font-weight: 1200;
       color:#fff;
       cursor:pointer;
       transition: .15s;
     }
     .playing-card.active{
-      background:#3a3a3c;
       border-color: var(--y);
-      transform: translateY(-4px);
-      box-shadow: 0 6px 12px rgba(255,214,10,0.4);
+      box-shadow: 0 0 0 2px rgba(255,214,10,0.25), 0 10px 18px rgba(0,0,0,0.35);
+      transform: translateY(-2px);
       color: var(--y);
-      border-width:2px;
     }
     .playing-card.filled{ background:#e5e5ea; color:#000; border-color:#fff; }
-    .playing-card.disabled{ background:#18181a !important; border-color:#222; opacity:.28; pointer-events:none; }
+    .playing-card.disabled{ opacity:.25; pointer-events:none; }
 
-    .keypad{ display:grid; grid-template-columns: repeat(5,1fr); gap:8px; margin-top:12px; }
+    .keypad{ display:grid; grid-template-columns: repeat(5,1fr); gap:10px; margin-top:12px; }
     .key{
-      background:#2c2c2e;
-      border-radius: 14px;
-      padding: 10px 0;
+      background: rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 12px 0;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
       cursor:pointer;
-      box-shadow: 0 3px 0 #111;
-      transition:.1s;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-    .key:active{ transform: translateY(3px); box-shadow:none; background:#444; }
-    .key-val{ font-size:22px; font-weight:1200; color:#fff; line-height:1; }
-    .key-count{ font-size:11px; font-weight:1100; color: var(--muted); margin-top:6px; font-variant-numeric: tabular-nums; }
-    .key-count.low{ color: var(--danger); }
-
-    .key.action-back{
-      background: rgba(255,255,255,0.06);
-      color: var(--text);
       border: 1px solid rgba(255,255,255,0.12);
-      grid-column: span 3;
-      flex-direction: row;
-      font-size: 16px;
-      font-weight: 1100;
-      gap: 6px;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.55);
+      transition:.1s;
     }
-    .key.action-clear{
-      background: rgba(255,159,10,0.15);
-      color: var(--w);
-      border: 1px solid rgba(255,159,10,0.3);
-      grid-column: span 2;
-      flex-direction: row;
-      font-size: 16px;
-      font-weight: 1100;
-      gap: 6px;
-    }
+    .key:active{ transform: translateY(3px); box-shadow:none; }
+    .key-val{ font-size:24px; font-weight:1200; color:#fff; line-height:1; }
+    .key-count{ font-size:11px; font-weight:1100; color: var(--muted); margin-top:8px; font-variant-numeric: tabular-nums; }
+    .key-count.low{ color: var(--danger); }
+    .key.action-back{ grid-column: span 3; flex-direction: row; gap:8px; font-size:16px; font-weight:1100; color:#fff; }
+    .key.action-clear{ grid-column: span 2; flex-direction: row; gap:8px; font-size:16px; font-weight:1100; color: var(--w); border-color: rgba(255,159,10,0.28); background: rgba(255,159,10,0.12); }
 
     .submit-btn{
       width:100%;
       padding: 18px;
-      background:#2c2c2e;
-      color:#666;
+      background: rgba(255,255,255,0.08);
+      color:#777;
       font-size:18px;
       font-weight:1200;
       border:none;
-      border-radius: 16px;
-      margin-top: 16px;
-      box-shadow: 0 3px 0 #111;
+      border-radius: 18px;
+      margin-top: 14px;
       cursor:not-allowed;
       transition:.2s;
+      border: 1px solid rgba(255,255,255,0.12);
     }
     .submit-btn.ready{
-      background: var(--t);
+      background: rgba(50,215,75,0.92);
       color:#000;
-      box-shadow: 0 0 22px rgba(50,215,75,0.45);
       cursor:pointer;
-      animation: pulse 1.2s infinite alternate;
+      box-shadow: 0 0 22px rgba(50,215,75,0.45);
+      animation: pulse 1.15s infinite alternate;
     }
-    .submit-btn.ready:active{ transform: scale(.985); }
     @keyframes pulse{ from{transform:scale(1)} to{transform:scale(1.01)} }
 
-    .road-container{ width:100%; overflow-x:auto; background: rgba(0,0,0,0.2); border-radius: 12px; padding:4px; box-sizing:border-box; }
-    .road-grid{ display:flex; min-width:max-content; background:#fff; border-radius: 12px; padding:3px; }
+    /* 路單（顯示用） */
+    .road-container{ width:100%; overflow-x:auto; background: rgba(0,0,0,0.22); border-radius: 16px; padding:6px; box-sizing:border-box; }
+    .road-grid{ display:flex; min-width:max-content; background:#fff; border-radius: 16px; padding:6px; }
     .road-col{ display:flex; flex-direction:column; }
     .cell-lg{ width:16px; height:16px; border:1px solid #f0f0f0; display:flex; align-items:center; justify-content:center; position:relative; }
     .cell-sm{ width:8px; height:8px; border:1px solid #f0f0f0; display:flex; align-items:center; justify-content:center; position:relative; }
     .circle-hollow{ width:12px; height:12px; border-radius:50%; border:2px solid transparent; box-sizing:border-box; }
-    .circle-hollow.B, .circle-hollow.R{ border-color: var(--b); }
-    .circle-hollow.P, .circle-hollow.Blue{ border-color: var(--p); }
+    .circle-hollow.B,.circle-hollow.R{ border-color: var(--b); }
+    .circle-hollow.P,.circle-hollow.Blue{ border-color: var(--p); }
     .tie-line{ background: linear-gradient(to top right, transparent 45%, var(--t) 45%, var(--t) 55%, transparent 55%); }
     .tie-text{ position:absolute; font-size:8px; font-weight:1200; color: var(--t); }
     .circle-solid{ width:6px; height:6px; border-radius:50%; }
@@ -324,21 +339,27 @@
     .slash{ width:8px; height:8px; }
     .slash.R{ background: linear-gradient(to bottom left, transparent 40%, var(--b) 40%, var(--b) 60%, transparent 60%); }
     .slash.Blue{ background: linear-gradient(to bottom left, transparent 40%, var(--p) 40%, var(--p) 60%, transparent 60%); }
-    .derived-roads-wrapper{ display:flex; gap:6px; margin-top: 8px; }
+    .derived-roads-wrapper{ display:flex; gap:10px; margin-top: 10px; }
     .derived-col{ flex:1; min-width:0; }
+
+    .hint{
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.35;
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- ✅ 固定 HUD：不管你滑到哪都看得到 -->
+  <!-- HUD -->
   <div id="hud" class="hud pass">
     <div class="hud-top" onclick="toggleHud()">
       <div class="hud-left">
         <div class="hud-title" id="hudMain">觀望 <span class="badge" id="hudBadge">點我展開</span></div>
-        <div class="hud-sub" id="hudSub">等待輸入 / 計算中…</div>
+        <div class="hud-sub" id="hudSub"></div>
       </div>
-
       <div class="hud-actions" onclick="event.stopPropagation()">
         <button class="hud-btn undo" onclick="undoLastRound()">↩ 撤銷</button>
         <button class="hud-btn reset" onclick="resetSystem()">換靴</button>
@@ -348,7 +369,7 @@
     <div class="hud-mini">
       <div class="mini-item">剩餘 <b id="hudRemain">416</b></div>
       <div class="mini-item">局數 <b id="hudRound">0</b></div>
-      <div class="mini-item">下注 <b id="hudArmed">否</b></div>
+      <div class="mini-item">授權 <b id="hudArmed">否</b></div>
       <div class="mini-item">SIM <b id="hudSim">--</b></div>
     </div>
 
@@ -361,38 +382,86 @@
           <div class="row"><span class="k">P(T)</span><span class="v g" id="hudPT">--</span></div>
         </div>
         <div class="detail-box">
-          <div class="h">Expected Value</div>
+          <div class="h">Learning / EV</div>
           <div class="row"><span class="k">EV(B)</span><span class="v" id="hudEVB">--</span></div>
           <div class="row"><span class="k">EV(P)</span><span class="v" id="hudEVP">--</span></div>
-          <div class="row"><span class="k">抽水</span><span class="v" id="hudCom">5%</span></div>
+          <div class="row"><span class="k">情境命中</span><span class="v" id="hudCtx">--</span></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 原本 dashboard / UI（你可以保留，因為 HUD 已經解決「看不到」問題） -->
-  <div class="dashboard">
-    <div class="dash-box">
-      <div class="dash-header"><span>條件機率 / EV</span><span id="simInfo" style="color:var(--y);font-weight:1100;">SIM: --</span></div>
-      <div class="ev-row"><span class="ev-label b">莊 P(B)</span><span class="ev-val" id="bankerOdds">--</span></div>
-      <div class="ev-row"><span class="ev-label p">閒 P(P)</span><span class="ev-val" id="playerOdds">--</span></div>
-      <div class="ev-row"><span class="ev-label" style="color:var(--t)">和 P(T)</span><span class="ev-val" id="tieOdds">--</span></div>
-      <div class="ev-row"><span class="ev-label b">莊 EV</span><span class="ev-val" id="evBanker">--</span></div>
-      <div class="ev-row"><span class="ev-label p">閒 EV</span><span class="ev-val" id="evPlayer">--</span></div>
+  <!-- Controls -->
+  <div class="module-card">
+    <div class="controls">
+      <div class="ctrl">
+        <h3>出手規則</h3>
+        <div class="line">
+          <label><input type="checkbox" id="optArmed"> 本局授權下注（Opt-in）</label>
+          <button class="btn good" onclick="toggleArmed()">切換</button>
+        </div>
+        <div class="line">
+          <label><input type="checkbox" id="optAllowTrend"> 允許負EV順勢訊號</label>
+          <span style="font-size:11px;color:var(--muted);font-weight:900;">（不保證改善EV）</span>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <h3>線上學習門檻</h3>
+        <div class="line">
+          <label><input type="checkbox" id="optLearn" checked> 啟用學習過濾</label>
+          <button class="btn warn" onclick="resetLearning()">清空學習</button>
+        </div>
+        <div class="line">
+          <label>最少樣本</label>
+          <input type="number" id="minSamples" value="12" min="0" max="999" />
+        </div>
+        <div class="line">
+          <label>命中門檻</label>
+          <input type="number" id="minAcc" value="0.53" step="0.01" min="0.5" max="0.9" />
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <h3>SIM（穩定輸出）</h3>
+        <div class="line">
+          <label>次數</label>
+          <input type="number" id="trials" value="12000" step="1000" min="1000" max="200000" />
+        </div>
+        <div class="line">
+          <button class="btn" onclick="recalcAndRender(true)">立即重算</button>
+          <button class="btn" onclick="exportLog()">匯出紀錄</button>
+        </div>
+      </div>
+
+      <div class="ctrl">
+        <h3>績效監控</h3>
+        <div class="line">
+          <div style="font-size:12px;font-weight:1100;color:var(--muted);">上局結果</div>
+          <div id="lastPerf" style="font-size:12px;font-weight:1100;">—</div>
+        </div>
+        <div class="line">
+          <div style="font-size:12px;font-weight:1100;color:var(--muted);">近50命中</div>
+          <div id="rollPerf" style="font-size:12px;font-weight:1100;">—</div>
+        </div>
+        <div class="line">
+          <div style="font-size:12px;font-weight:1100;color:var(--muted);">總命中</div>
+          <div id="allPerf" style="font-size:12px;font-weight:1100;">—</div>
+        </div>
+      </div>
     </div>
 
-    <div class="dash-box">
-      <div class="dash-header">技術面（問路 / 下三路）</div>
-      <div class="ev-row"><span class="ev-label b">若開莊</span><div class="trend-dots" id="askB-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div></div>
-      <div class="ev-row"><span class="ev-label p">若開閒</span><div class="trend-dots" id="askP-dots"><div class="dot e"></div><div class="dot e"></div><div class="dot e"></div></div></div>
-      <div id="breakAlert" class="break-trend-alert"></div>
+    <div class="hint">
+      說明：此系統會把「每次建議」與「實際開獎結果」寫入本機資料庫（localStorage）。<br/>
+      線上學習僅能做到：失敗後降低相同情境的信心（更容易 PASS），並提供可驗證的績效統計；不保證勝率單調上升。
     </div>
   </div>
 
+  <!-- Input -->
   <div class="module-card">
     <div class="input-header">
       <span>依序發牌（P1 → B1 → P2 → B2 → P3 → B3）</span>
-      <label class="toggle-guide"><input type="checkbox" id="autoGuideToggle" checked onchange="evaluateDrawRules()">防呆</label>
+      <label class="toggle-guide"><input type="checkbox" id="autoGuideToggle" checked onchange="evaluateDrawRules()">補牌防呆</label>
     </div>
 
     <div class="table-layout">
@@ -404,6 +473,7 @@
           <div class="playing-card disabled" id="slot-p3" onclick="setActiveSlot('p3')" data-rank=""></div>
         </div>
       </div>
+
       <div class="table-side">
         <div class="side-label b">BANKER 莊</div>
         <div class="cards-row">
@@ -418,7 +488,8 @@
     <button class="submit-btn" id="submitBtn" onclick="submitData()" disabled>輸入需符合法定規則</button>
   </div>
 
-  <div class="module-card" style="padding:8px;">
+  <!-- Roads -->
+  <div class="module-card">
     <div class="road-container"><div class="road-grid" id="grid-big"></div></div>
     <div class="derived-roads-wrapper">
       <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-eye"></div></div></div>
@@ -428,92 +499,67 @@
   </div>
 
 <script>
-/* ===== 這份版本的核心是 UI：固定 HUD，不用滑上去看 ===== */
+/* =======================
+   0) State / Storage
+======================= */
+const STORE_KEY = "baccarat_dss_online_learning_v1";
 
-const STORE_KEY = "baccarat_giant_strict_mc_hud_v1";
 const DEFAULTS = {
   decks: 8,
   commission: 0.05,
   trials: 12000,
-  rankCounts: null,
-  history: [],
-  armed: false,      // 你有沒有“授權下注下一局”
-  plannedSide: "PASS",
+  rankCounts: null,    // 1..13
+  history: [],         // 'B','P','T'
+  armed: false,        // opt-in for this hand
+  lastRec: null,       // recommendation for THIS hand (before user submits)
+  perf: {              // overall + rolling
+    totalPred: 0,
+    correct: 0,
+    roll: []           // array of 1(correct)/0(wrong) length <=50
+  },
+  learn: {             // Bayesian buckets
+    enabled: true,
+    minSamples: 12,
+    minAcc: 0.53,
+    buckets: {}        // key -> {B:{a,b,n}, P:{a,b,n}}
+  },
+  log: [],             // last ~2000 records
+  cache: {}            // deckHash -> {trials, pB,pP,pT}
 };
+
 let S = loadState() || initState();
 let backupState = null;
 
+/* ===== Utils ===== */
+function deepClone(x){ return JSON.parse(JSON.stringify(x)); }
 function initCounts(decks=8){
   const c = {};
   for(let r=1;r<=13;r++) c[r]=4*decks;
   return c;
 }
 function initState(){
-  const st = structuredClone(DEFAULTS);
+  const st = deepClone(DEFAULTS);
   st.rankCounts = initCounts(st.decks);
   return st;
 }
-function saveState(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){} }
+function saveState(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }catch(e){}
+}
 function loadState(){
   try{
     const t = localStorage.getItem(STORE_KEY);
     if(!t) return null;
     const obj = JSON.parse(t);
-    if(!obj.rankCounts || !obj.history) return null;
-    return Object.assign(structClone(DEFAULTS), obj);
+    if(!obj.rankCounts || !obj.history || !obj.learn) return null;
+    // merge defaults (forward compatible)
+    return Object.assign(deepClone(DEFAULTS), obj);
   }catch(e){ return null; }
 }
-function structClone(x){ return JSON.parse(JSON.stringify(x)); }
-function snapshot(){ backupState = structClone(S); }
-
-const $ = (id)=>document.getElementById(id);
-
-const ui = {
-  simInfo: $("simInfo"),
-  bankerOdds: $("bankerOdds"),
-  playerOdds: $("playerOdds"),
-  tieOdds: $("tieOdds"),
-  evBanker: $("evBanker"),
-  evPlayer: $("evPlayer"),
-  askB: $("askB-dots"),
-  askP: $("askP-dots"),
-  breakAlert: $("breakAlert"),
-  autoGuideToggle: $("autoGuideToggle"),
-  submitBtn: $("submitBtn"),
-  keypad: $("keypad"),
-  gridBig: $("grid-big"),
-  gridEye: $("grid-eye"),
-  gridSmall: $("grid-small"),
-  gridRoach: $("grid-roach"),
-
-  // HUD
-  hud: $("hud"),
-  hudMain: $("hudMain"),
-  hudSub: $("hudSub"),
-  hudBadge: $("hudBadge"),
-  hudRemain: $("hudRemain"),
-  hudRound: $("hudRound"),
-  hudArmed: $("hudArmed"),
-  hudSim: $("hudSim"),
-  hudPB: $("hudPB"),
-  hudPP: $("hudPP"),
-  hudPT: $("hudPT"),
-  hudEVB: $("hudEVB"),
-  hudEVP: $("hudEVP"),
-  hudCom: $("hudCom"),
-};
-
-let hudExpanded = false;
-function toggleHud(){
-  hudExpanded = !hudExpanded;
-  ui.hud.classList.toggle("expanded", hudExpanded);
-  ui.hudBadge.textContent = hudExpanded ? "點我收合" : "點我展開";
+function snapshot(){ backupState = deepClone(S); }
+function totalRemaining(){
+  let t=0; for(let r=1;r<=13;r++) t += (S.rankCounts[r]||0);
+  return t;
 }
-
-/* ===== 鍵盤 + 輸入 ===== */
-const slotOrder = ["p1","b1","p2","b2","p3","b3"];
-let currentSlotIdx = 0;
-
 function rankToDisplay(n){
   n=parseInt(n,10);
   if(n===1) return "A";
@@ -526,6 +572,88 @@ function baccaratValFromRank(n){
   n=parseInt(n,10);
   return (n>=10)?0:n;
 }
+function fmtPct(x){ return (x*100).toFixed(2)+"%"; }
+function nowISO(){ return new Date().toISOString(); }
+
+/* =======================
+   1) DOM
+======================= */
+const $ = (id)=>document.getElementById(id);
+
+const ui = {
+  // HUD
+  hud: $("hud"),
+  hudMain: $("hudMain"),
+  hudBadge: $("hudBadge"),
+  hudSub: $("hudSub"),
+  hudRemain: $("hudRemain"),
+  hudRound: $("hudRound"),
+  hudArmed: $("hudArmed"),
+  hudSim: $("hudSim"),
+  hudPB: $("hudPB"),
+  hudPP: $("hudPP"),
+  hudPT: $("hudPT"),
+  hudEVB: $("hudEVB"),
+  hudEVP: $("hudEVP"),
+  hudCtx: $("hudCtx"),
+
+  // controls
+  optArmed: $("optArmed"),
+  optAllowTrend: $("optAllowTrend"),
+  optLearn: $("optLearn"),
+  minSamples: $("minSamples"),
+  minAcc: $("minAcc"),
+  trials: $("trials"),
+  lastPerf: $("lastPerf"),
+  rollPerf: $("rollPerf"),
+  allPerf: $("allPerf"),
+
+  autoGuideToggle: $("autoGuideToggle"),
+  submitBtn: $("submitBtn"),
+  keypad: $("keypad"),
+
+  gridBig: $("grid-big"),
+  gridEye: $("grid-eye"),
+  gridSmall: $("grid-small"),
+  gridRoach: $("grid-roach"),
+};
+
+let hudExpanded = false;
+function toggleHud(){
+  hudExpanded = !hudExpanded;
+  ui.hud.classList.toggle("expanded", hudExpanded);
+  ui.hudBadge.textContent = hudExpanded ? "點我收合" : "點我展開";
+}
+
+/* =======================
+   2) Deterministic RNG
+   - 同牌庫狀態 => 同模擬結果
+======================= */
+function hashCounts(counts, trials){
+  let h = 2166136261 >>> 0;
+  for(let r=1;r<=13;r++){
+    let v = (counts[r]||0) | 0;
+    h ^= v & 0xff; h = Math.imul(h, 16777619);
+    h ^= (v >>> 8) & 0xff; h = Math.imul(h, 16777619);
+  }
+  h ^= (trials|0) & 0xff; h = Math.imul(h, 16777619);
+  return h >>> 0;
+}
+function mulberry32(a){
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* =======================
+   3) Input + Keypad
+======================= */
+const slotOrder = ["p1","b1","p2","b2","p3","b3"];
+let currentSlotIdx = 0;
+
 function getSlotRank(id){ return $(`slot-${id}`).dataset.rank || ""; }
 function setSlotRank(id, rank){
   const el = $(`slot-${id}`);
@@ -602,19 +730,22 @@ function buildKeypad(){
   clr.onclick = ()=>clearAllSlots();
   ui.keypad.appendChild(clr);
 }
-
 function inputKey(val){
-  const pend = pendingCounts();
   const r = parseInt(val,10);
+
+  // ✅ 庫存檢查：把「本局已輸入」也算進去
+  const pend = pendingCounts();
   const remain = (S.rankCounts[r]||0) - (pend[r]||0);
   if(remain<=0){
     alert(`庫存不足：${rankToDisplay(r)}（含本局已輸入）`);
     return;
   }
+
   while(currentSlotIdx < slotOrder.length && $(`slot-${slotOrder[currentSlotIdx]}`).classList.contains("disabled")){
     currentSlotIdx++;
   }
   if(currentSlotIdx >= slotOrder.length) return;
+
   const id=slotOrder[currentSlotIdx];
   setSlotRank(id, val);
 
@@ -629,15 +760,13 @@ function inputKey(val){
   else document.querySelectorAll(".playing-card").forEach(x=>x.classList.remove("active"));
 }
 
-/* ===== 補牌防呆（嚴格） ===== */
+/* =======================
+   4) Strict draw-rule validator
+======================= */
 function getBaccaratValFromSlot(id){
   const rk=getSlotRank(id);
   if(!rk) return null;
   return baccaratValFromRank(rk);
-}
-function totalRemaining(){
-  let t=0; for(let r=1;r<=13;r++) t += (S.rankCounts[r]||0);
-  return t;
 }
 function evaluateDrawRules(){
   const strict = ui.autoGuideToggle.checked;
@@ -720,7 +849,9 @@ function evaluateDrawRules(){
   btn.textContent = msg;
 }
 
-/* ===== 勝負判定 + 扣牌 ===== */
+/* =======================
+   5) Winner + consume cards
+======================= */
 function cardsConsumed(){
   const arr=[];
   slotOrder.forEach(id=>{ const rk=getSlotRank(id); if(rk) arr.push(parseInt(rk,10)); });
@@ -736,9 +867,11 @@ function computeWinner(){
   return "T";
 }
 
-/* ===== Monte Carlo（SIM） ===== */
-function drawRankFromCounts(counts,total){
-  const x = Math.floor(Math.random()*total);
+/* =======================
+   6) Monte Carlo SIM
+======================= */
+function drawRankFromCounts(counts,total,rand){
+  const x = Math.floor(rand()*total);
   let acc=0;
   for(let r=1;r<=13;r++){
     acc += counts[r];
@@ -746,15 +879,15 @@ function drawRankFromCounts(counts,total){
   }
   counts[13]--; return 13;
 }
-function simulateOneHand(countsBase){
+function simulateOneHand(countsBase, rand){
   const counts=new Array(14).fill(0);
   let total=0;
   for(let r=1;r<=13;r++){ counts[r]=countsBase[r]; total+=counts[r]; }
 
-  const p1=drawRankFromCounts(counts,total--);
-  const b1=drawRankFromCounts(counts,total--);
-  const p2=drawRankFromCounts(counts,total--);
-  const b2=drawRankFromCounts(counts,total--);
+  const p1=drawRankFromCounts(counts,total--,rand);
+  const b1=drawRankFromCounts(counts,total--,rand);
+  const p2=drawRankFromCounts(counts,total--,rand);
+  const b2=drawRankFromCounts(counts,total--,rand);
 
   const pT=(baccaratValFromRank(p1)+baccaratValFromRank(p2))%10;
   const bT=(baccaratValFromRank(b1)+baccaratValFromRank(b2))%10;
@@ -766,10 +899,10 @@ function simulateOneHand(countsBase){
   }
 
   let p3=null,b3=null;
-  if(pT<=5) p3=drawRankFromCounts(counts,total--);
+  if(pT<=5) p3=drawRankFromCounts(counts,total--,rand);
 
   if(p3===null){
-    if(bT<=5) b3=drawRankFromCounts(counts,total--);
+    if(bT<=5) b3=drawRankFromCounts(counts,total--,rand);
   }else{
     const p3v=baccaratValFromRank(p3);
     let needB3=false;
@@ -778,7 +911,7 @@ function simulateOneHand(countsBase){
     else if (bT === 4 && p3v >= 2 && p3v <= 7) needB3 = true;
     else if (bT === 5 && p3v >= 4 && p3v <= 7) needB3 = true;
     else if (bT === 6 && (p3v === 6 || p3v === 7)) needB3 = true;
-    if(needB3) b3=drawRankFromCounts(counts,total--);
+    if(needB3) b3=drawRankFromCounts(counts,total--,rand);
   }
 
   const pF=(baccaratValFromRank(p1)+baccaratValFromRank(p2)+(p3?baccaratValFromRank(p3):0))%10;
@@ -789,19 +922,30 @@ function simulateOneHand(countsBase){
   return "T";
 }
 function simulateProbs(trials){
+  const seed = hashCounts(S.rankCounts, trials);
+  const deckHash = String(seed);
+  if(S.cache[deckHash] && S.cache[deckHash].trials === trials){
+    return Object.assign({deckHash}, S.cache[deckHash]);
+  }
+
   const base=new Array(14).fill(0);
   for(let r=1;r<=13;r++) base[r]=S.rankCounts[r];
 
+  const rand = mulberry32(seed);
   let B=0,P=0,T=0;
   for(let i=0;i<trials;i++){
-    const w=simulateOneHand(base);
+    const w=simulateOneHand(base, rand);
     if(w==="B") B++; else if(w==="P") P++; else T++;
   }
-  return {pB:B/trials, pP:P/trials, pT:T/trials};
+  const res = { deckHash, trials, pB:B/trials, pP:P/trials, pT:T/trials };
+  S.cache[deckHash] = res;
+  return res;
 }
-function fmtPct(x){ return (x*100).toFixed(2)+"%"; }
 
-/* ===== 路單（簡化：只保留大路與三路渲染）===== */
+/* =======================
+   7) Technical features (Ask the Road)
+   - 不寫進機率，只當特徵/濾網/監控
+======================= */
 function genericMatrixMapper(arr,supportTie){
   let gridMap={}, lastRes=null, sc=0, cc=0, cr=0, mc=0, lastCrd=null, pendingTies=0;
   for(let i=0;i<arr.length;i++){
@@ -901,117 +1045,374 @@ function renderAllRoads(){
   renderGrid("grid-small",sm.grid,sm.maxCol,"small");
   renderGrid("grid-roach",ro.grid,ro.maxCol,"roach");
 }
+function getStreak(){
+  const pure = S.history.filter(x=>x!=="T");
+  if(pure.length===0) return {side:null,len:0};
+  const side = pure[pure.length-1];
+  let len=0;
+  for(let i=pure.length-1;i>=0;i--){
+    if(pure[i]===side) len++; else break;
+  }
+  return {side,len:Math.min(len,6)};
+}
+function askVectorIf(hyp){
+  const d = generateDerivedArrays([...S.history, hyp]);
+  const last = (a)=>a.length?a[a.length-1]:null;
+  return [last(d.eye), last(d.small), last(d.roach)];
+}
+function countRed(vec){
+  return vec.filter(x=>x==="R").length;
+}
 
-/* ===== HUD 更新（核心） ===== */
-function setHudState(state){
+/* =======================
+   8) Online learning (Bayesian)
+   - key = phase + streak + askRed + probDiffBucket
+======================= */
+function phaseBucket(){
+  // 8副牌 => 416張，按剩餘副數分桶（0~8）
+  return Math.floor(totalRemaining()/52); // 0..8
+}
+function probDiffBucket(pB, pP){
+  // 用機率差（去除Tie後用B/P比）粗分桶
+  const denom = Math.max(1e-9, (pB+pP));
+  const b = pB/denom;
+  const diff = (b - 0.5); // -0.5..0.5
+  // 每 0.01 一桶，約 -50..50
+  return Math.max(-50, Math.min(50, Math.round(diff*100)));
+}
+function makeContextKey(recSide, pB, pP){
+  const st = getStreak();
+  const vec = (recSide==="B") ? askVectorIf("B") : askVectorIf("P");
+  const red = countRed(vec);
+  const ph = phaseBucket();
+  const db = probDiffBucket(pB,pP);
+  const ss = st.side ? st.side : "N";
+  return `ph${ph}|st${ss}${st.len}|red${red}|d${db}`;
+}
+function getBucket(key){
+  if(!S.learn.buckets[key]){
+    S.learn.buckets[key] = {
+      B:{a:1,b:1,n:0},
+      P:{a:1,b:1,n:0}
+    };
+  }
+  return S.learn.buckets[key];
+}
+function posteriorMean(side, key){
+  const b = getBucket(key)[side];
+  return b.a/(b.a+b.b);
+}
+function bucketN(side, key){
+  return getBucket(key)[side].n;
+}
+function updateLearning(side, key, correct){
+  const b = getBucket(key)[side];
+  b.n += 1;
+  if(correct) b.a += 1;
+  else b.b += 1;
+}
+
+/* =======================
+   9) Recommendation logic
+   - 基本面：EV>0 才是「有理論意義」訊號
+   - 你要求的技術面：可選擇允許負EV順勢，但必須通過學習門檻
+======================= */
+function decide(probs){
+  const pB=probs.pB, pP=probs.pP, pT=probs.pT;
+  const evB = (pB*(1-S.commission)) - pP;
+  const evP = pP - pB;
+
+  // base side（先用 EV，再用機率）
+  let baseSide="PASS";
+  if(Math.max(evB, evP) > 0){
+    baseSide = (evB>=evP) ? "B" : "P";
+  }else{
+    // EV都負：若允許順勢，才可進一步看
+    baseSide = ui.optAllowTrend.checked ? ((pB>=pP) ? "B" : "P") : "PASS";
+  }
+
+  // learning filter
+  let reason = "";
+  let key = null;
+  let ctxMean = null;
+  let ctxN = 0;
+
+  if(baseSide==="PASS"){
+    reason = "PASS：EV≤0（且未啟用負EV順勢）";
+    return {side:"PASS", pB,pP,pT, evB, evP, key, ctxMean, ctxN, reason};
+  }
+
+  key = makeContextKey(baseSide, pB, pP);
+  ctxMean = posteriorMean(baseSide, key);
+  ctxN = bucketN(baseSide, key);
+
+  if(ui.optLearn.checked){
+    const minN = parseInt(ui.minSamples.value||"0",10);
+    const minAcc = parseFloat(ui.minAcc.value||"0.5");
+    if(ctxN < minN){
+      reason = `PASS：學習樣本不足（n=${ctxN} < ${minN}）`;
+      return {side:"PASS", pB,pP,pT, evB, evP, key, ctxMean, ctxN, reason};
+    }
+    if(ctxMean < minAcc){
+      reason = `PASS：情境命中不足（${(ctxMean*100).toFixed(1)}% < ${(minAcc*100).toFixed(1)}%）`;
+      return {side:"PASS", pB,pP,pT, evB, evP, key, ctxMean, ctxN, reason};
+    }
+  }
+
+  // allow
+  if(Math.max(evB, evP) > 0){
+    reason = `出手：EV為正 ＋ 情境命中 ${(ctxMean*100).toFixed(1)}% (n=${ctxN})`;
+  }else{
+    reason = `順勢（負EV）：情境命中 ${(ctxMean*100).toFixed(1)}% (n=${ctxN})`;
+  }
+  return {side:baseSide, pB,pP,pT, evB, evP, key, ctxMean, ctxN, reason};
+}
+
+/* =======================
+   10) Performance tracking
+======================= */
+function updatePerf(correct){
+  S.perf.totalPred += 1;
+  if(correct) S.perf.correct += 1;
+  S.perf.roll.push(correct?1:0);
+  if(S.perf.roll.length>50) S.perf.roll.shift();
+}
+function perfText(){
+  const roll = S.perf.roll;
+  const rollN = roll.length;
+  const rollC = roll.reduce((a,b)=>a+b,0);
+  const allN = S.perf.totalPred;
+  const allC = S.perf.correct;
+  ui.rollPerf.textContent = rollN ? `${(rollC/rollN*100).toFixed(1)}% (${rollC}/${rollN})` : "—";
+  ui.allPerf.textContent  = allN  ? `${(allC/allN*100).toFixed(1)}% (${allC}/${allN})` : "—";
+}
+
+/* =======================
+   11) Render
+======================= */
+function setHudState(side){
   ui.hud.classList.remove("pass","banker","player");
-  if(state==="B") ui.hud.classList.add("banker");
-  else if(state==="P") ui.hud.classList.add("player");
+  if(side==="B") ui.hud.classList.add("banker");
+  else if(side==="P") ui.hud.classList.add("player");
   else ui.hud.classList.add("pass");
 }
-function recalcAndRender(){
-  const total = totalRemaining();
-  const trials = S.trials;
+function recalcAndRender(force=false){
+  // sync controls -> state
+  const t = parseInt(ui.trials.value||"12000",10);
+  S.trials = Math.max(1000, Math.min(200000, t));
+  S.learn.enabled = ui.optLearn.checked;
+  S.learn.minSamples = parseInt(ui.minSamples.value||"0",10);
+  S.learn.minAcc = parseFloat(ui.minAcc.value||"0.5");
 
-  ui.simInfo.textContent = `SIM: ${trials}`;
-  ui.hudRemain.textContent = String(total);
+  ui.hudRemain.textContent = String(totalRemaining());
   ui.hudRound.textContent  = String(S.history.length);
-  ui.hudArmed.textContent  = S.armed ? "是" : "否";
-  ui.hudSim.textContent    = String(trials);
-  ui.hudCom.textContent    = (S.commission*100).toFixed(1) + "%";
+  ui.hudSim.textContent    = String(S.trials);
+  ui.optArmed.checked = S.armed;
+  ui.hudArmed.textContent = S.armed ? "是" : "否";
 
-  const probs = simulateProbs(trials);
+  // SIM
+  const probs = simulateProbs(S.trials);
+  const rec = decide(probs);
 
-  ui.bankerOdds.textContent = fmtPct(probs.pB);
-  ui.playerOdds.textContent = fmtPct(probs.pP);
-  ui.tieOdds.textContent    = fmtPct(probs.pT);
+  // store "recommendation for THIS upcoming hand"
+  S.lastRec = rec;
 
-  ui.hudPB.textContent = fmtPct(probs.pB);
-  ui.hudPP.textContent = fmtPct(probs.pP);
-  ui.hudPT.textContent = fmtPct(probs.pT);
+  // HUD numbers
+  ui.hudPB.textContent = fmtPct(rec.pB);
+  ui.hudPP.textContent = fmtPct(rec.pP);
+  ui.hudPT.textContent = fmtPct(rec.pT);
+  ui.hudEVB.textContent = (rec.evB*100).toFixed(2)+"%";
+  ui.hudEVP.textContent = (rec.evP*100).toFixed(2)+"%";
+  ui.hudEVB.style.color = rec.evB>0 ? "var(--t)" : "var(--muted)";
+  ui.hudEVP.style.color = rec.evP>0 ? "var(--t)" : "var(--muted)";
+  ui.hudCtx.textContent  = rec.key ? `${(rec.ctxMean*100).toFixed(1)}% / n=${rec.ctxN}` : "--";
 
-  const evB = (probs.pB*(1-S.commission)) - probs.pP;
-  const evP = probs.pP - probs.pB;
-
-  ui.evBanker.textContent = (evB*100).toFixed(2)+"%";
-  ui.evPlayer.textContent = (evP*100).toFixed(2)+"%";
-
-  ui.hudEVB.textContent = (evB*100).toFixed(2)+"%";
-  ui.hudEVP.textContent = (evP*100).toFixed(2)+"%";
-  ui.hudEVB.style.color = evB>0 ? "var(--t)" : "var(--muted)";
-  ui.hudEVP.style.color = evP>0 ? "var(--t)" : "var(--muted)";
-
-  // HUD 主指揮（這裡只做示範：以 EV 最大者為主，EV<=0 則觀望）
-  let state="PASS", main="觀望", sub="EV ≤ 0（僅顯示條件機率）";
-  if(Math.max(evB,evP) > 0){
-    if(evB>=evP){ state="B"; main="🔥 押莊"; sub="EV(B) > 0"; }
-    else { state="P"; main="🔥 押閒"; sub="EV(P) > 0"; }
+  // HUD command
+  if(rec.side==="B"){
+    setHudState("B");
+    ui.hudMain.innerHTML = `押莊 <span class="badge" id="hudBadge">${hudExpanded?"點我收合":"點我展開"}</span>`;
+  }else if(rec.side==="P"){
+    setHudState("P");
+    ui.hudMain.innerHTML = `押閒 <span class="badge" id="hudBadge">${hudExpanded?"點我收合":"點我展開"}</span>`;
+  }else{
+    setHudState("PASS");
+    ui.hudMain.innerHTML = `觀望 <span class="badge" id="hudBadge">${hudExpanded?"點我收合":"點我展開"}</span>`;
   }
-  setHudState(state);
-  ui.hudMain.innerHTML = `${main} <span class="badge" id="hudBadge">${hudExpanded?"點我收合":"點我展開"}</span>`;
-  ui.hudSub.textContent = sub;
 
-  // 問路 dots（保留）
-  const dB = generateDerivedArrays([...S.history,"B"]);
-  const dP = generateDerivedArrays([...S.history,"P"]);
-  const last = (a)=>a.length?a[a.length-1]:null;
-  const askB = [last(dB.eye), last(dB.small), last(dB.roach)];
-  const askP = [last(dP.eye), last(dP.small), last(dP.roach)];
+  // Subtitle includes: reason + armed + last outcome line
+  const armedTxt = S.armed ? "授權下注：是" : "授權下注：否";
+  ui.hudSub.textContent = `${rec.reason} ｜ ${armedTxt}`;
 
-  function setDots(el, arr){
-    el.innerHTML="";
-    arr.forEach(x=>{
-      const dot=document.createElement("div");
-      dot.className="dot " + (x==="R"?"r":x==="Blue"?"b":"e");
-      el.appendChild(dot);
-    });
-  }
-  setDots(ui.askB, askB);
-  setDots(ui.askP, askP);
-
+  // roads
   renderAllRoads();
+
+  // keypad / validator
   updateKeypadCounts();
   evaluateDrawRules();
+
+  // perf
+  perfText();
+
+  saveState();
 }
 
-/* ===== 送出 / 撤銷 / 換靴 ===== */
+/* =======================
+   12) Submit: evaluate lastRec -> update learning & perf -> consume cards
+======================= */
+let submitLock = false;
+
 function submitData(){
+  if(submitLock) return;
   if(ui.submitBtn.disabled) return;
 
-  snapshot();
+  submitLock = true;
+  ui.submitBtn.disabled = true;
+  const oldText = ui.submitBtn.textContent;
+  ui.submitBtn.textContent = "結算中...";
 
-  const winner = computeWinner();
-  S.history.push(winner);
+  snapshot(); // undo must revert everything
 
+  const outcome = computeWinner(); // 'B','P','T'
   const consumed = cardsConsumed();
-  consumed.forEach(r=>{ S.rankCounts[r]--; });
+
+  // Evaluate prediction of THIS hand (S.lastRec was computed before this hand)
+  // If lastRec is PASS -> no evaluation
+  // If outcome is T -> exclude from accuracy update (push), but log it
+  let predSide = S.lastRec ? S.lastRec.side : "PASS";
+  let correct = null;
+
+  if(predSide==="B" || predSide==="P"){
+    if(outcome==="T"){
+      correct = null; // push
+    }else{
+      correct = (outcome === predSide);
+      // update performance (only for non-tie)
+      updatePerf(correct);
+
+      // update learning (only for non-tie)
+      if(S.lastRec.key){
+        updateLearning(predSide, S.lastRec.key, correct);
+      }
+    }
+  }
+
+  // log
+  const rec = S.lastRec || {pB:null,pP:null,pT:null,evB:null,evP:null,key:null,ctxMean:null,ctxN:null};
+  S.log.push({
+    ts: nowISO(),
+    deckHash: rec.key ? rec.key : null,
+    trials: S.trials,
+    pred: predSide,
+    armed: S.armed,
+    pB: rec.pB, pP: rec.pP, pT: rec.pT,
+    evB: rec.evB, evP: rec.evP,
+    ctxKey: rec.key,
+    ctxMean: rec.ctxMean,
+    ctxN: rec.ctxN,
+    outcome,
+    correct
+  });
+  if(S.log.length > 2000) S.log.shift();
+
+  // update lastPerf UI
+  if(predSide==="PASS"){
+    ui.lastPerf.textContent = `—（上局未預測）`;
+  }else if(outcome==="T"){
+    ui.lastPerf.textContent = `和局（不計勝負）`;
+  }else{
+    ui.lastPerf.textContent = correct ? `✅ 命中（預測${predSide} / 實際${outcome}）` : `❌ 失敗（預測${predSide} / 實際${outcome}）`;
+  }
+
+  // write history AFTER evaluation (so streak/ask uses correct time order)
+  S.history.push(outcome);
+
+  // consume cards
+  for(const r of consumed){
+    S.rankCounts[r] -= 1;
+    if(S.rankCounts[r] < 0) S.rankCounts[r] = 0; // hard guard
+  }
+
+  // per-hand: force disarm after settle (防胖手指）
+  S.armed = false;
+  ui.optArmed.checked = false;
 
   clearAllSlots();
-  saveState();
-  recalcAndRender();
+
+  // Important: clear cache because deck changed
+  S.cache = {};
+
+  recalcAndRender(true);
+
+  setTimeout(()=>{
+    submitLock = false;
+    ui.submitBtn.textContent = oldText;
+  }, 250);
+}
+
+/* =======================
+   13) Controls
+======================= */
+function toggleArmed(){
+  S.armed = !S.armed;
+  ui.optArmed.checked = S.armed;
+  recalcAndRender(false);
+}
+function resetLearning(){
+  if(!confirm("確定清空學習資料？（只清學習，不清路單/牌庫）")) return;
+  snapshot();
+  S.learn.buckets = {};
+  S.perf = {totalPred:0, correct:0, roll:[]};
+  ui.lastPerf.textContent = "—";
+  recalcAndRender(true);
+}
+function exportLog(){
+  const blob = new Blob([JSON.stringify({meta:{exportedAt:nowISO()}, state:{decks:S.decks, commission:S.commission, trials:S.trials}, log:S.log}, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url;
+  a.download=`baccarat_dss_log_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 function undoLastRound(){
   if(!backupState){ alert("沒有可撤銷的上一局。"); return; }
-  S = structClone(backupState);
+  S = deepClone(backupState);
   backupState = null;
   saveState();
   clearAllSlots();
-  recalcAndRender();
+  recalcAndRender(true);
 }
 function resetSystem(){
-  if(!confirm("確定換靴？（重置牌庫與路單）")) return;
+  if(!confirm("確定換靴？（重置牌庫、路單、快取；保留學習/績效可選）\n按「確定」= 清路單與牌庫，但保留學習。\n若你也要清學習，請先按『清空學習』。")) return;
   snapshot();
   S.rankCounts = initCounts(S.decks);
   S.history = [];
-  saveState();
+  S.cache = {};
+  S.lastRec = null;
+  S.armed = false;
+  ui.optArmed.checked = false;
   clearAllSlots();
-  recalcAndRender();
+  recalcAndRender(true);
 }
 
-/* ===== 初始化 ===== */
+/* =======================
+   14) init
+======================= */
+function syncUIFromState(){
+  ui.trials.value = String(S.trials);
+  ui.optArmed.checked = S.armed;
+  ui.optLearn.checked = S.learn.enabled;
+  ui.minSamples.value = String(S.learn.minSamples);
+  ui.minAcc.value = String(S.learn.minAcc);
+}
 buildKeypad();
+syncUIFromState();
 setActiveSlot("p1");
-recalcAndRender();
+updateKeypadCounts();
+evaluateDrawRules();
+recalcAndRender(true);
 </script>
 
 </body>
