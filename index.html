@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂量化終端 - Pro Max版</title>
+    <title>百家樂量化終端 - 自訂順序版</title>
     <style>
         :root {
             --bg: #09090b; --card: #18181b; --border: #27272a;
@@ -88,6 +88,9 @@
         .input-card { background: var(--card); border-radius: 16px; padding: 12px; border: 1px solid var(--border); }
         .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .toggle-guide { font-size: 12px; font-weight: 800; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+        
+        /* 自訂順序下拉選單樣式 */
+        .order-select { background: #27272a; color: #fff; border: 1px solid #3f3f46; border-radius: 6px; font-size: 12px; padding: 4px 6px; font-weight: bold; outline: none; }
         
         .table-layout { display: flex; gap: 8px; }
         .table-side { flex: 1; background: #000; border-radius: 12px; padding: 8px; border: 1px solid var(--border); }
@@ -175,9 +178,18 @@
 
         <div class="input-card">
             <div class="input-header">
-                <span style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;">自動偵測點數與對子</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;">順序:</span>
+                    <select id="inputOrderSelect" class="order-select" onchange="changeInputOrder()">
+                        <option value="PBPB">閒莊閒莊 (國際)</option>
+                        <option value="PPBB">閒閒莊莊 (區塊)</option>
+                        <option value="BPBP">莊閒莊閒</option>
+                        <option value="BBPP">莊莊閒閒</option>
+                    </select>
+                </div>
                 <label class="toggle-guide"><input type="checkbox" id="autoGuideToggle" checked onchange="evaluateDrawRules()" style="accent-color: var(--t-color);"> 🛡️ 防呆</label>
             </div>
+            
             <div class="table-layout">
                 <div class="table-side">
                     <div class="side-label p">PLAYER 閒</div>
@@ -234,7 +246,6 @@
                     <span id="shoeWinRate" style="font-size:16px; color:var(--text-main)">0.0%</span>
                 </div>
             </div>
-            <div style="font-size:10px; color:#888; margin-top:8px;">* 僅計算系統明確推薦莊閒且未和局之手數。點擊換靴即重置。</div>
         </div>
 
         <div class="db-section" style="border-color: var(--highlight);">
@@ -265,52 +276,70 @@
 /* =========================================================
    1) 核心狀態變數
 ========================================================= */
-const STATE_KEY = "baccarat_state_v8_promax";
-const DB_KEY = "baccarat_bigdata_v8_promax";
+const STATE_KEY = "baccarat_state_v9_order";
+const DB_KEY = "baccarat_bigdata_v9_order";
 
-// 單靴狀態
 let S = { 
     totalCards: 416, 
     deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, 
     history: [], 
     runningCount: 0,
-    shoePerf: { recs: 0, hits: 0 }, // 當靴表現
-    lastRecSide: null // 紀錄上一把推薦，用於結算比對
+    shoePerf: { recs: 0, hits: 0 },
+    lastRecSide: null
 };
 let backupState = null;
-
-// 大數據庫 (上限 50,000)
-let BigData = { 
-    totalHands: 0, 
-    stats: { B: 0, P: 0, T: 0, BP: 0, PP: 0 }, 
-    patterns: {},
-    acc: { recs: 0, hits: 0 } // 全局推薦命中追蹤
-};
+let BigData = { totalHands: 0, stats: { B: 0, P: 0, T: 0, BP: 0, PP: 0 }, patterns: {}, acc: { recs: 0, hits: 0 } };
 
 const baseBankerProb = 0.458597; const basePlayerProb = 0.446247; 
 const countWeights = {1:1, 2:1, 3:2, 4:2, 5:1, 6:-1, 7:-2, 8:-2, 9:-2, 10:0, 11:0, 12:0, 13:0};
-const slotOrder = ['p1', 'b1', 'p2', 'b2', 'p3', 'b3']; 
-let currentSlotIdx = 0; let dbPanelOpen = false;
 
-loadDatabase(); loadState(); updateDBUI(); recalcAndRender(); evaluateDrawRules();
+// 🎯 新增：動態輸入順序管理
+let currentSlotOrder = ['p1', 'b1', 'p2', 'b2', 'p3', 'b3']; 
+let currentSlotIdx = 0; 
+let dbPanelOpen = false;
+
+// 初始化
+loadDatabase(); loadState(); loadInputOrder(); updateDBUI(); recalcAndRender(); evaluateDrawRules();
 
 /* =========================================================
-   2) 大數據庫存取、自適應學習 (80% 鎖定)、iOS 專屬匯出
+   1.5) 自訂發牌順序功能 (Custom Dealing Order)
+========================================================= */
+function loadInputOrder() {
+    let savedOrder = localStorage.getItem('baccarat_input_order') || 'PBPB';
+    document.getElementById('inputOrderSelect').value = savedOrder;
+    applyInputOrder(savedOrder);
+}
+
+function changeInputOrder() {
+    const val = document.getElementById('inputOrderSelect').value;
+    localStorage.setItem('baccarat_input_order', val);
+    applyInputOrder(val);
+    
+    // 如果中途切換順序，為避免邏輯錯亂，一律清空當前輸入
+    clearAllSlots();
+}
+
+function applyInputOrder(val) {
+    if (val === 'PBPB') currentSlotOrder = ['p1', 'b1', 'p2', 'b2', 'p3', 'b3'];
+    else if (val === 'PPBB') currentSlotOrder = ['p1', 'p2', 'b1', 'b2', 'p3', 'b3'];
+    else if (val === 'BPBP') currentSlotOrder = ['b1', 'p1', 'b2', 'p2', 'p3', 'b3'];
+    else if (val === 'BBPP') currentSlotOrder = ['b1', 'b2', 'p1', 'p2', 'p3', 'b3'];
+}
+
+/* =========================================================
+   2) 大數據庫存取與自適應學習
 ========================================================= */
 function loadDatabase() { try { let db = localStorage.getItem(DB_KEY); if (db) BigData = JSON.parse(db); } catch (e) {} }
 function saveDatabase() { localStorage.setItem(DB_KEY, JSON.stringify(BigData)); updateDBUI(); }
 
 function isModelFrozen() {
-    // 總預測次數 > 50 且 勝率 >= 80% 時鎖定模型
     let globalWinRate = BigData.acc.recs > 0 ? BigData.acc.hits / BigData.acc.recs : 0;
     return (BigData.acc.recs >= 50 && globalWinRate >= 0.80);
 }
 
 function updateBigData(rd) {
-    if (BigData.totalHands >= 50000) return; // 容量上限
-    if (rd.w === 'T') return; // 忽略和局主邏輯
-    
-    // 如果模型已達 80% 黃金水準，停止寫入新 Pattern 防止雜訊污染
+    if (BigData.totalHands >= 50000) return; 
+    if (rd.w === 'T') return; 
     if (isModelFrozen()) return; 
 
     BigData.totalHands++;
@@ -338,15 +367,12 @@ function exportDatabase() {
         const blob = new Blob([dataStr], {type: "application/json"});
         const filename = `Baccarat_ProDB_${new Date().getTime()}.json`;
         
-        // 🍎 iOS Safari 專屬解決方案：Web Share API
         if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, {type: "application/json"})] })) {
             const file = new File([blob], filename, {type: "application/json"});
             navigator.share({
                 files: [file], title: 'Baccarat DB', text: '百家樂大數據庫匯出'
             }).catch(e => fallbackExport(blob, filename));
-        } else {
-            fallbackExport(blob, filename); // 電腦或其他瀏覽器
-        }
+        } else { fallbackExport(blob, filename); }
     } catch(e) { alert("匯出錯誤：" + e.message); }
 }
 
@@ -368,12 +394,10 @@ function importDatabase(evt) {
 function resetDatabase() { if(confirm("⚠️ 確定清空所有數據？")) { BigData = { totalHands: 0, stats: { B: 0, P: 0, T: 0, BP: 0, PP: 0 }, patterns: {}, acc: {recs:0, hits:0} }; saveDatabase(); alert("已清空。"); } }
 
 function updateDBUI() {
-    // 當靴勝率
     document.getElementById('shoeRecs').innerText = S.shoePerf.recs;
     document.getElementById('shoeHits').innerText = S.shoePerf.hits;
     document.getElementById('shoeWinRate').innerText = S.shoePerf.recs > 0 ? ((S.shoePerf.hits / S.shoePerf.recs)*100).toFixed(1) + "%" : "0.0%";
 
-    // 全局勝率與狀態
     document.getElementById('dbTotalHands').innerText = BigData.totalHands;
     document.getElementById('dbPatterns').innerText = Object.keys(BigData.patterns).length + " 組";
     document.getElementById('dbGlobalHits').innerText = `${BigData.acc.hits} / ${BigData.acc.recs}`;
@@ -393,7 +417,7 @@ function updateDBUI() {
 function toggleDBPanel() { dbPanelOpen = !dbPanelOpen; document.getElementById('dbPanel').className = dbPanelOpen ? "database-panel open" : "database-panel"; updateDBUI(); }
 
 /* =========================================================
-   3) 單靴與防呆輸入邏輯
+   3) 單靴與防呆輸入邏輯 (使用動態 currentSlotOrder)
 ========================================================= */
 function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(S)); updateDBUI(); }
 function loadState() { try { let st = localStorage.getItem(STATE_KEY); if (st) { S = JSON.parse(st); if(!S.shoePerf) S.shoePerf = {recs:0, hits:0}; } } catch(e){} }
@@ -437,22 +461,54 @@ function evaluateDrawRules() {
     btn.disabled = !valid; btn.className = valid ? "submit-btn ready" : "submit-btn"; btn.innerText = valid ? "✓ 牌局合法，點擊結算" : "需符合法定發牌規則";
 }
 
-function setActiveSlot(id) { let el = document.getElementById(`slot-${id}`); if(el.classList.contains('disabled')) return; document.querySelectorAll('.playing-card').forEach(e=>e.classList.remove('active')); el.classList.add('active'); currentSlotIdx = slotOrder.indexOf(id); }
+function setActiveSlot(id) { 
+    let el = document.getElementById(`slot-${id}`); 
+    if(el.classList.contains('disabled')) return; 
+    document.querySelectorAll('.playing-card').forEach(e=>e.classList.remove('active')); 
+    el.classList.add('active'); 
+    currentSlotIdx = currentSlotOrder.indexOf(id); // 使用動態順序
+}
+
 function inputKey(val) {
     if(S.deck[val] <= 0) { alert(`庫存不足！`); return; }
-    while(currentSlotIdx < slotOrder.length && document.getElementById(`slot-${slotOrder[currentSlotIdx]}`).classList.contains('disabled')) currentSlotIdx++;
-    if(currentSlotIdx >= slotOrder.length) return;
-    const id = slotOrder[currentSlotIdx], el = document.getElementById(`slot-${id}`);
+    
+    // 依據 currentSlotOrder 尋找下一個未被鎖定的框
+    while(currentSlotIdx < currentSlotOrder.length && document.getElementById(`slot-${currentSlotOrder[currentSlotIdx]}`).classList.contains('disabled')) {
+        currentSlotIdx++;
+    }
+    if(currentSlotIdx >= currentSlotOrder.length) return;
+    
+    const id = currentSlotOrder[currentSlotIdx];
+    const el = document.getElementById(`slot-${id}`);
+    
     let dVal=val; if(val==='1') dVal='A'; if(val==='11') dVal='J'; if(val==='12') dVal='Q'; if(val==='13') dVal='K';
     el.innerText = dVal; el.dataset.val = val; el.classList.add('filled');
+    
     evaluateDrawRules();
-    currentSlotIdx++; while(currentSlotIdx < slotOrder.length && document.getElementById(`slot-${slotOrder[currentSlotIdx]}`).classList.contains('disabled')) currentSlotIdx++;
-    if(currentSlotIdx < slotOrder.length) setActiveSlot(slotOrder[currentSlotIdx]); else document.querySelectorAll('.playing-card').forEach(e=>e.classList.remove('active'));
+    
+    currentSlotIdx++; 
+    while(currentSlotIdx < currentSlotOrder.length && document.getElementById(`slot-${currentSlotOrder[currentSlotIdx]}`).classList.contains('disabled')) {
+        currentSlotIdx++;
+    }
+    
+    if(currentSlotIdx < currentSlotOrder.length) {
+        setActiveSlot(currentSlotOrder[currentSlotIdx]); 
+    } else { 
+        document.querySelectorAll('.playing-card').forEach(e=>e.classList.remove('active')); 
+    }
 }
-function clearAllSlots() { slotOrder.forEach(id=>{ let el=document.getElementById(`slot-${id}`); el.innerText=''; el.dataset.val=''; el.classList.remove('filled'); }); currentSlotIdx=0; evaluateDrawRules(); setActiveSlot('p1'); }
+
+function clearAllSlots() { 
+    currentSlotOrder.forEach(id=>{ 
+        let el=document.getElementById(`slot-${id}`); el.innerText=''; el.dataset.val=''; el.classList.remove('filled'); 
+    }); 
+    currentSlotIdx=0; 
+    evaluateDrawRules(); 
+    setActiveSlot(currentSlotOrder[0]); 
+}
 
 /* =========================================================
-   4) 結算與勝率評估 (Perf Evaluation)
+   4) 結算與勝率評估
 ========================================================= */
 function submitData() {
     const btn = document.getElementById('submitBtn'); if(btn.disabled) return;
@@ -474,33 +530,28 @@ function submitData() {
     let winner = 'T', fP = pPts%10, fB = bPts%10;
     if(fP > fB) winner = 'P'; else if(fB > fP) winner = 'B';
     
-    // 🎯 勝率評估：檢查系統上一把的推薦是否命中
     if (S.lastRecSide && S.lastRecSide !== 'PASS' && winner !== 'T') {
         let isHit = (S.lastRecSide === winner);
-        S.shoePerf.recs++;
-        BigData.acc.recs++;
+        S.shoePerf.recs++; BigData.acc.recs++;
         if (isHit) { S.shoePerf.hits++; BigData.acc.hits++; }
     }
 
     let roundData = { w: winner, bp: isBPair, pp: isPPair };
     S.history.push(roundData);
     consumed.forEach(v => { S.deck[v]--; S.totalCards--; S.runningCount += countWeights[v]; });
-    
-    updateBigData(roundData); // 如果大於80% 內部會自動 block
-    
+    updateBigData(roundData);
     saveState(); clearAllSlots(); recalcAndRender();
     setTimeout(() => { if(S.totalCards >= 6) evaluateDrawRules(); }, 400);
 }
 
 /* =========================================================
-   5) 雙腦決策與強弱顯示 (HUD Updates)
+   5) 雙腦決策與側注機率 UI
 ========================================================= */
 function recalcAndRender() {
     let decksRem = S.totalCards / 52; let tc = decksRem > 0 ? S.runningCount / decksRem : 0;
     let edgeShift = tc * 0.0005; let p_player = basePlayerProb + edgeShift; let p_banker = baseBankerProb - edgeShift;
     let evBanker = (p_banker * 0.95) - p_player; let evPlayer = p_player - p_banker;
 
-    // 取得歷史預測
     let pureHist = S.history.filter(x => x.w !== 'T');
     let mlSide = null, mlMsg = "樣本收集中", tRate = 0, bpRate = 0, ppRate = 0;
     if (pureHist.length >= 3) {
@@ -508,10 +559,7 @@ function recalcAndRender() {
         let ptn = BigData.patterns[seq];
         if (ptn) {
             let tBP = ptn.B + ptn.P; let tHands = tBP + ptn.T;
-            if (tBP >= 5) {
-                let bR = ptn.B/tBP, pR = ptn.P/tBP;
-                if (bR >= 0.58) { mlSide = "B"; } else if (pR >= 0.58) { mlSide = "P"; }
-            }
+            if (tBP >= 5) { let bR = ptn.B/tBP, pR = ptn.P/tBP; if (bR >= 0.58) mlSide = "B"; else if (pR >= 0.58) mlSide = "P"; }
             if (tHands > 0) { tRate = ptn.T/tHands; bpRate = ptn.BP/tHands; ppRate = ptn.PP/tHands; }
         }
     }
@@ -523,7 +571,6 @@ function recalcAndRender() {
     const obox = document.getElementById('oracleBox'), omain = document.getElementById('oracleMain');
     const badge = document.getElementById('oracleStrength');
     
-    // 計算 EV 強度
     let maxEV = Math.max(evBanker, evPlayer);
     let strLabel = "弱"; let strColor = "var(--text-muted)";
     if (maxEV > 0.015) { strLabel = "強"; strColor = "var(--highlight)"; }
@@ -531,7 +578,6 @@ function recalcAndRender() {
 
     let phySide = evBanker > 0 ? 'B' : (evPlayer > 0 ? 'P' : null);
     
-    // 決策輸出
     if (phySide === 'B' && mlSide === 'B') { obox.className = "oracle-box banker"; omain.innerHTML = `🔥 共振：重注莊家 <span class="strength-badge" style="color:${strColor}; border-color:${strColor};">強度: ${strLabel}</span>`; S.lastRecSide = 'B'; } 
     else if (phySide === 'P' && mlSide === 'P') { obox.className = "oracle-box player"; omain.innerHTML = `🔥 共振：重注閒家 <span class="strength-badge" style="color:${strColor}; border-color:${strColor};">強度: ${strLabel}</span>`; S.lastRecSide = 'P'; } 
     else if (phySide === 'B') { obox.className = "oracle-box banker"; omain.innerHTML = `試探莊家 (物理優勢) <span class="strength-badge" style="color:${strColor}; border-color:${strColor};">強度: ${strLabel}</span>`; S.lastRecSide = 'B'; } 
@@ -540,17 +586,14 @@ function recalcAndRender() {
     else if (mlSide === 'P') { obox.className = "oracle-box player"; omain.innerHTML = `順勢試閒 (歷史規律) <span class="strength-badge" style="color:#aaa; border-color:#aaa;">強度: 趨勢</span>`; S.lastRecSide = 'P'; } 
     else { obox.className = "oracle-box pass"; omain.innerHTML = `🛡️ 條件不足：觀望`; S.lastRecSide = 'PASS'; }
 
-    // 側注推薦邏輯 (高於自然發生機率 1.5 倍即亮起提示)
     let sbTie = document.getElementById('sbTie'); let sbBP = document.getElementById('sbBP'); let sbPP = document.getElementById('sbPP');
     sbTie.className = tRate > 0.14 ? "sidebet-pill active" : "sidebet-pill"; sbTie.innerText = `和局 ${(tRate*100).toFixed(0)}%`;
     sbBP.className = bpRate > 0.11 ? "sidebet-pill active" : "sidebet-pill"; sbBP.innerText = `莊對 ${(bpRate*100).toFixed(0)}%`;
     sbPP.className = ppRate > 0.11 ? "sidebet-pill active" : "sidebet-pill"; sbPP.innerText = `閒對 ${(ppRate*100).toFixed(0)}%`;
 
-    renderAllRoads();
-    updateDBUI();
+    renderAllRoads(); updateDBUI();
 }
 
-// 支援對子的完整五路圖渲染
 function renderAllRoads() {
     renderBeadPlate();
     let bd = buildBigRoadAndDerived(S.history); 
@@ -573,8 +616,7 @@ function renderBeadPlate() {
             if(grid[`${i},${j}`]){
                 let d = grid[`${i},${j}`];
                 let dot = document.createElement('div'); dot.className=`bead-dot ${d.w}`;
-                if(d.bp) dot.classList.add('has-bp');
-                if(d.pp) dot.classList.add('has-pp');
+                if(d.bp) dot.classList.add('has-bp'); if(d.pp) dot.classList.add('has-pp');
                 dot.innerHTML = `<span class="bead-text">${d.w==='B'?'莊':d.w==='P'?'閒':'和'}</span>`;
                 dot.style.display="flex"; dot.style.alignItems="center"; dot.style.justifyContent="center";
                 cell.appendChild(dot);
