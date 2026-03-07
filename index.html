@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>商業決策支援系統 - 專業五路圖版</title>
+    <title>商業決策支援系統 - 自動判定版</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 10px; background-color: #f2f2f7; color: #333; margin: 0; }
         .card { background: #fff; padding: 12px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -27,42 +27,42 @@
         .decision-box.banker { background: #ffebee; border-color: #ff3b30; color: #ff3b30; }
         .decision-box.player { background: #e3f2fd; border-color: #007aff; color: #007aff; }
         
-        /* 五路圖 UI (路單容器優化) */
+        /* 五路圖 UI */
         .road-title { font-size: 12px; font-weight: bold; color: #555; margin: 10px 0 5px 0; }
         .road-container { width: 100%; overflow-x: auto; border: 1px solid #ccc; background: #fff; padding: 1px; box-sizing: border-box; }
         .road-grid { display: flex; min-width: max-content; }
         .road-col { display: flex; flex-direction: column; }
-        
-        /* 網格與指示器 */
         .cell-lg { width: 22px; height: 22px; border: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: center; position: relative; }
         .cell-sm { width: 12px; height: 12px; border: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: center; position: relative; }
         
         .bead { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold; }
         .bead.B { background-color: #ff3b30; } .bead.P { background-color: #007aff; } .bead.T { background-color: #28a745; }
-        
         .circle-hollow { width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent; box-sizing: border-box; }
         .circle-hollow.B, .circle-hollow.R { border-color: #ff3b30; } .circle-hollow.P, .circle-hollow.Blue { border-color: #007aff; }
         .tie-line { background: linear-gradient(to top right, transparent 45%, #28a745 45%, #28a745 55%, transparent 55%); }
         .tie-text { position: absolute; font-size: 9px; font-weight: bold; color: #28a745; }
-        
         .circle-solid { width: 8px; height: 8px; border-radius: 50%; }
         .circle-solid.R { background-color: #ff3b30; } .circle-solid.Blue { background-color: #007aff; }
-        
         .slash { width: 10px; height: 10px; }
         .slash.R { background: linear-gradient(to bottom left, transparent 40%, #ff3b30 40%, #ff3b30 60%, transparent 60%); }
         .slash.Blue { background: linear-gradient(to bottom left, transparent 40%, #007aff 40%, #007aff 60%, transparent 60%); }
-        
-        /* 雙欄並排佈局供下三路使用 */
         .derived-roads-wrapper { display: flex; gap: 5px; margin-top: 5px; }
         .derived-col { flex: 1; min-width: 0; }
         
-        /* 輸入區 UI */
-        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .card-slot { border: 1px solid #ccc; border-radius: 6px; padding: 8px; background: #fafafa; }
-        .slot-title { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #555; }
-        .select-group select { width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #bbb; font-size: 14px; background: #fff; }
-        select.full-width, button.submit-btn { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: none; box-sizing: border-box; font-size: 16px; font-weight: bold; }
-        button.submit-btn { background: #000; color: #fff; cursor: pointer; margin-top: 15px; }
+        /* 全新輸入區 UI：閒莊分區設計 */
+        .input-section { margin-top: 10px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+        .input-header { padding: 8px; font-size: 13px; font-weight: bold; text-align: center; color: #fff; }
+        .input-header.player { background-color: #007aff; }
+        .input-header.banker { background-color: #ff3b30; }
+        .input-row { display: flex; padding: 10px; gap: 8px; background: #fafafa; }
+        .input-box { flex: 1; display: flex; flex-direction: column; align-items: center; }
+        .input-box span { font-size: 11px; margin-bottom: 4px; color: #666; }
+        .input-box select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; text-align: center; }
+        
+        button.submit-btn { width: 100%; padding: 14px; border-radius: 8px; border: none; box-sizing: border-box; font-size: 16px; font-weight: bold; background: #000; color: #fff; cursor: pointer; margin-top: 15px; }
+        
+        /* 自動判定結果顯示區 */
+        .auto-result-box { display: none; margin-top: 10px; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 14px; background: #e5e5ea; }
     </style>
 </head>
 <body>
@@ -94,16 +94,12 @@
 
     <div class="card">
         <h2>歷史軌跡與圖形分析</h2>
-        
         <div class="road-title">珠盤路 (Bead Plate)</div>
         <div class="road-container"><div class="road-grid" id="grid-bead"></div></div>
-        
         <div class="road-title">大路 (Big Road)</div>
         <div class="road-container"><div class="road-grid" id="grid-big"></div></div>
-        
         <div class="road-title">大眼仔路 (Big Eye Boy)</div>
         <div class="road-container"><div class="road-grid" id="grid-eye"></div></div>
-        
         <div class="derived-roads-wrapper">
             <div class="derived-col">
                 <div class="road-title">小路 (Small Road)</div>
@@ -117,31 +113,44 @@
     </div>
 
     <div class="card">
-        <h2>物理記錄與資料輸入</h2>
-        <div class="input-grid" id="cardInputsContainer"></div>
-        <select id="winnerSelect" class="full-width" style="margin-top: 10px;">
-            <option value="B">本局勝方：莊家 (Banker)</option>
-            <option value="P">本局勝方：閒家 (Player)</option>
-            <option value="T">本局勝方：和局 (Tie)</option>
-        </select>
+        <h2>自動判定輸入區 (免選手動勝負)</h2>
+        
+        <div class="input-section">
+            <div class="input-header player">閒家 (Player) 牌面</div>
+            <div class="input-row" id="playerInputs"></div>
+        </div>
+        
+        <div class="input-section">
+            <div class="input-header banker">莊家 (Banker) 牌面</div>
+            <div class="input-row" id="bankerInputs"></div>
+        </div>
+
+        <div id="autoResultBox" class="auto-result-box"></div>
+
         <button class="submit-btn" onclick="submitData()">寫入資料並執行次局演算</button>
     </div>
 
     <script>
-        // 初始化下拉選單
-        const cardValues = [{val: "", label: "-無-"}, {val: "1", label: "A"}, {val: "2", label: "2"}, {val: "3", label: "3"}, {val: "4", label: "4"}, {val: "5", label: "5"}, {val: "6", label: "6"}, {val: "7", label: "7"}, {val: "8", label: "8"}, {val: "9", label: "9"}, {val: "10", label: "10"}, {val: "11", label: "J"}, {val: "12", label: "Q"}, {val: "13", label: "K"}];
-        const container = document.getElementById('cardInputsContainer');
-        for(let i=1; i<=6; i++) {
-            container.innerHTML += `<div class="card-slot"><div class="slot-title">第 ${i} 張牌</div><div class="select-group"><select id="val-${i}">${cardValues.map(v => `<option value="${v.val}">${v.label}</option>`).join('')}</select></div></div>`;
+        // 初始化選項 (移除花色，只保留數值，加速操作)
+        const cardValues = [{val: "", label: "-空-"}, {val: "1", label: "A"}, {val: "2", label: "2"}, {val: "3", label: "3"}, {val: "4", label: "4"}, {val: "5", label: "5"}, {val: "6", label: "6"}, {val: "7", label: "7"}, {val: "8", label: "8"}, {val: "9", label: "9"}, {val: "10", label: "10"}, {val: "11", label: "J"}, {val: "12", label: "Q"}, {val: "13", label: "K"}];
+        
+        const pContainer = document.getElementById('playerInputs');
+        const bContainer = document.getElementById('bankerInputs');
+        
+        for(let i=1; i<=3; i++) {
+            let selectHTML = `<select id="p-val-${i}">${cardValues.map(v => `<option value="${v.val}">${v.label}</option>`).join('')}</select>`;
+            pContainer.innerHTML += `<div class="input-box"><span>第 ${i} 張</span>${selectHTML}</div>`;
+            
+            let selectHTML2 = `<select id="b-val-${i}">${cardValues.map(v => `<option value="${v.val}">${v.label}</option>`).join('')}</select>`;
+            bContainer.innerHTML += `<div class="input-box"><span>第 ${i} 張</span>${selectHTML2}</div>`;
         }
 
-        // 系統變數
         let totalCards = 416;
         let deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 0:128};
         let currentStep = 1; 
         const betSteps = {1: 100, 2: 200, 3: 400, 4: 800};
         let lastRecommendedSide = null; 
-        let historyLog = []; // 儲存所有局數結果 ['B', 'P', 'T', ...]
+        let historyLog = []; 
 
         renderAllRoads();
         calculateAndDisplay(0.4586, 0.4462);
@@ -151,21 +160,78 @@
                 totalCards = 416; deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 0:128};
                 currentStep = 1; lastRecommendedSide = null; historyLog = [];
                 renderAllRoads(); calculateAndDisplay(0.4586, 0.4462);
-                for(let i=1; i<=6; i++) document.getElementById(`val-${i}`).value = "";
+                document.getElementById('autoResultBox').style.display = 'none';
+                clearInputs();
+            }
+        }
+
+        function clearInputs() {
+            for(let i=1; i<=3; i++) {
+                document.getElementById(`p-val-${i}`).value = "";
+                document.getElementById(`b-val-${i}`).value = "";
             }
         }
 
         function submitData() {
-            let validCards = [];
-            for(let i=1; i<=6; i++) {
-                let valStr = document.getElementById(`val-${i}`).value;
-                if(valStr !== "") validCards.push((parseInt(valStr) >= 10) ? 0 : parseInt(valStr));
+            let pCardsRaw = [], bCardsRaw = [];
+            let validCards = []; // 存入引擎扣除庫存使用
+            let pPointsTotal = 0, bPointsTotal = 0;
+
+            // 讀取閒家牌面
+            for(let i=1; i<=3; i++) {
+                let valStr = document.getElementById(`p-val-${i}`).value;
+                if(valStr !== "") {
+                    let rawVal = parseInt(valStr);
+                    pCardsRaw.push(rawVal);
+                    let baccaratVal = rawVal >= 10 ? 0 : rawVal;
+                    validCards.push(baccaratVal);
+                    pPointsTotal += baccaratVal;
+                }
             }
-            if (validCards.length < 4 || validCards.length > 6) { alert("數據異常：每局必須消耗 4 到 6 張牌。"); return; }
+            
+            // 讀取莊家牌面
+            for(let i=1; i<=3; i++) {
+                let valStr = document.getElementById(`b-val-${i}`).value;
+                if(valStr !== "") {
+                    let rawVal = parseInt(valStr);
+                    bCardsRaw.push(rawVal);
+                    let baccaratVal = rawVal >= 10 ? 0 : rawVal;
+                    validCards.push(baccaratVal);
+                    bPointsTotal += baccaratVal;
+                }
+            }
 
-            const winner = document.getElementById('winnerSelect').value;
-            historyLog.push(winner); // 寫入歷史軌跡
+            // 防呆：雙方至少要有兩張牌 (百家樂基本規則)
+            if (pCardsRaw.length < 2 || bCardsRaw.length < 2) { 
+                alert("數據異常：莊家與閒家至少皆需輸入 2 張牌。"); 
+                return; 
+            }
 
+            // --- 絕對客觀判定勝負引擎 ---
+            let finalP = pPointsTotal % 10;
+            let finalB = bPointsTotal % 10;
+            let winner = 'T';
+            let winnerText = `【和局 Tie】雙方 ${finalP} 點平手`;
+
+            if (finalP > finalB) {
+                winner = 'P';
+                winnerText = `【閒家 Player 贏】閒 ${finalP} 點 vs 莊 ${finalB} 點`;
+            } else if (finalB > finalP) {
+                winner = 'B';
+                winnerText = `【莊家 Banker 贏】莊 ${finalB} 點 vs 閒 ${finalP} 點`;
+            }
+
+            // 顯示判定結果提示
+            const resultBox = document.getElementById('autoResultBox');
+            resultBox.style.display = 'block';
+            resultBox.innerText = `系統自動判定：${winnerText}`;
+            if (winner === 'B') resultBox.style.color = '#ff3b30';
+            else if (winner === 'P') resultBox.style.color = '#007aff';
+            else resultBox.style.color = '#28a745';
+
+            historyLog.push(winner); 
+
+            // --- 資金策略引擎 ---
             if (lastRecommendedSide !== null && lastRecommendedSide !== 'PASS' && winner !== 'T') {
                 if (winner === lastRecommendedSide) { currentStep = 1; } 
                 else {
@@ -174,8 +240,8 @@
                 }
             }
 
+            // --- 物理機率引擎 ---
             validCards.forEach(val => { if(deck[val] > 0) { deck[val]--; totalCards--; } });
-
             let lowCards = deck[1] + deck[2] + deck[3] + deck[4] + deck[5];
             let highCards = deck[6] + deck[7] + deck[8] + deck[9] + deck[0];
             let ratio = lowCards / (highCards === 0 ? 1 : highCards);
@@ -186,8 +252,7 @@
 
             calculateAndDisplay(p_banker, p_player);
             renderAllRoads();
-
-            for(let i=1; i<=6; i++) document.getElementById(`val-${i}`).value = "";
+            clearInputs();
         }
 
         function calculateAndDisplay(p_banker, p_player) {
@@ -218,21 +283,17 @@
             fp.className = flipProb < 0.60 ? "survival-rate-value survival-warning" : "survival-rate-value";
         }
 
-        // ================= 五路圖繪製核心引擎 =================
+        // --- 五路圖繪製核心 ---
         function renderAllRoads() {
             renderBeadPlate();
-            
-            // 提取大路數據與下三路布林陣列
             let bigMap = genericMatrixMapper(historyLog, true);
             let derived = generateDerivedArrays(historyLog);
-            
             renderGrid('grid-big', bigMap.grid, bigMap.maxCol, 'big');
             renderGrid('grid-eye', genericMatrixMapper(derived.eye, false).grid, genericMatrixMapper(derived.eye, false).maxCol, 'eye');
             renderGrid('grid-small', genericMatrixMapper(derived.small, false).grid, genericMatrixMapper(derived.small, false).maxCol, 'small');
             renderGrid('grid-roach', genericMatrixMapper(derived.roach, false).grid, genericMatrixMapper(derived.roach, false).maxCol, 'roach');
         }
 
-        // 珠盤路直譯
         function renderBeadPlate() {
             const container = document.getElementById('grid-bead'); container.innerHTML = '';
             const cols = Math.max(12, Math.ceil(historyLog.length / 6));
@@ -254,7 +315,6 @@
             container.parentElement.scrollLeft = container.parentElement.scrollWidth;
         }
 
-        // 泛用型矩陣碰撞尋路演算 (Matrix Pathfinding)
         function genericMatrixMapper(arr, supportTie) {
             let gridMap = {}; let lastRes = null; let sc = 0, cc = 0, cr = 0, mc = 0; let lastCrd = null;
             for (let i = 0; i < arr.length; i++) {
@@ -274,30 +334,26 @@
             return { grid: gridMap, maxCol: mc };
         }
 
-        // 產生下三路的布林陣列 (嚴謹時序法)
         function generateDerivedArrays(hist) {
             let pHist = hist.filter(x => x !== 'T');
             let pCols = []; let cCol = []; let lRes = null;
-            
-            // 建立純大路分欄
             for(let r of pHist) {
                 if (r === lRes) cCol.push(r); else { if(cCol.length>0) pCols.push(cCol); cCol = [r]; lRes = r; }
             }
             if(cCol.length>0) pCols.push(cCol);
 
             let eye = [], sm = [], roach = [];
-            // 時序走訪大路座標
             for (let c = 0; c < pCols.length; c++) {
                 for (let r = 0; r < pCols[c].length; r++) {
-                    if (c >= 1) { // 大眼仔 k=1
+                    if (c >= 1) { 
                         if (r === 0 && c >= 2) eye.push(pCols[c-1].length === pCols[c-2].length ? 'R' : 'Blue');
                         else if (r > 0) eye.push((pCols[c-1] && pCols[c-1].length > r) ? 'R' : ((pCols[c-1] && pCols[c-1].length === r) ? 'Blue' : 'R'));
                     }
-                    if (c >= 2) { // 小路 k=2
+                    if (c >= 2) { 
                         if (r === 0 && c >= 3) sm.push(pCols[c-1].length === pCols[c-3].length ? 'R' : 'Blue');
                         else if (r > 0) sm.push((pCols[c-2] && pCols[c-2].length > r) ? 'R' : ((pCols[c-2] && pCols[c-2].length === r) ? 'Blue' : 'R'));
                     }
-                    if (c >= 3) { // 蟑螂路 k=3
+                    if (c >= 3) { 
                         if (r === 0 && c >= 4) roach.push(pCols[c-1].length === pCols[c-4].length ? 'R' : 'Blue');
                         else if (r > 0) roach.push((pCols[c-3] && pCols[c-3].length > r) ? 'R' : ((pCols[c-3] && pCols[c-3].length === r) ? 'Blue' : 'R'));
                     }
@@ -306,11 +362,10 @@
             return { eye, small: sm, roach };
         }
 
-        // 泛用型 DOM 渲染器
         function renderGrid(domId, gridMap, maxCol, type) {
             const container = document.getElementById(domId); container.innerHTML = '';
             const isSm = (type === 'small' || type === 'roach');
-            const cols = Math.max(isSm ? 24 : 12, maxCol + 1); // 確保起始寬度
+            const cols = Math.max(isSm ? 24 : 12, maxCol + 1); 
             
             for (let c = 0; c < cols; c++) {
                 let colDiv = document.createElement('div'); colDiv.className = 'road-col';
