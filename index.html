@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂 DSS（即時監控＋線上學習版 v2）</title>
+  <title>百家樂 DSS（即時監控＋線上學習版 v3）</title>
   <style>
     :root{
       --bg:#0d0d12;
@@ -27,7 +27,7 @@
       padding: 8px 6px 14px;
       user-select:none;
       -webkit-font-smoothing:antialiased;
-      padding-top: calc(env(safe-area-inset-top) + 116px);
+      padding-top: calc(env(safe-area-inset-top) + 132px);
     }
     .module-card{
       background:var(--card);
@@ -64,15 +64,16 @@
       box-shadow: 0 0 26px rgba(10,132,255,.35), 0 10px 30px rgba(0,0,0,0.45);
       background: linear-gradient(180deg, rgba(10,132,255,0.18) 0%, var(--glass) 70%);
     }
+
     .hud-top{
       display:flex;
       justify-content: space-between;
-      align-items:center;
+      align-items:flex-start;
       gap:10px;
       padding: 10px 12px;
       cursor: pointer;
     }
-    .hud-left{ min-width: 0; }
+    .hud-left{ min-width: 0; flex: 1; }
     .hud-title{
       font-size: 22px;
       font-weight: 1000;
@@ -81,16 +82,6 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-    .hud-sub{
-      margin-top: 5px;
-      font-size: 12px;
-      font-weight: 900;
-      color: #c7c7cc;
-      opacity: .92;
-      display:flex;
-      gap:10px;
-      flex-wrap: wrap;
     }
     .badge{
       display:inline-block;
@@ -103,6 +94,79 @@
       border: 1px solid rgba(255,255,255,0.12);
       color: var(--text);
       vertical-align: middle;
+    }
+
+    /* ===== 偏向 Banner（醒目） ===== */
+    .bias-banner{
+      margin-top: 8px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25);
+      font-variant-numeric: tabular-nums;
+    }
+    .bias-left{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+    .bias-main{
+      font-size: 18px;
+      font-weight: 1200;
+      letter-spacing: .6px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .bias-sub{
+      font-size: 11px;
+      font-weight: 1000;
+      color: rgba(242,242,247,0.75);
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .lvl-pill{
+      flex-shrink:0;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 1200;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.25);
+    }
+
+    /* side color */
+    .bias-B{ border-color: rgba(255,59,48,0.35); background: rgba(255,59,48,0.12); }
+    .bias-P{ border-color: rgba(10,132,255,0.35); background: rgba(10,132,255,0.12); }
+
+    /* level styling */
+    .lvl-weak  { opacity: 0.80; }
+    .lvl-med   { opacity: 0.95; box-shadow: 0 0 18px rgba(255,214,10,0.12); }
+    .lvl-strong{
+      opacity: 1;
+      animation: biasPulse 1.2s infinite alternate;
+    }
+    @keyframes biasPulse{
+      from { transform: scale(1); box-shadow: 0 0 14px rgba(255,214,10,0.10); }
+      to   { transform: scale(1.01); box-shadow: 0 0 26px rgba(255,214,10,0.28); }
+    }
+
+    .hud-sub{
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #c7c7cc;
+      opacity: .92;
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
     }
     .hud-actions{
       display:flex;
@@ -125,6 +189,7 @@
     .hud-btn:active{ transform: translateY(2px); box-shadow:none; }
     .hud-btn.undo{ color: var(--w); }
     .hud-btn.reset{ color: #ff5c5c; }
+
     .hud-mini{
       display:flex;
       justify-content: space-between;
@@ -356,8 +421,19 @@
     <div class="hud-top" onclick="toggleHud()">
       <div class="hud-left">
         <div class="hud-title" id="hudMain">觀望 <span class="badge" id="hudBadge">點我展開</span></div>
+
+        <!-- ✅ 醒目的偏向（強/中/弱） -->
+        <div id="hudBias" class="bias-banner lvl-weak">
+          <div class="bias-left">
+            <div class="bias-main" id="hudBiasMain">偏向：--</div>
+            <div class="bias-sub" id="hudBiasSub">紅B=0 / 紅P=0｜ΔP=--</div>
+          </div>
+          <div class="lvl-pill" id="hudBiasLvl">弱</div>
+        </div>
+
         <div class="hud-sub" id="hudSub"></div>
       </div>
+
       <div class="hud-actions" onclick="event.stopPropagation()">
         <button class="hud-btn undo" onclick="undoLastRound()">↩ 撤銷</button>
         <button class="hud-btn reset" onclick="resetSystem()">換靴</button>
@@ -428,7 +504,7 @@
           <input type="number" id="trials" value="12000" step="1000" min="1000" max="200000" />
         </div>
         <div class="line">
-          <button class="btn" onclick="recalcAndRender(true)">立即重算</button>
+          <button class="btn" onclick="recalcAndRender()">立即重算</button>
           <button class="btn" onclick="exportLog()">匯出紀錄</button>
         </div>
       </div>
@@ -451,9 +527,8 @@
     </div>
 
     <div class="hint">
-      重要：此系統不保證勝率單調上升。<br/>
-      新版改為：即使當下仍 PASS，也會輸出「偏向」並在每局結算後更新學習資料（避免永遠累積不到樣本）。<br/>
-      「SIM」代表 Monte Carlo 模擬次數：次數越高，P(B)/P(P)/P(T) 越穩定，但計算會更吃效能。
+      強/中/弱分級：以「下三路紅點差」為主、機率差為輔（僅監控用）。<br/>
+      SIM 是 Monte Carlo 模擬次數：同一個牌庫狀態會得到相同結果。
     </div>
   </div>
 
@@ -502,40 +577,31 @@
 /* =======================
    0) State / Storage
 ======================= */
-const STORE_KEY = "baccarat_dss_online_learning_v2";
+const STORE_KEY = "baccarat_dss_online_learning_v3";
 
 const DEFAULTS = {
   decks: 8,
   commission: 0.05,
   trials: 12000,
-  rankCounts: null,    // 1..13
-  history: [],         // 'B','P','T'
-  armed: false,        // opt-in for this hand
-
-  lastRec: null,       // {actionSide,biasSide,key,ctxMean,ctxN,...}
-
-  perf: {              // accuracy on biasSide (non-tie)
-    total: 0,
-    correct: 0,
-    roll: []
-  },
-
+  rankCounts: null,
+  history: [],
+  armed: false,
+  lastRec: null,
+  perf: { total: 0, correct: 0, roll: [] },
   learn: {
     enabled: true,
-    minSamples: 12,    // GLOBAL
+    minSamples: 12,
     minAcc: 0.53,
-    totalN: 0,         // global evaluated count (non-tie)
-    buckets: {}        // key -> {B:{a,b,n}, P:{a,b,n}}
+    totalN: 0,
+    buckets: {}
   },
-
   log: [],
-  cache: {}            // deckHash -> {trials, pB,pP,pT}
+  cache: {}
 };
 
 let S = loadState() || initState();
 let backupState = null;
 
-/* ===== Utils ===== */
 function deepClone(x){ return JSON.parse(JSON.stringify(x)); }
 function initCounts(decks=8){
   const c = {};
@@ -601,6 +667,11 @@ const ui = {
   hudN: $("hudN"),
   hudCtx: $("hudCtx"),
 
+  hudBias: $("hudBias"),
+  hudBiasMain: $("hudBiasMain"),
+  hudBiasSub: $("hudBiasSub"),
+  hudBiasLvl: $("hudBiasLvl"),
+
   optArmed: $("optArmed"),
   optAllowTrend: $("optAllowTrend"),
   optLearn: $("optLearn"),
@@ -648,7 +719,7 @@ function mulberry32(a){
 
 /* =======================
    3) Input + Keypad
-   ★ 改成：P1 P2 B1 B2 P3 B3
+   P1 P2 B1 B2 P3 B3
 ======================= */
 const slotOrder = ["p1","p2","b1","b2","p3","b3"];
 let currentSlotIdx = 0;
@@ -759,7 +830,6 @@ function inputKey(val){
 
 /* =======================
    4) Strict draw-rule validator
-   (只要求四張都齊即可，順序無關)
 ======================= */
 function getBaccaratValFromSlot(id){
   const rk=getSlotRank(id);
@@ -878,7 +948,6 @@ function drawRankFromCounts(counts,total,rand){
   counts[13]--; return 13;
 }
 function simulateOneHand(countsBase, rand){
-  // 模擬仍用真實交錯發牌：P1 B1 P2 B2 ...
   const counts=new Array(14).fill(0);
   let total=0;
   for(let r=1;r<=13;r++){ counts[r]=countsBase[r]; total+=counts[r]; }
@@ -942,7 +1011,7 @@ function simulateProbs(trials){
 }
 
 /* =======================
-   7) Technical features (Ask the Road)
+   7) Roads / Ask
 ======================= */
 function genericMatrixMapper(arr,supportTie){
   let gridMap={}, lastRes=null, sc=0, cc=0, cr=0, mc=0, lastCrd=null, pendingTies=0;
@@ -1051,8 +1120,7 @@ function askVectorIf(hyp){
 function countRed(vec){ return vec.filter(x=>x==="R").length; }
 
 /* =======================
-   8) Online learning (Bayesian)
-   ★ 修正：全局樣本 + 影子更新
+   8) Learning
 ======================= */
 function getBucket(key){
   if(!S.learn.buckets[key]){
@@ -1077,14 +1145,12 @@ function updateLearning(side, key, correct){
   else b.b += 1;
 }
 function makeContextKey(side, pB, pP){
-  // 降低碎片化：只用「phase + red差」做 key（更容易累積到 n）
   const ph = Math.floor(totalRemaining()/52); // 0..8
   const askB = askVectorIf("B");
   const askP = askVectorIf("P");
   const redB = countRed(askB);
   const redP = countRed(askP);
-  const redDiff = Math.max(-3, Math.min(3, redB - redP)); // -3..3
-  // diff bucket（粗分）
+  const redDiff = Math.max(-3, Math.min(3, redB - redP));
   const denom = Math.max(1e-9, (pB+pP));
   const b = pB/denom;
   const db = Math.max(-25, Math.min(25, Math.round((b-0.5)*50)));
@@ -1092,8 +1158,32 @@ function makeContextKey(side, pB, pP){
 }
 
 /* =======================
-   9) Decide
-   ★ 永遠輸出「偏向」，但「出手」要過門檻
+   9) Bias strength (強/中/弱)
+   - 主：紅點差 (0..3)
+   - 輔：B/P 機率差（去Tie後）約 0..0.5
+======================= */
+function probGap01(pB, pP){
+  const denom = Math.max(1e-9, (pB+pP));
+  const b = pB/denom;
+  return Math.abs(b - 0.5);
+}
+function biasLevel(redB, redP, pB, pP){
+  const rd = Math.abs(redB - redP);         // 0..3
+  const gap = probGap01(pB, pP);            // 0..0.5
+  if(rd >= 3) return "強";
+  if(rd === 2 && gap >= 0.008) return "強";
+  if(rd === 2) return "中";
+  if(rd === 1 && gap >= 0.012) return "中";
+  return "弱";
+}
+function levelClass(lv){
+  if(lv==="強") return "lvl-strong";
+  if(lv==="中") return "lvl-med";
+  return "lvl-weak";
+}
+
+/* =======================
+   10) Decide
 ======================= */
 function decide(probs){
   const pB=probs.pB, pP=probs.pP, pT=probs.pT;
@@ -1105,10 +1195,9 @@ function decide(probs){
   const redB = countRed(askB);
   const redP = countRed(askP);
 
-  // 偏向：先看技術面紅數，多者勝；同則看機率
   let biasSide = (redB!==redP) ? (redB>redP ? "B":"P") : (pB>=pP ? "B":"P");
+  const lvl = biasLevel(redB, redP, pB, pP);
 
-  // 出手候選：EV>0 優先；否則若允許負EV順勢且技術面>=2紅才可出手
   let actionSide = "PASS";
   let actionWhy  = "";
   if(Math.max(evB, evP) > 0){
@@ -1128,7 +1217,6 @@ function decide(probs){
     actionWhy = "EV≤0";
   }
 
-  // 學習門檻（全局）
   const key = makeContextKey(biasSide, pB, pP);
   const ctxMean = posteriorMean(biasSide, key);
   const ctxN = bucketN(biasSide, key);
@@ -1138,7 +1226,6 @@ function decide(probs){
   const minN = parseInt(ui.minSamples.value||"0",10);
   const minAcc = parseFloat(ui.minAcc.value||"0.5");
 
-  // 若學習開啟，出手要過全局最少樣本 + 命中門檻
   if(learnOn && actionSide!=="PASS"){
     if(totalN < minN){
       actionSide = "PASS";
@@ -1149,19 +1236,11 @@ function decide(probs){
     }
   }
 
-  return {
-    pB,pP,pT, evB, evP,
-    redB, redP,
-    biasSide,
-    actionSide,
-    actionWhy,
-    key, ctxMean, ctxN,
-    totalN
-  };
+  return { pB,pP,pT, evB, evP, redB, redP, biasSide, biasLevel:lvl, actionSide, actionWhy, key, ctxMean, ctxN, totalN };
 }
 
 /* =======================
-   10) Performance tracking
+   11) Performance
 ======================= */
 function updatePerf(correct){
   S.perf.total += 1;
@@ -1180,7 +1259,7 @@ function perfText(){
 }
 
 /* =======================
-   11) Render
+   12) HUD render helpers
 ======================= */
 function setHudState(side){
   ui.hud.classList.remove("pass","banker","player");
@@ -1188,8 +1267,24 @@ function setHudState(side){
   else if(side==="P") ui.hud.classList.add("player");
   else ui.hud.classList.add("pass");
 }
+function setBiasBanner(rec){
+  // side class
+  ui.hudBias.classList.remove("bias-B","bias-P","lvl-weak","lvl-med","lvl-strong");
+  ui.hudBias.classList.add(rec.biasSide==="B" ? "bias-B" : "bias-P");
+  ui.hudBias.classList.add(levelClass(rec.biasLevel));
+
+  const sideName = rec.biasSide==="B" ? "莊" : "閒";
+  ui.hudBiasMain.textContent = `偏向：${sideName}`;
+  ui.hudBiasLvl.textContent = rec.biasLevel;
+
+  const gap = probGap01(rec.pB, rec.pP);
+  ui.hudBiasSub.textContent = `紅B=${rec.redB} / 紅P=${rec.redP}｜ΔP=${gap.toFixed(3)}`;
+}
+
+/* =======================
+   13) Main render
+======================= */
 function recalcAndRender(){
-  // sync controls -> state
   const t = parseInt(ui.trials.value||"12000",10);
   S.trials = Math.max(1000, Math.min(200000, t));
   S.learn.enabled = ui.optLearn.checked;
@@ -1202,12 +1297,10 @@ function recalcAndRender(){
   ui.optArmed.checked = S.armed;
   ui.hudArmed.textContent = S.armed ? "是" : "否";
 
-  // SIM
   const probs = simulateProbs(S.trials);
   const rec = decide(probs);
   S.lastRec = rec;
 
-  // HUD numbers
   ui.hudPB.textContent = fmtPct(rec.pB);
   ui.hudPP.textContent = fmtPct(rec.pP);
   ui.hudPT.textContent = fmtPct(rec.pT);
@@ -1219,7 +1312,7 @@ function recalcAndRender(){
   ui.hudN.textContent = `${rec.totalN}（全局）`;
   ui.hudCtx.textContent = `${(rec.ctxMean*100).toFixed(1)}% / n=${rec.ctxN}`;
 
-  // HUD command: actionSide決定「出手」，biasSide永遠顯示「偏向」
+  // decision title color/state
   if(rec.actionSide==="B"){
     setHudState("B");
     ui.hudMain.innerHTML = `押莊 <span class="badge" id="hudBadge">${hudExpanded?"點我收合":"點我展開"}</span>`;
@@ -1231,11 +1324,11 @@ function recalcAndRender(){
     ui.hudMain.innerHTML = `觀望 <span class="badge" id="hudBadge">${hudExpanded?"點我收合":"點我展開"}</span>`;
   }
 
-  const biasText = `偏向：${rec.biasSide==="B"?"莊":"閒"}（紅B=${rec.redB}/紅P=${rec.redP}）`;
-  const armedTxt = S.armed ? "授權下注：是" : "授權下注：否";
-  ui.hudSub.textContent = `${rec.actionWhy} ｜ ${biasText} ｜ ${armedTxt}`;
+  setBiasBanner(rec);
 
-  // roads + validators + perf
+  const armedTxt = S.armed ? "授權下注：是" : "授權下注：否";
+  ui.hudSub.textContent = `${rec.actionWhy} ｜ ${armedTxt}`;
+
   renderAllRoads();
   updateKeypadCounts();
   evaluateDrawRules();
@@ -1245,10 +1338,9 @@ function recalcAndRender(){
 }
 
 /* =======================
-   12) Submit: 使用 biasSide 做「影子學習」每局都更新
+   14) Submit / learning
 ======================= */
 let submitLock = false;
-
 function submitData(){
   if(submitLock) return;
   if(ui.submitBtn.disabled) return;
@@ -1260,18 +1352,14 @@ function submitData(){
 
   snapshot();
 
-  const outcome = computeWinner(); // 'B','P','T'
+  const outcome = computeWinner();
   const consumed = cardsConsumed();
 
-  // 影子預測：永遠用 biasSide 更新（非和局）
   const rec = S.lastRec || null;
   if(rec && (rec.biasSide==="B" || rec.biasSide==="P") && outcome!=="T"){
     const correct = (outcome === rec.biasSide);
     updatePerf(correct);
-
-    // learning update
-    const key = rec.key;
-    updateLearning(rec.biasSide, key, correct);
+    updateLearning(rec.biasSide, rec.key, correct);
     S.learn.totalN += 1;
 
     ui.lastPerf.textContent = correct
@@ -1281,28 +1369,24 @@ function submitData(){
     ui.lastPerf.textContent = (outcome==="T") ? `和局（不計入學習）` : `—`;
   }
 
-  // history
   S.history.push(outcome);
 
-  // consume cards
   for(const r of consumed){
     S.rankCounts[r] -= 1;
     if(S.rankCounts[r] < 0) S.rankCounts[r] = 0;
   }
 
-  // per-hand disarm
   S.armed = false;
   ui.optArmed.checked = false;
 
-  // clear cache because deck changed
   S.cache = {};
 
-  // log
   S.log.push({
     ts: nowISO(),
     trials: S.trials,
     actionSide: rec ? rec.actionSide : null,
     biasSide: rec ? rec.biasSide : null,
+    biasLevel: rec ? rec.biasLevel : null,
     pB: rec ? rec.pB : null,
     pP: rec ? rec.pP : null,
     pT: rec ? rec.pT : null,
@@ -1325,7 +1409,7 @@ function submitData(){
 }
 
 /* =======================
-   13) Controls
+   15) Controls
 ======================= */
 function toggleArmed(){
   S.armed = !S.armed;
@@ -1374,7 +1458,7 @@ function resetSystem(){
 }
 
 /* =======================
-   14) init
+   16) init
 ======================= */
 function syncUIFromState(){
   ui.trials.value = String(S.trials);
