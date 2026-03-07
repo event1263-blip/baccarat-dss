@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>商業決策支援系統 - 量化剝削版</title>
+    <title>商業決策支援系統 - 數據透視版</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 6px; background-color: #000; color: #333; margin: 0; }
         .card { background: #fff; padding: 10px; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
@@ -14,10 +14,8 @@
         .btn-sm { border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; color: white; }
         .btn-undo { background: #ff9500; } .btn-reset { background: #ff3b30; }
         
-        /* 核心戰術看板：數據化改造 */
+        /* 核心戰術看板 */
         .tactical-board { display: flex; gap: 6px; margin-bottom: 8px; }
-        
-        /* 左側：精確機率與凱利注碼 */
         .left-panel { flex: 1.2; background: #1c1c1e; color: white; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #333; }
         .odds-row { display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; border-bottom: 1px solid #444; padding-bottom: 4px; }
         .odds-row .b { color: #ff453a; } .odds-row .p { color: #0a84ff; }
@@ -25,13 +23,22 @@
         .step-txt { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
         .amt-txt { font-size: 24px; font-weight: bold; color: #32d74b; margin: 2px 0; }
         
-        /* 右側：大數據 EoR 監控核心 */
+        /* 右側 EoR 監控 */
         .eor-panel { flex: 1; border: 1px solid #000; border-radius: 8px; background: #000; padding: 6px; display: flex; flex-direction: column; justify-content: space-around; color: white; }
         .var-title { font-size: 10px; font-weight: bold; color: #ffd60a; text-align: center; margin-bottom: 2px; }
         .var-row { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; padding: 2px 0; }
         .var-row .val { color: #fff; }
+
+        /* 全新移至上方的 1~13 牌庫透視網格 */
+        .deck-tracker { background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+        .tracker-title { font-size: 12px; font-weight: bold; color: #555; text-align: center; margin-bottom: 6px; }
+        .tracker-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .card-count-box { border: 1px solid #ccc; border-radius: 4px; text-align: center; background: #fff; padding: 4px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .cc-val { font-size: 11px; font-weight: bold; color: #555; }
+        .cc-count { font-size: 14px; font-weight: bold; color: #007aff; margin-top: 2px; }
+        .card-count-box.empty { opacity: 0.3; background: #eee; }
         
-        /* 決策面板：改為期望值導向 */
+        /* 決策面板 */
         .decision-panel { text-align: center; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 8px; border: 2px solid transparent; transition: 0.3s; }
         .decision-panel.pass { background: #2c2c2e; border-color: #8e8e93; color: #8e8e93; }
         .decision-panel.banker { background: #ffebee; border-color: #ff3b30; color: #ff3b30; }
@@ -56,14 +63,6 @@
         .key.clear { background: #ff9500; color: white; border: none; grid-column: span 2; }
         
         .submit-btn { width: 100%; padding: 12px; background: #ffd60a; color: #000; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; margin-top: 6px; cursor: pointer; }
-        
-        .deck-tracker { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; }
-        .tracker-title { font-size: 12px; font-weight: bold; color: #555; text-align: center; margin-bottom: 6px; }
-        .tracker-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .card-count-box { border: 1px solid #ddd; border-radius: 4px; text-align: center; background: #fafafa; padding: 4px 0; }
-        .cc-val { font-size: 11px; font-weight: bold; color: #333; }
-        .cc-count { font-size: 14px; font-weight: bold; color: #007aff; margin-top: 2px; }
-        .card-count-box.empty { opacity: 0.3; }
     </style>
 </head>
 <body>
@@ -81,254 +80,3 @@
             <div class="left-panel">
                 <div class="odds-row"><span class="b">莊 <span id="bankerOdds">45.86</span>%</span><span class="p">閒 <span id="playerOdds">44.62</span>%</span></div>
                 <div class="capital-info">
-                    <div class="step-txt">Kelly Criterion 指引注碼</div>
-                    <div class="amt-txt" id="betAmount">0</div>
-                    <div style="font-size: 10px; color: #888; margin-top: 4px;">期望值(EV): <span id="evDisplay">0.00%</span></div>
-                </div>
-            </div>
-            
-            <div class="eor-panel">
-                <div class="var-title">⚡ EoR 數學核心</div>
-                <div class="var-row">
-                    <span style="color: #aaa;">剩餘副數 (Decks)</span>
-                    <span class="val" id="decksRemaining">8.00</span>
-                </div>
-                <div class="var-row">
-                    <span style="color: #aaa;">流水數 (RC)</span>
-                    <span class="val" id="runningCount">0</span>
-                </div>
-                <div class="var-row" style="border-top: 1px solid #333; padding-top: 4px;">
-                    <span style="color: #ffd60a;">動態真數 (TC)</span>
-                    <span class="val" id="trueCount" style="color: #ffd60a; font-size: 14px;">0.00</span>
-                </div>
-            </div>
-        </div>
-
-        <div id="decisionPanel" class="decision-panel pass">
-            訊號：<span id="predictionResult">優勢不足，鎖定觀望 (EV < 0)</span>
-        </div>
-        <button id="triggerBtn" class="trigger-btn" onclick="toggleBet()">
-            🔘 觀望中 (點擊以確認下注本局)
-        </button>
-
-        <div class="input-wrapper">
-            <div class="input-side">
-                <div class="side-head p">閒家 (Player)</div>
-                <div class="slot-row">
-                    <div class="slot active" id="slot-p1" onclick="setActiveSlot('p1')" data-val=""></div>
-                    <div class="slot" id="slot-p2" onclick="setActiveSlot('p2')" data-val=""></div>
-                    <div class="slot" id="slot-p3" onclick="setActiveSlot('p3')" data-val=""></div>
-                </div>
-            </div>
-            <div class="input-side">
-                <div class="side-head b">莊家 (Banker)</div>
-                <div class="slot-row">
-                    <div class="slot" id="slot-b1" onclick="setActiveSlot('b1')" data-val=""></div>
-                    <div class="slot" id="slot-b2" onclick="setActiveSlot('b2')" data-val=""></div>
-                    <div class="slot" id="slot-b3" onclick="setActiveSlot('b3')" data-val=""></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="keypad">
-            <div class="key" onclick="inputKey('1')">A</div><div class="key" onclick="inputKey('2')">2</div><div class="key" onclick="inputKey('3')">3</div><div class="key" onclick="inputKey('4')">4</div><div class="key" onclick="inputKey('5')">5</div>
-            <div class="key" onclick="inputKey('6')">6</div><div class="key" onclick="inputKey('7')">7</div><div class="key" onclick="inputKey('8')">8</div><div class="key" onclick="inputKey('9')">9</div><div class="key" onclick="inputKey('10')">10</div>
-            <div class="key" onclick="inputKey('11')">J</div><div class="key" onclick="inputKey('12')">Q</div><div class="key" onclick="inputKey('13')">K</div><div class="key clear" onclick="clearAllSlots()">🗑️ 清空重填</div>
-        </div>
-        <button class="submit-btn" onclick="submitData()">輸入數據・重算尾局機率</button>
-
-        <div class="deck-tracker">
-            <div class="tracker-title">🎴 剩餘牌庫精確追蹤 (Card Tracking)</div>
-            <div class="tracker-grid" id="deckTrackerGrid"></div>
-        </div>
-    </div>
-
-    <script>
-        // === EoR 深度算牌引擎變數 ===
-        let totalCards = 416;
-        let deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32};
-        
-        // Thorp's Baccarat Point System (權重)
-        // 1,2,3=0 | 4=+1 | 5,6=+2 | 7=+1 | 8=-1 | 9=-2 | 0=0
-        const eorWeights = {1:0, 2:0, 3:0, 4:1, 5:2, 6:2, 7:1, 8:-1, 9:-2, 10:0, 11:0, 12:0, 13:0};
-        let runningCount = 0;
-        
-        let lastRecommendedSide = null; 
-        let historyLog = []; 
-        let isBetActive = false;
-        let backupState = null;
-
-        // 基準機率常數 (8副牌初始)
-        const baseBankerProb = 0.4586;
-        const basePlayerProb = 0.4462;
-        const tieProb = 0.0952;
-        const baseCapital = 10000; // 模擬系統基準總資金，用於計算凱利注碼
-
-        function renderDeckTracker() {
-            const grid = document.getElementById('deckTrackerGrid'); grid.innerHTML = '';
-            const labels = {1:'A', 2:'2', 3:'3', 4:'4', 5:'5', 6:'6', 7:'7', 8:'8', 9:'9', 10:'10', 11:'J', 12:'Q', 13:'K'};
-            for(let i=1; i<=13; i++) {
-                let box = document.createElement('div'); box.className = `card-count-box ${deck[i] === 0 ? 'empty' : ''}`;
-                box.innerHTML = `<div class="cc-val">${labels[i]}</div><div class="cc-count" style="color:${deck[i]<10?'#ff3b30':'#007aff'}">${deck[i]}</div>`;
-                grid.appendChild(box);
-            }
-        }
-
-        function saveState() {
-            backupState = {
-                totalCards: totalCards, deck: Object.assign({}, deck),
-                runningCount: runningCount, lastRecommendedSide: lastRecommendedSide, historyLog: [...historyLog]
-            };
-        }
-
-        function undoLastRound() {
-            if (!backupState) return;
-            if (confirm("撤銷上一局的物理消耗？")) {
-                totalCards = backupState.totalCards; deck = Object.assign({}, backupState.deck);
-                runningCount = backupState.runningCount; lastRecommendedSide = backupState.lastRecommendedSide; historyLog = [...backupState.historyLog];
-                isBetActive = false; updateBetTriggerUI(); recalcAndRender(); backupState = null; 
-            }
-        }
-
-        function toggleBet() {
-            if (lastRecommendedSide === 'PASS') { alert("數學模型否決：當前期望值為負，禁止投入資金！"); return; }
-            isBetActive = !isBetActive; updateBetTriggerUI();
-        }
-
-        function updateBetTriggerUI() {
-            const btn = document.getElementById('triggerBtn');
-            if (isBetActive) { btn.classList.add('active'); btn.innerText = `✅ 系統授權下注 (點擊取消)`; } 
-            else { btn.classList.remove('active'); btn.innerText = "🔘 觀望中 (點擊以確認下注本局)"; }
-        }
-
-        const slotOrder = ['p1', 'p2', 'b1', 'b2', 'p3', 'b3']; 
-        let currentSlotIdx = 0;
-
-        function setActiveSlot(slotId) {
-            document.querySelectorAll('.slot').forEach(el => el.classList.remove('active'));
-            document.getElementById(`slot-${slotId}`).classList.add('active');
-            currentSlotIdx = slotOrder.indexOf(slotId);
-        }
-
-        function inputKey(val) {
-            if (currentSlotIdx >= slotOrder.length) return; 
-            const activeId = slotOrder[currentSlotIdx];
-            const el = document.getElementById(`slot-${activeId}`);
-            let dVal = val; if (val==='1') dVal='A'; if (val==='11') dVal='J'; if (val==='12') dVal='Q'; if (val==='13') dVal='K';
-            el.innerText = dVal; el.dataset.val = val; el.classList.add('filled');
-            currentSlotIdx++;
-            if (currentSlotIdx < slotOrder.length) setActiveSlot(slotOrder[currentSlotIdx]);
-            else document.querySelectorAll('.slot').forEach(el => el.classList.remove('active'));
-        }
-
-        function clearAllSlots() { slotOrder.forEach(id => { const el = document.getElementById(`slot-${id}`); el.innerText = ''; el.dataset.val = ''; el.classList.remove('filled'); }); setActiveSlot('p1'); }
-
-        recalcAndRender();
-
-        function resetSystem() {
-            if(confirm("確定開啟新靴牌？將重置大數據模型。")) {
-                totalCards = 416; deck = {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32};
-                runningCount = 0; lastRecommendedSide = null; historyLog = []; backupState = null;
-                isBetActive = false; updateBetTriggerUI(); recalcAndRender(); clearAllSlots();
-            }
-        }
-
-        function submitData() {
-            if (totalCards < 6) { alert("🛑 靴底已耗盡，請開啟新靴牌。"); return; }
-            let pRaw = [], bRaw = [], pPts = 0, bPts = 0; let cardsConsumed = []; 
-
-            ['p1', 'p2', 'p3'].forEach(id => { let v = document.getElementById(`slot-${id}`).dataset.val; if(v) { let rv = parseInt(v); pRaw.push(rv); cardsConsumed.push(rv); pPts += (rv >= 10 ? 0 : rv); } });
-            ['b1', 'b2', 'b3'].forEach(id => { let v = document.getElementById(`slot-${id}`).dataset.val; if(v) { let rv = parseInt(v); bRaw.push(rv); cardsConsumed.push(rv); bPts += (rv >= 10 ? 0 : rv); } });
-            if (pRaw.length < 2 || bRaw.length < 2) { alert("數據不完整。"); return; }
-
-            saveState();
-            let fP = pPts % 10, fB = bPts % 10, winner = 'T';
-            if (fP > fB) winner = 'P'; else if (fB > fP) winner = 'B';
-            historyLog.push(winner); 
-
-            // 精確扣除與累積流水數
-            cardsConsumed.forEach(val => { 
-                if(deck[val] > 0) { 
-                    deck[val]--; totalCards--; 
-                    runningCount += eorWeights[val]; // 核心：增加權重
-                } 
-            });
-
-            isBetActive = false; updateBetTriggerUI(); clearAllSlots(); recalcAndRender();
-        }
-
-        // === 核心算牌與凱利推算引擎 ===
-        function recalcAndRender() {
-            let decksRemaining = totalCards / 52;
-            let trueCount = decksRemaining > 0 ? (runningCount / decksRemaining) : 0;
-            
-            // 數學換算：TC 對莊閒機率的極限影響 (Multiplier)
-            // 當 TC 為正，代表有利於閒家 (Player)；當 TC 為負，有利於莊家 (Banker)
-            let edgeShift = trueCount * 0.0015; // 基於量化推演的影響因子
-
-            let p_player = basePlayerProb + edgeShift;
-            let p_banker = baseBankerProb - edgeShift;
-
-            // 機率正規化
-            p_player = Math.max(0, Math.min(1 - tieProb, p_player));
-            p_banker = Math.max(0, Math.min(1 - tieProb, p_banker));
-
-            document.getElementById('totalCards').innerText = totalCards;
-            document.getElementById('decksRemaining').innerText = decksRemaining.toFixed(2);
-            document.getElementById('runningCount').innerText = runningCount;
-            document.getElementById('trueCount').innerText = trueCount.toFixed(2);
-            
-            // 越到牌局尾段，如果 TC 累積龐大，數字會變成極限紅色
-            let tcColor = Math.abs(trueCount) > 5 ? '#ff3b30' : '#ffd60a';
-            document.getElementById('trueCount').style.color = tcColor;
-
-            document.getElementById('bankerOdds').innerText = (p_banker * 100).toFixed(2);
-            document.getElementById('playerOdds').innerText = (p_player * 100).toFixed(2);
-            
-            const dp = document.getElementById('decisionPanel');
-            const pe = document.getElementById('predictionResult');
-            const evDisp = document.getElementById('evDisplay');
-            const amt = document.getElementById('betAmount');
-
-            // --- 凱利公式與期望值計算 (Kelly Criterion & Expected Value) ---
-            // 莊家賠率 (扣5%水) = 0.95, 閒家賠率 = 1.00
-            let evBanker = (p_banker * 0.95) - (p_player * 1.00); 
-            let evPlayer = (p_player * 1.00) - (p_banker * 1.00);
-            
-            let bestEV = 0; let kellyFraction = 0;
-            
-            if (evBanker > 0 && evBanker > evPlayer) {
-                lastRecommendedSide = 'B';
-                bestEV = evBanker;
-                kellyFraction = evBanker / 0.95; // f* = EV / b
-                dp.className = "decision-panel banker";
-                pe.innerText = "✅ 尾局優勢反轉：下注莊家 (Banker)";
-            } else if (evPlayer > 0 && evPlayer > evBanker) {
-                lastRecommendedSide = 'P';
-                bestEV = evPlayer;
-                kellyFraction = evPlayer / 1.00;
-                dp.className = "decision-panel player";
-                pe.innerText = "✅ 尾局優勢反轉：下注閒家 (Player)";
-            } else {
-                lastRecommendedSide = 'PASS';
-                dp.className = "decision-panel pass";
-                pe.innerText = "❌ 無數學優勢，鎖定觀望 (EV < 0)";
-            }
-
-            // 更新 UI
-            evDisp.innerText = (bestEV * 100).toFixed(3) + "%";
-            if (bestEV > 0) evDisp.style.color = "#32d74b"; else evDisp.style.color = "#888";
-
-            if (lastRecommendedSide === 'PASS') { 
-                amt.innerText = "0"; amt.style.color = "#aaa"; 
-            } else { 
-                // 將 Kelly Fraction 轉換為實際建議金額 (保守使用 Quarter Kelly)
-                let recommendedBet = Math.max(100, Math.floor((baseCapital * kellyFraction * 0.25) / 100) * 100);
-                amt.innerText = recommendedBet; amt.style.color = "#32d74b"; 
-            }
-
-            renderDeckTracker();
-        }
-    </script>
-</body>
-</html>
