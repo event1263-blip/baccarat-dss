@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂 - v23.5 穩定回調版</title>
+    <title>百家樂 - v24.0 六維能量版</title>
     <style>
         :root {
             --bg: #09090b; --card: #18181b; --border: #27272a;
@@ -16,7 +16,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; user-select: none; overflow-x: hidden; }
         * { box-sizing: border-box; }
 
-        /* 🚁 懸浮抬頭顯示器 (維持 v23 完美設計) */
+        /* 🚁 懸浮抬頭顯示器 */
         .sticky-hud {
             position: sticky; top: 0; z-index: 1000;
             background: rgba(18, 18, 21, 0.92); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
@@ -61,7 +61,7 @@
         .alert-info { color: #60a5fa; background: rgba(59, 130, 246, 0.1); }
         @keyframes pulse { from{ transform: scale(1); } to{ transform: scale(1.03); } }
 
-        /* 📜 滾動內容區 (維持 v23 五路圖) */
+        /* 📜 滾動內容區 (穩定不跑版) */
         .scroll-container { padding: 12px; padding-bottom: 40px; }
 
         .roads-card { background: var(--card); border-radius: 16px; padding: 10px; border: 1px solid var(--border); margin-bottom: 12px; }
@@ -95,7 +95,7 @@
 
         .derived-roads { display: flex; gap: 4px; } .derived-col { flex: 1; min-width: 0; }
 
-        /* 🃏 實體手牌輸入區 (維持 v23 原貌保證不卡死) */
+        /* 🃏 實體手牌輸入區 */
         .input-card { background: var(--card); border-radius: 16px; padding: 12px; border: 1px solid var(--border); }
         .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .toggle-guide { font-size: 12px; font-weight: 800; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
@@ -152,7 +152,7 @@
     <div class="sticky-hud">
         <div class="hud-header">
             <div class="hud-stats">
-                <span class="version-badge">v23.5</span> 
+                <span class="version-badge">v24.0 能量版</span> 
                 剩牌: <span class="val" id="hdrRemain">416</span> 
                 局數: <span class="val" id="hdrRound">0</span>
             </div>
@@ -163,7 +163,7 @@
         </div>
         
         <div id="oracleBox" class="oracle-box pass">
-            <div class="trend-alert alert-safe" id="trendAlert">📊 系統準備就緒</div>
+            <div class="trend-alert alert-safe" id="trendAlert">📊 牌局資料收集中...</div>
             <div class="oracle-main" id="oracleMain">等待輸入</div>
             <div class="reason-badge" id="reasonBadge">判斷方式與強度分析中...</div>
 
@@ -243,7 +243,7 @@
     <button class="fab-btn" onclick="toggleDBPanel()">⚙️</button>
     <div class="database-panel" id="dbPanel">
         <div class="db-header">
-            <div class="db-title">大數據學習中心 (v23.5)</div>
+            <div class="db-title">大數據學習中心</div>
             <button class="db-close" onclick="toggleDBPanel()">×</button>
         </div>
 
@@ -307,9 +307,9 @@
 /* =========================================================
    1) 核心狀態變數與自動向下相容遷移 (Migration)
 ========================================================= */
-const STATE_KEY = "baccarat_state_v23_5";
-const DB_KEY = "baccarat_bigdata_v23_5";
-const CFG_KEY = "baccarat_config_v23_5";
+const STATE_KEY = "baccarat_state_v24_power";
+const DB_KEY = "baccarat_bigdata_v24_power";
+const CFG_KEY = "baccarat_config_v24_power";
 
 let Config = { mainThreshold: 0.55, tieThreshold: 0.11, pairThreshold: 0.09 };
 try { let c = localStorage.getItem(CFG_KEY); if (c) Config = Object.assign(Config, JSON.parse(c)); } catch(e){}
@@ -317,8 +317,9 @@ try { let c = localStorage.getItem(CFG_KEY); if (c) Config = Object.assign(Confi
 let S = { 
     totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, 
     shoePerf: { recs: 0, hits: 0, tieRecs: 0, tieHits: 0, bpRecs: 0, bpHits: 0, ppRecs: 0, ppHits: 0 }, 
-    stats: { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0} },
-    shadowPreds: { ev: null, trend: null, derived: null, ml: null, shoe: null },
+    // 新增 power 策略追蹤
+    stats: { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0}, power: {p:0,h:0} },
+    shadowPreds: { ev: null, trend: null, derived: null, ml: null, shoe: null, power: null },
     lastRecSide: null, lastSideBets: { tie: false, bp: false, pp: false }
 };
 
@@ -361,7 +362,6 @@ function autoTuneThreshold() {
     let bestThresh = 0.51; let bestWinRate = 0; let bestRecs = 0;
     let originalThresh = Config.mainThreshold;
     
-    // 防過度擬合 (至少佔總局數 2% 且大於 5 局)
     let minReq = Math.max(5, Math.floor(BigData.totalHands * 0.02)); 
 
     for (let t = 0.51; t <= 0.85; t += 0.01) {
@@ -410,7 +410,7 @@ function applyInputOrder(val) {
 ========================================================= */
 function loadDatabase() { 
     try { 
-        let db = localStorage.getItem(DB_KEY) || localStorage.getItem("baccarat_bigdata_v23"); 
+        let db = localStorage.getItem(DB_KEY) || localStorage.getItem("baccarat_bigdata_v23_5"); 
         if (db) {
             let parsed = JSON.parse(db);
             if(!parsed.acc) parsed.acc = {recs:0, hits:0, tieRecs:0, tieHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0};
@@ -427,7 +427,6 @@ function recalcDBStats(db) {
     
     for (let seq in db.patterns) {
         let ptn = db.patterns[seq]; 
-        // 🚨 NaN 安全防護 🚨
         let bC = ptn.B || 0; let pC = ptn.P || 0; let tC = ptn.T || 0;
         let bpC = ptn.BP || 0; let ppC = ptn.PP || 0;
 
@@ -439,7 +438,6 @@ function recalcDBStats(db) {
             else if (pRate >= Config.mainThreshold) { validPatterns++; db.acc.recs += tBP; db.acc.hits += pC; }
         }
         
-        // 貝氏平滑化
         let smoothT = (tC + 0.95) / (tHands + 10);
         let smoothBP = (bpC + 0.74) / (tHands + 10);
         let smoothPP = (ppC + 0.74) / (tHands + 10);
@@ -535,15 +533,17 @@ function toggleDBPanel() { dbPanelOpen = !dbPanelOpen; document.getElementById('
 function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(S)); updateDBUI(); }
 function loadState() { 
     try { 
-        let st = localStorage.getItem(STATE_KEY) || localStorage.getItem("baccarat_state_v23"); 
+        let st = localStorage.getItem(STATE_KEY) || localStorage.getItem("baccarat_state_v23_5"); 
         if (st) { 
             let parsed = JSON.parse(st);
             if (parsed.history && parsed.history.length > 0 && typeof parsed.history[0] === 'string') {
                 parsed.history = parsed.history.map(w => ({w: w, bp: false, pp: false}));
             }
             if(!parsed.shoePerf) parsed.shoePerf = {recs:0, hits:0, tieRecs:0, tieHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0}; 
-            if(!parsed.stats) parsed.stats = { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0} };
-            if(!parsed.shadowPreds) parsed.shadowPreds = { ev: null, trend: null, derived: null, ml: null, shoe: null };
+            if(!parsed.stats) parsed.stats = { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0}, power: {p:0,h:0} };
+            if(!parsed.stats.power) parsed.stats.power = {p:0,h:0};
+            if(!parsed.shadowPreds) parsed.shadowPreds = { ev: null, trend: null, derived: null, ml: null, shoe: null, power: null };
+            if(!parsed.shadowPreds.power) parsed.shadowPreds.power = null;
             if(!parsed.lastSideBets) parsed.lastSideBets = { tie: false, bp: false, pp: false };
             S = parsed;
             saveState(); 
@@ -561,7 +561,7 @@ function undoLastRound() {
     backupState = null; backupBigData = null; 
     saveState(); saveDatabase(); clearAllSlots(); recalcAndRender(); 
 }
-function resetShoe() { if(confirm("確定重置本靴牌？當前勝率將歸零。")) { S = { totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, shoePerf: {recs:0, hits:0, tieRecs:0, tieHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0}, stats: { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0} }, shadowPreds: { ev: null, trend: null, derived: null, ml: null, shoe: null }, lastRecSide: null, lastSideBets: {tie:false, bp:false, pp:false} }; backupState = null; backupBigData = null; saveState(); clearAllSlots(); recalcAndRender(); } }
+function resetShoe() { if(confirm("確定重置本靴牌？當前勝率將歸零。")) { S = { totalCards: 416, deck: {1:32, 2:32, 3:32, 4:32, 5:32, 6:32, 7:32, 8:32, 9:32, 10:32, 11:32, 12:32, 13:32}, history: [], runningCount: 0, shoePerf: {recs:0, hits:0, tieRecs:0, tieHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0}, stats: { ev: {p:0,h:0}, trend: {p:0,h:0}, derived: {p:0,h:0}, ml: {p:0,h:0}, shoe: {p:0,h:0}, power: {p:0,h:0} }, shadowPreds: { ev: null, trend: null, derived: null, ml: null, shoe: null, power: null }, lastRecSide: null, lastSideBets: {tie:false, bp:false, pp:false} }; backupState = null; backupBigData = null; saveState(); clearAllSlots(); recalcAndRender(); } }
 function updateKeypadCounts() { for(let i=1; i<=13; i++) { let el = document.getElementById(`kcnt-${i}`); if(el) { el.innerText = S.deck[i]; el.className = S.deck[i] < 10 ? "key-count low" : "key-count"; } } }
 function getBaccaratVal(id) { let v = document.getElementById(`slot-${id}`).dataset.val; if(!v) return null; let n=parseInt(v); return n>=10?0:n; }
 function getRawVal(id) { let v = document.getElementById(`slot-${id}`).dataset.val; return v ? parseInt(v) : null; }
@@ -607,7 +607,7 @@ function inputKey(val) {
 function clearAllSlots() { currentSlotOrder.forEach(id=>{ let el=document.getElementById(`slot-${id}`); el.innerText=''; el.dataset.val=''; el.classList.remove('filled'); }); currentSlotIdx=0; evaluateDrawRules(); setActiveSlot(currentSlotOrder[0]); }
 
 /* =========================================================
-   4) 結算與追蹤
+   4) 結算與追蹤 
 ========================================================= */
 function submitData() {
     const btn = document.getElementById('submitBtn'); if(btn.disabled) return;
@@ -621,7 +621,8 @@ function submitData() {
 
     let isPPair = (pRaw.length >= 2 && pRaw[0] === pRaw[1]);
     let isBPair = (bRaw.length >= 2 && bRaw[0] === bRaw[1]);
-    let winner = 'T', fP = pPts%10, fB = bPts%10;
+    let fP = pPts%10, fB = bPts%10;
+    let winner = 'T';
     if(fP > fB) winner = 'P'; else if(fB > fP) winner = 'B';
     
     if (winner !== 'T') {
@@ -630,19 +631,21 @@ function submitData() {
         if(S.shadowPreds.derived) { S.stats.derived.p++; if(S.shadowPreds.derived === winner) S.stats.derived.h++; }
         if(S.shadowPreds.ml) { S.stats.ml.p++; if(S.shadowPreds.ml === winner) S.stats.ml.h++; }
         if(S.shadowPreds.shoe) { S.stats.shoe.p++; if(S.shadowPreds.shoe === winner) S.stats.shoe.h++; }
+        if(S.shadowPreds.power) { S.stats.power.p++; if(S.shadowPreds.power === winner) S.stats.power.h++; }
         
         if (S.lastRecSide && S.lastRecSide !== 'PASS') {
             let isHit = (S.lastRecSide === winner);
-            S.shoePerf.recs++; 
-            if (isHit) S.shoePerf.hits++;
+            S.shoePerf.recs++; BigData.acc.recs++;
+            if (isHit) { S.shoePerf.hits++; BigData.acc.hits++; }
         }
     }
     
-    if (S.lastSideBets.tie) { S.shoePerf.tieRecs++; if (winner === 'T') S.shoePerf.tieHits++; }
-    if (S.lastSideBets.bp) { S.shoePerf.bpRecs++; if (isBPair) S.shoePerf.bpHits++; }
-    if (S.lastSideBets.pp) { S.shoePerf.ppRecs++; if (isPPair) S.shoePerf.ppHits++; }
+    if (S.lastSideBets.tie) { S.shoePerf.tieRecs++; BigData.acc.tieRecs++; if (winner === 'T') { S.shoePerf.tieHits++; BigData.acc.tieHits++; } }
+    if (S.lastSideBets.bp) { S.shoePerf.bpRecs++; BigData.acc.bpRecs++; if (isBPair) { S.shoePerf.bpHits++; BigData.acc.bpHits++; } }
+    if (S.lastSideBets.pp) { S.shoePerf.ppRecs++; BigData.acc.ppRecs++; if (isPPair) { S.shoePerf.ppHits++; BigData.acc.ppHits++; } }
 
-    let roundData = { w: winner, bp: isBPair, pp: isPPair };
+    // 紀錄點數以供「牌面能量」策略使用
+    let roundData = { w: winner, bp: isBPair, pp: isPPair, pPt: fP, bPt: fB };
     S.history.push(roundData);
     consumed.forEach(v => { S.deck[v]--; S.totalCards--; S.runningCount += countWeights[v]; });
     updateBigData(roundData);
@@ -651,7 +654,7 @@ function submitData() {
 }
 
 /* =========================================================
-   5) 5D 備援決策 HUD (防噪貝氏運算)
+   5) 6D 備援決策 HUD (加入牌面能量策略)
 ========================================================= */
 function simulateAskRoad(hyp) {
     let testArr = [...S.history, {w: hyp, bp:false, pp:false}];
@@ -691,6 +694,25 @@ function recalcAndRender() {
 
     S.shadowPreds.shoe = shoeTotal >= 15 ? (shoeBRate > 0.53 ? 'B' : (shoePRate > 0.53 ? 'P' : null)) : null;
 
+    // 🌟 新增：第六維度 - 牌面能量 (Point Momentum)
+    S.shadowPreds.power = null;
+    if (S.history.length >= 3) {
+        let last3 = S.history.slice(-3);
+        let marginSum = 0;
+        let valid = true;
+        for(let h of last3) {
+            if (h.pPt !== undefined && h.bPt !== undefined) {
+                marginSum += (h.pPt - h.bPt); // 閒家贏為正，莊家贏為負
+            } else {
+                valid = false;
+            }
+        }
+        if (valid) {
+            if (marginSum >= 6) S.shadowPreds.power = 'P'; // 閒家連勝且勝分大
+            else if (marginSum <= -6) S.shadowPreds.power = 'B'; // 莊家連勝且勝分大
+        }
+    }
+
     let mlSide = null, finalTRate = 0, finalBPRate = 0, finalPPRate = 0;
     
     if (S.history.length > 0) {
@@ -728,7 +750,12 @@ function recalcAndRender() {
                 else if (breakRate < 0.45) { breakMsg = `🛡️【防禦警報】大數據斷龍機率低，嚴禁逆勢。`; alertClass = "alert-safe"; } 
                 else { breakMsg = `🔮【動能追蹤】目前${last==='B'?'莊':'閒'}連${currStreakLength}`; alertClass = "alert-safe"; }
             } else { breakMsg = `🔮 目前${last==='B'?'莊':'閒'}連${currStreakLength} (歷史樣本不足)`; }
-        }
+        } else if (currentStreakLength === 1 && pureHist.length >= 4) {
+            let isAlt = true;
+            for(let i=1; i<=3; i++) { if (pureHist[pureHist.length-i] === pureHist[pureHist.length-i-1]) { isAlt = false; break; } }
+            if (isAlt) { breakMsg = `🔄【變路預警】目前為密集單跳期，請注意規律反轉風險。`; alertClass = "alert-info"; }
+            else { breakMsg = `📊 觀察牌局走勢中...`; }
+        } else { breakMsg = `📊 觀察牌局走勢中...`; }
     }
 
     document.getElementById('hdrRemain').innerText = S.totalCards;
@@ -740,13 +767,13 @@ function recalcAndRender() {
 
     const obox = document.getElementById('oracleBox'), omain = document.getElementById('oracleMain'), badge = document.getElementById('reasonBadge');
     
-    // --- 🚨 降維備援決策引擎 ---
+    // --- 🚨 降維備援決策引擎 (加入 power) ---
     if (S.history.length < 15) {
         obox.className = "oracle-box locked"; omain.innerHTML = `🔒 規律收集中`;
         badge.innerHTML = `<span>判斷: 燃燒期 (第 ${S.history.length}/15 局)</span> <span class="str-low">強度: 鎖定</span>`;
         S.lastRecSide = 'PASS';
     } else {
-        let sortedStrats = ['ml', 'shoe', 'derived', 'trend', 'ev'].sort((a, b) => {
+        let sortedStrats = ['ml', 'shoe', 'power', 'derived', 'trend', 'ev'].sort((a, b) => {
             let rA = S.stats[a].p >= 3 ? S.stats[a].h / S.stats[a].p : -1;
             let rB = S.stats[b].p >= 3 ? S.stats[b].h / S.stats[b].p : -1;
             return rB - rA; 
@@ -764,7 +791,7 @@ function recalcAndRender() {
                 let rate = S.stats[s].p >= 3 ? S.stats[s].h / S.stats[s].p : 0;
                 if (rate >= 0.50 && S.shadowPreds[s] !== null) {
                     finalDecision = S.shadowPreds[s];
-                    let sName = s === 'ev' ? '物理算牌' : s === 'trend' ? '大路動能' : s === 'derived' ? '五路共振' : s === 'shoe' ? '當靴偏差' : '歷史大數據';
+                    let sName = s === 'ev' ? '物理算牌' : s === 'trend' ? '大路動能' : s === 'derived' ? '五路共振' : s === 'shoe' ? '當靴偏差' : s === 'power' ? '牌面能量' : '歷史大數據';
                     rsnText = `自適應主導: ${sName}`;
                     if (rate >= 0.65) { strClass = "str-high"; strText = "強"; } else if (rate >= 0.55) { strClass = "str-mid"; strText = "中"; }
                     break;
@@ -793,7 +820,7 @@ function recalcAndRender() {
 }
 
 /* =========================================================
-   繪圖引擎 (v23 穩定結構)
+   繪圖引擎保持原樣
 ========================================================= */
 function renderAllRoads() {
     renderBeadPlate();
