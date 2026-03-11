@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>百家樂量化終端 - v56 Deterministic Import/Export Fix</title>
+    <title>百家樂量化終端 - v57 Native FS</title>
     <style>
         :root {
             --bg: #09090b; --card: #18181b; --border: #27272a;
@@ -176,7 +176,7 @@
     <div class="sticky-hud">
         <div class="hud-header">
             <div class="hud-stats">
-                <span class="version-badge">v56 Final Fix</span>
+                <span class="version-badge">v57 Native FS</span>
                 <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
                 <span>局:<span class="val" id="hdrRound">0</span></span>
             </div>
@@ -249,7 +249,7 @@
 
     <div class="database-panel" id="dbPanel">
         <div class="db-header">
-            <div class="db-title">實驗室控制台 <span class="version-badge">v56 Final</span></div>
+            <div class="db-title">實驗室控制台 <span class="version-badge">v57 File System</span></div>
             <button class="db-close" onclick="toggleDB()">×</button>
         </div>
 
@@ -261,7 +261,7 @@
                 1. Rolling Evaluation<br>
                 2. Final Holdout<br>
                 3. v53/v54/v55 相容匯入修正<br>
-                4. 匯出改為 clone 審計，不污染 live 狀態
+                4. 原生檔案存取機制 (FileSystem API)
             </div>
         </div>
 
@@ -292,7 +292,7 @@
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
-            <button class="hud-btn" style="background:#2563eb; color:#fff; border:none;" onclick="exportDB()">📤 匯出資料庫 (JSON)</button>
+            <button class="hud-btn" style="background:#2563eb; color:#fff; border:none;" onclick="exportDB()">📤 原生匯出 (JSON)</button>
             <button class="hud-btn" style="background:#16a34a; color:#fff; border:none;" onclick="document.getElementById('impFile').click()">📥 匯入資料庫</button>
             <input type="file" id="impFile" style="display:none" onchange="importDB(event)">
             <button class="hud-btn" style="background:var(--danger); color:#fff; border:none; grid-column:span 2;" onclick="resetAll()">⚠️ 徹底清除所有數據</button>
@@ -301,24 +301,24 @@
 
 <script>
 /* =========================================================
-   v56
+   v57
    修正重點：
-   1. 匯出改為 clone 後審計，避免 export 直接污染 live memory。
-   2. 補上 v53 / v54 / v55 舊資料 model_id 相容層。
-   3. 保留決定論審計、側注重推、降級阻斷。
+   1. 導入 File System Access API (`showSaveFilePicker`) 支援桌面端自訂儲存位置。
+   2. 導入 Web Share API (`navigator.share`) 支援手機端 WebView/PWA 強制呼叫系統分享選單 (可選「儲存到檔案」)。
+   3. 保留傳統 `<a>` 下載作為最後的相容性降級防線。
 ========================================================= */
 
-const DB_K = 'bac_db_v56';
-const LAB_K = 'bac_lab_v56';
-const ST_K = 'bac_st_v56';
-const CF_K = 'bac_cfg_v56';
-const LEGACY_KEYS = ['v55','v54','v53','v52','v51','v50','v49','v48','v47','v46','v45','v44','v43','v42','v41','v40','v39','v38','v37','v36','v35','v34','v33','v32','v31_14','v31_13','v31_12','v31_11','v31_10'];
+const DB_K = 'bac_db_v57';
+const LAB_K = 'bac_lab_v57';
+const ST_K = 'bac_st_v57';
+const CF_K = 'bac_cfg_v57';
+const LEGACY_KEYS = ['v56','v55','v54','v53','v52','v51','v50','v49','v48','v47','v46','v45','v44','v43','v42','v41','v40','v39','v38','v37','v36','v35','v34','v33','v32','v31_14','v31_13','v31_12','v31_11','v31_10'];
 const SIDEBET_MIN_N = 12;
 const WARMUP_HANDS = 15;
 const PATTERN_CAP = 50000;
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0}, isPolluted:false };
-let LabStore = { schema_version:'v56', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version:'v57', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
 let Config = { m:0.005, s:0.08, nBins:10 };
 let bSt = null, bDB = null, bLab = null;
@@ -339,8 +339,8 @@ function approxEq(a, b, eps){
 }
 
 function readStorageWithFallback(primaryPrefix){
-    let bestValue = localStorage.getItem(primaryPrefix + 'v56');
-    let bestKey = primaryPrefix + 'v56';
+    let bestValue = localStorage.getItem(primaryPrefix + 'v57');
+    let bestKey = primaryPrefix + 'v57';
     if (bestValue === null){
         for (let i = 0; i < LEGACY_KEYS.length; i++){
             const k = primaryPrefix + LEGACY_KEYS[i];
@@ -364,6 +364,7 @@ function migrateToCurrentKey(sourceKey, targetKey, rawValue){
 function migrateOutcomeContract(hand){
     if (hand && hand.outcome){
         if (hand.outcome.w && hand.outcome.winner && hand.outcome.w !== hand.outcome.winner){
+            console.warn("Audit Failure: Conflicting outcome contracts detected. Marking as tampered.");
             hand.outcome.winner = 'TAMPERED';
         } else if (hand.outcome.w && !hand.outcome.winner){
             hand.outcome.winner = hand.outcome.w;
@@ -449,7 +450,8 @@ const MODEL_REGISTRY = {
     expert_wf_v21_snapshot: () => createExpertModel('expert_wf_v21_snapshot').fit([]),
     expert_wf_v22_immutable: () => createExpertModel('expert_wf_v22_immutable').fit([]),
     expert_wf_v23_unforgeable: () => createExpertModel('expert_wf_v23_unforgeable').fit([]),
-    expert_wf_v24_detseal: () => createExpertModel('expert_wf_v24_detseal').fit([])
+    expert_wf_v24_detseal: () => createExpertModel('expert_wf_v24_detseal').fit([]),
+    expert_wf_v25_native: () => createExpertModel('expert_wf_v25_native').fit([])
 };
 
 function getModelById(id){
@@ -460,7 +462,7 @@ function getModelById(id){
 
 function getDeployedPolicy(){
     return {
-        model: getModelById('expert_wf_v24_detseal'),
+        model: getModelById('expert_wf_v25_native'),
         tau: Config.m,
         options: { allowTieBet: false }
     };
@@ -496,26 +498,72 @@ function baccaratValue(rank){
     return rank >= 10 ? 0 : rank;
 }
 
-function downloadBlob(filename, text, mimeType){
-    const blob = new Blob([text], { type: mimeType || 'application/octet-stream' });
-
-    if (window.navigator && typeof window.navigator.msSaveOrOpenBlob === 'function'){
-        window.navigator.msSaveOrOpenBlob(blob, filename);
-        return;
+// 🚨 v57: 原生跨平台檔案系統介面 (Native File System API)
+async function downloadBlobNative(filename, text, mimeType){
+    const blob = new Blob([text], { type: mimeType || 'application/json' });
+    
+    // 1. 嘗試使用 Native File System Access API (桌面端 / 最新 Android)
+    if (window.showSaveFilePicker) {
+        try {
+            const handle = await window.showSaveFilePicker({
+                suggestedName: filename,
+                types: [{
+                    description: 'JSON Database File',
+                    accept: { 'application/json': ['.json'] },
+                }],
+            });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            return true; 
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.warn("File System Access API failed:", err);
+            } else {
+                return false; 
+            }
+        }
     }
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-
-    setTimeout(function(){
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }, 100);
+    
+    // 2. 嘗試使用 Web Share API (iOS Safari / 手機 WebView)
+    if (navigator.share && navigator.canShare) {
+        const file = new File([blob], filename, { type: mimeType || 'application/json' });
+        if (navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    title: 'Baccarat Quant DB Export',
+                    text: '請選擇「儲存到檔案」或分享至其他應用程式',
+                    files: [file]
+                });
+                return true;
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.warn("Web Share API failed:", err);
+                } else {
+                    return false; 
+                }
+            }
+        }
+    }
+    
+    // 3. 終極降級防線：傳統 <a> 標籤隱藏下載
+    try {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function(){
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+        return true;
+    } catch(err) {
+        console.error("Fallback download failed:", err);
+        throw new Error("您的瀏覽器阻擋了所有檔案匯出方法，請嘗試使用 Safari 或 Chrome 原生瀏覽器。");
+    }
 }
 
 function inferLegacyModelIdFromHand(hand){
@@ -530,8 +578,9 @@ function inferLegacyModelIdFromHand(hand){
     if (spec === 'v53') return 'expert_wf_v21_snapshot';
     if (spec === 'v54') return 'expert_wf_v22_immutable';
     if (spec === 'v55') return 'expert_wf_v23_unforgeable';
+    if (spec === 'v56') return 'expert_wf_v24_detseal';
 
-    return 'expert_wf_v24_detseal';
+    return 'expert_wf_v25_native';
 }
 
 function migrateLabStoreModels(targetLabStore){
@@ -626,7 +675,7 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
             is_warmup: !!predCopy.isWarmup
         },
         input: { cards: deepCopy(inputs) },
-        audit: { created_at: Date.now(), spec_version: 'v56' }
+        audit: { created_at: Date.now(), spec_version: 'v57' }
     };
 }
 
@@ -1554,14 +1603,15 @@ function rebuildLiveStateMetrics(stateToRebuild, openShoe){
 
 function annihilateLiveState(options){
     const rebuildBigData = options && options.rebuildBigData;
+    console.warn("Annihilation Protocol Activated. Purging live state and ghosts.");
     LabStore.currentOpenShoe = null;
     resetShoeVarsInit();
-
+    
     if (rebuildBigData){
         auditLabStore(LabStore);
         BigData = rebuildBigDataFromAuditedShoes(LabStore.rawShoes);
     }
-
+    
     bSt = null; bDB = null; bLab = null;
     saveDatabase();
     saveState();
@@ -1602,7 +1652,6 @@ function runExperiment(spec){
         return null;
     }
 
-    const policy = getDeployedPolicy();
     const runs = [];
     const validSlots = ['p1','p2','p3','b1','b2','b3'];
     const generator = rollingForecastOrigin(devShoes, spec.split_config.trainN, spec.split_config.valM, spec.split_config.testK, spec.split_config.stepK);
@@ -1639,7 +1688,11 @@ function runExperiment(spec){
                     F_Path: extractPathFeaturesCore(simHistory)
                 };
 
-                const res = executePolicyChain(policy.model, reconstructedFeatures, policy.tau, externalState, policy.options, false);
+                const modelId = (h.policy_snapshot && h.policy_snapshot.model_id) ? h.policy_snapshot.model_id : getDeployedPolicy().model.id;
+                const model = getModelById(modelId);
+                const tau = (h.policy_snapshot && h.policy_snapshot.tau !== undefined) ? h.policy_snapshot.tau : Config.m;
+
+                const res = executePolicyChain(model, reconstructedFeatures, tau, externalState, { allowTieBet:false }, false);
                 testSamples.push({ probs:res.probs, winner:winner, decision:res.decision });
                 updateCalibrationBins(splitBins, res.probs, winner);
 
@@ -1676,7 +1729,6 @@ function runExperiment(spec){
 
         runs.push({
             test_shoe_ids: split.test.map(s => s.shoe_id),
-            selected_tau: policy.tau,
             n_test_hands: testSamples.length,
             bet_count: betCount,
             log_loss: computeLogLoss(testSamples),
@@ -1724,7 +1776,11 @@ function runExperiment(spec){
                 F_Path: extractPathFeaturesCore(simHistory)
             };
 
-            const res = executePolicyChain(policy.model, reconstructedFeatures, policy.tau, externalState, policy.options, false);
+            const modelId = (h.policy_snapshot && h.policy_snapshot.model_id) ? h.policy_snapshot.model_id : getDeployedPolicy().model.id;
+            const model = getModelById(modelId);
+            const tau = (h.policy_snapshot && h.policy_snapshot.tau !== undefined) ? h.policy_snapshot.tau : Config.m;
+
+            const res = executePolicyChain(model, reconstructedFeatures, tau, externalState, { allowTieBet:false }, false);
             holdoutSamples.push({ probs:res.probs, winner:winner, decision:res.decision });
             updateCalibrationBins(holdoutBins, res.probs, winner);
 
@@ -1785,15 +1841,14 @@ function runExperiment(spec){
         run_id: 'exp_' + Date.now(),
         created_at: Date.now(),
         spec_version: 'ExperimentSpec_v1.0',
-        lab_version: 'v56-final-fix',
+        lab_version: 'v57-native',
         data_scope: {
             closed_shoe_count: closedShoes.length,
             dev_shoe_count: devShoes.length,
             holdout_shoe_count: holdoutShoes.length
         },
         split_config: spec.split_config,
-        model_registry: { deployed: policy.model.id },
-        selected_config: { tau: policy.tau, allowTieBet: policy.options.allowTieBet, nBins: spec.calibration.nBins },
+        selected_config: { tau: Config.m, allowTieBet: false, nBins: spec.calibration.nBins },
         split_runs: runs.map((r, idx) => ({
             split_index: idx,
             test_shoe_ids: r.test_shoe_ids,
@@ -1894,700 +1949,6 @@ function normalizeState(obj){
     return safe;
 }
 
-function getPendingCounts(){
-    const pending = {};
-    for (let i = 1; i <= 13; i++) pending[i] = 0;
-    ['p1','p2','p3','b1','b2','b3'].forEach(function(id){
-        const v = getVal(id);
-        if (v) pending[v]++;
-    });
-    return pending;
-}
-
-function drawKeypad(){
-    const k = document.getElementById('keypad');
-    k.innerHTML = '';
-    const pending = getPendingCounts();
-
-    for (let i = 1; i <= 13; i++){
-        const remain = Math.max(0, (S.deck[i] || 0) - pending[i]);
-        const b = document.createElement('div');
-        b.className = 'key';
-        b.innerHTML = '<div class="key-val">' + (i===1?'A':i===11?'J':i===12?'Q':i===13?'K':i) + '</div><div class="key-count">' + remain + '</div>';
-        b.onclick = function(){ inputRank(i); };
-        k.appendChild(b);
-    }
-
-    const clr = document.createElement('div');
-    clr.className = 'key action-clear';
-    clr.innerText = '⌫ 清空重填';
-    clr.onclick = clearCurrentInput;
-    k.appendChild(clr);
-}
-
-function getVal(id){
-    const el = document.getElementById('slot-' + id);
-    const v = el ? el.dataset.val : null;
-    return v ? parseInt(v, 10) : null;
-}
-
-function setActiveSlot(id){
-    const el = document.getElementById('slot-' + id);
-    if (!el || el.classList.contains('disabled')) return;
-    const cards = document.querySelectorAll('.playing-card');
-    for (let i = 0; i < cards.length; i++) cards[i].classList.remove('active');
-    el.classList.add('active');
-    cIdx = cOrder.indexOf(id);
-}
-
-function inputRank(rank){
-    const pending = getPendingCounts();
-    if (((S.deck[rank] || 0) - pending[rank]) <= 0) return;
-
-    while (cIdx < cOrder.length && document.getElementById('slot-' + cOrder[cIdx]).classList.contains('disabled')) cIdx++;
-    if (cIdx >= cOrder.length) return;
-
-    const target = document.getElementById('slot-' + cOrder[cIdx]);
-    target.innerText = rank===1?'A':rank===11?'J':rank===12?'Q':rank===13?'K':String(rank);
-    target.dataset.val = String(rank);
-    target.classList.add('filled');
-    cIdx++;
-
-    evaluateDrawRules();
-    drawKeypad();
-
-    while (cIdx < cOrder.length && document.getElementById('slot-' + cOrder[cIdx]).classList.contains('disabled')) cIdx++;
-    if (cIdx < cOrder.length) setActiveSlot(cOrder[cIdx]);
-}
-
-function clearCurrentInput(){
-    cIdx = 0;
-    const ids = ['p1','p2','p3','b1','b2','b3'];
-    for (let i = 0; i < ids.length; i++){
-        const id = ids[i];
-        const e = document.getElementById('slot-' + id);
-        e.innerText = '';
-        e.dataset.val = '';
-        e.classList.remove('filled', 'active');
-        if (id === 'p3' || id === 'b3') e.classList.add('disabled');
-        else e.classList.remove('disabled');
-    }
-    setActiveSlot(cOrder[0]);
-    evaluateDrawRules();
-    drawKeypad();
-}
-
-function changeOrder(){
-    cOrder = document.getElementById('orderSel').value === 'PBPB'
-        ? ['p1','b1','p2','b2','p3','b3']
-        : ['p1','p2','b1','b2','p3','b3'];
-    clearCurrentInput();
-}
-
-function evaluateDrawRules(){
-    const isAuto = document.getElementById('autoGuide').checked;
-    const btn = document.getElementById('submitBtn');
-    const p3 = document.getElementById('slot-p3');
-    const b3 = document.getElementById('slot-b3');
-    const p1 = getVal('p1');
-    const p2 = getVal('p2');
-    const b1 = getVal('b1');
-    const b2 = getVal('b2');
-
-    if (!p1 || !p2 || !b1 || !b2){
-        p3.classList.add('disabled');
-        b3.classList.add('disabled');
-        btn.disabled = true;
-        btn.className = 'submit-btn';
-        btn.innerText = '請依照發牌順序輸入';
-        return;
-    }
-
-    if (!isAuto){
-        p3.classList.remove('disabled');
-        b3.classList.remove('disabled');
-        btn.disabled = false;
-        btn.className = 'submit-btn ready';
-        btn.innerText = '手動覆寫模式：可結算';
-        return;
-    }
-
-    const pT = (baccaratValue(p1) + baccaratValue(p2)) % 10;
-    const bT = (baccaratValue(b1) + baccaratValue(b2)) % 10;
-    const isNat = pT >= 8 || bT >= 8;
-    const p3v = getVal('p3');
-    const b3v = getVal('b3');
-    let needP3 = false;
-    let needB3 = false;
-
-    if (!isNat){
-        if (pT <= 5) needP3 = true;
-        if (!needP3){
-            if (bT <= 5) needB3 = true;
-        } else if (p3v !== null){
-            const p3b = baccaratValue(p3v);
-            if (bT <= 2) needB3 = true;
-            else if (bT === 3 && p3b !== 8) needB3 = true;
-            else if (bT === 4 && p3b >= 2 && p3b <= 7) needB3 = true;
-            else if (bT === 5 && p3b >= 4 && p3b <= 7) needB3 = true;
-            else if (bT === 6 && (p3b === 6 || p3b === 7)) needB3 = true;
-        }
-    }
-
-    if (!needP3) p3.classList.add('disabled'); else p3.classList.remove('disabled');
-    if (needP3 && p3v === null) b3.classList.add('disabled');
-    else { if (!needB3) b3.classList.add('disabled'); else b3.classList.remove('disabled'); }
-
-    let valid = true;
-    let msg = '✓ 牌局合法，點擊結算';
-
-    if (isNat && (p3v !== null || b3v !== null)) { valid = false; msg = '❌ 錯誤：天牌不可補牌'; }
-    if (valid && needP3 && p3v === null) { valid = false; msg = '❌ 錯誤：閒家必須補牌'; }
-    if (valid && !needP3 && p3v !== null) { valid = false; msg = '❌ 錯誤：閒家不可補牌'; }
-    if (valid && needP3 && p3v !== null){
-        if (needB3 && b3v === null) { valid = false; msg = '❌ 錯誤：莊家必須補牌'; }
-        if (!needB3 && b3v !== null) { valid = false; msg = '❌ 錯誤：莊家不可補牌'; }
-    } else if (valid && !needP3){
-        if (needB3 && b3v === null) { valid = false; msg = '❌ 錯誤：莊家必須補牌'; }
-        if (!needB3 && b3v !== null) { valid = false; msg = '❌ 錯誤：莊家不可補牌'; }
-    }
-
-    btn.disabled = !valid;
-    btn.className = valid ? 'submit-btn ready' : 'submit-btn';
-    btn.innerText = msg;
-}
-
-function submitHand(){
-    if (S.isLegacyPartial){
-        alert("⚠️ 系統處於舊版相容降級模式，無法進行新局結算。請先點擊「換靴」以重建完整追溯鏈。");
-        return;
-    }
-
-    const btn = document.getElementById('submitBtn');
-    if (btn.disabled) return;
-
-    bSt = deepCopy(S);
-    bDB = deepCopy(BigData);
-    bLab = deepCopy(LabStore);
-
-    const vals = { p1:getVal('p1'), p2:getVal('p2'), p3:getVal('p3'), b1:getVal('b1'), b2:getVal('b2'), b3:getVal('b3') };
-    const cons = [];
-    let pPts = 0, bPts = 0;
-    const ids = ['p1','p2','p3','b1','b2','b3'];
-
-    for (let i = 0; i < ids.length; i++){
-        const id = ids[i];
-        const v = vals[id];
-        if (v){
-            cons.push(v);
-            if (id.indexOf('p') === 0) pPts += baccaratValue(v);
-            else bPts += baccaratValue(v);
-        }
-    }
-
-    const pFinal = pPts % 10;
-    const bFinal = bPts % 10;
-    const w = pFinal > bFinal ? 'P' : (bFinal > pFinal ? 'B' : 'T');
-    const bp = cons.length >= 4 && vals.b1 === vals.b2 && vals.b1 !== null && vals.b1 !== undefined;
-    const pp = cons.length >= 4 && vals.p1 === vals.p2 && vals.p1 !== null && vals.p1 !== undefined;
-    const keyToUpdate = getPatternKeyBeforePush();
-
-    const remainCards = Object.values(S.deck).reduce((a,b) => a + b, 0);
-    const oldFeatures = {
-        F_Base: {},
-        F_Comp: { running_count:S.runningCount, remain_cards:remainCards },
-        F_Path: extractPathFeaturesCore(S.history)
-    };
-
-    let oldPrediction;
-    try{
-        const policy = getDeployedPolicy();
-        const cp = keyToUpdate ? canonicalPatternLive(keyToUpdate, BigData.patterns[keyToUpdate]) : null;
-        const externalState = cp ? { has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P } : { has_pattern:false };
-        oldPrediction = executePolicyChain(policy.model, oldFeatures, policy.tau, externalState, policy.options, false);
-        oldPrediction.model_id = policy.model.id;
-    }catch(e){
-        oldPrediction = { probs:NAIVE_PRIORS, ev:{ B:0, P:0, T:0 }, decision:'PASS', tau:Config.m, isWarmup:false, model_id:getDeployedPolicy().model.id };
-    }
-
-    const observation = captureObservation(S, oldFeatures, oldPrediction, vals, S.lastSideBets);
-    commitObservation(observation, { winner:w, pPt:pFinal, bPt:bFinal, bp:bp, pp:pp });
-
-    if (w !== 'T'){
-        if (oldPrediction.decision !== 'PASS'){
-            S.shoePerf.recs += 1;
-            if (oldPrediction.decision === w) S.shoePerf.hits += 1;
-        }
-    }
-    if (S.lastSideBets.tie){ S.shoePerf.tRecs += 1; if (w === 'T') S.shoePerf.tHits += 1; }
-    if (S.lastSideBets.bp){ S.shoePerf.bpRecs += 1; if (bp) S.shoePerf.bpHits += 1; }
-    if (S.lastSideBets.pp){ S.shoePerf.ppRecs += 1; if (pp) S.shoePerf.ppHits += 1; }
-
-    S.history.push({ w:w, pPt:pFinal, bPt:bFinal, bp:bp, pp:pp });
-    for (let i = 0; i < cons.length; i++){
-        const v = cons[i];
-        S.deck[v] = Math.max(0, (S.deck[v] || 0) - 1);
-        S.runningCount += (countWeights[v] || 0);
-    }
-
-    if (keyToUpdate){
-        updatePatternDB(BigData, keyToUpdate, w, bp, pp);
-    }
-
-    recalcDBStats(BigData);
-    saveDatabase();
-    clearCurrentInput();
-    render();
-}
-
-function saveState(){
-    localStorage.setItem(ST_K, JSON.stringify(S));
-}
-
-function saveDatabase(){
-    localStorage.setItem(DB_K, JSON.stringify(BigData));
-    localStorage.setItem(LAB_K, JSON.stringify(LabStore));
-}
-
-function saveConfig(){
-    Config = normalizeConfig({
-        m: document.getElementById('cfgM').value,
-        s: document.getElementById('cfgS').value,
-        nBins: document.getElementById('cfgBins').value
-    });
-
-    document.getElementById('cfgM').value = Config.m;
-    document.getElementById('cfgS').value = Config.s;
-    document.getElementById('cfgBins').value = Config.nBins;
-
-    localStorage.setItem(CF_K, JSON.stringify(Config));
-    recalcDBStats(BigData);
-    render();
-}
-
-function undo(){
-    if (!bSt || !bDB || !bLab){
-        alert('無可撤銷資料');
-        return;
-    }
-    S = deepCopy(bSt);
-    BigData = deepCopy(bDB);
-    LabStore = deepCopy(bLab);
-    recalcDBStats(BigData);
-    saveState();
-    saveDatabase();
-    drawKeypad();
-    clearCurrentInput();
-    render();
-}
-
-function resetShoe(){
-    if (!confirm('換靴？本靴路單將清空。\n系統會自動將當前已打過的牌局結算並存入資料庫。')) return;
-    closeCurrentShoe();
-    resetShoeVarsInit();
-    bSt = null; bDB = null; bLab = null;
-    saveState();
-    saveDatabase();
-    drawKeypad();
-    clearCurrentInput();
-    render();
-}
-
-function resetAll(){
-    if (!confirm('⚠️ 警告：這將徹底清除本機所有歷史資料！確定嗎？')) return;
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++){
-        const k = localStorage.key(i);
-        if (k && (k.indexOf('bac_db_') === 0 || k.indexOf('bac_lab_') === 0 || k.indexOf('bac_st_') === 0 || k.indexOf('bac_cfg_') === 0)){
-            keysToRemove.push(k);
-        }
-    }
-    keysToRemove.forEach(k => localStorage.removeItem(k));
-    location.reload();
-}
-
-function exportDB(){
-    try{
-        const exportLabStore = deepCopy(LabStore);
-        const exportState = deepCopy(S);
-        const exportConfig = deepCopy(Config);
-
-        migrateLabStoreModels(exportLabStore);
-        auditLabStore(exportLabStore);
-
-        const basePatternDB = rebuildBigDataFromAuditedShoes(exportLabStore.rawShoes);
-
-        if (!validateOpenShoeConsistency(exportLabStore, exportState, basePatternDB)){
-            console.warn('Export: currentOpenShoe failed validation, purged from export payload.');
-            exportLabStore.currentOpenShoe = null;
-        }
-
-        const exportBigData = buildLiveBigDataFromStores(exportLabStore.rawShoes, exportLabStore.currentOpenShoe);
-        rebuildLiveStateMetrics(exportState, exportLabStore.currentOpenShoe);
-        recalcDBStats(exportBigData);
-
-        const payload = {
-            version: 'v56',
-            exported_at: Date.now(),
-            bigData: exportBigData,
-            labStore: exportLabStore,
-            state: exportState,
-            config: exportConfig,
-            export_meta: {
-                closed_shoes: exportLabStore.rawShoes.length,
-                open_hands: exportLabStore.currentOpenShoe ? exportLabStore.currentOpenShoe.hands.length : 0
-            }
-        };
-
-        downloadBlob('bac_v56_export.json', JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
-
-        alert(
-            '✅ 匯出成功！\n' +
-            '已結算鞋數: ' + payload.export_meta.closed_shoes + '\n' +
-            '未結算局數: ' + payload.export_meta.open_hands
-        );
-    }catch(e){
-        console.error('Export Error:', e);
-        alert('匯出失敗：' + e.message);
-    }
-}
-
-function importDB(e){
-    const reader = new FileReader();
-
-    reader.onload = function(ev){
-        try{
-            const rawText = String(ev.target.result || '').replace(/^\uFEFF/, '');
-            const obj = JSON.parse(rawText);
-
-            let tempLabStore = { schema_version:'v56', rawShoes:[], currentOpenShoe:null, experiments:[] };
-            let tempS = createInitialState();
-            let tempConfig = Object.assign({}, Config);
-
-            const isStructurallyValid =
-                obj &&
-                obj.labStore && typeof obj.labStore === 'object' &&
-                Array.isArray(obj.labStore.rawShoes) &&
-                obj.state && typeof obj.state === 'object' &&
-                obj.state.deck && typeof obj.state.deck === 'object' &&
-                isValidDeck(obj.state.deck) &&
-                Array.isArray(obj.state.history) &&
-                obj.config && typeof obj.config === 'object';
-
-            if (!isStructurallyValid){
-                throw new Error('partial-or-invalid-snapshot');
-            }
-
-            tempLabStore = deepCopy(obj.labStore);
-            tempLabStore.experiments = [];
-
-            migrateLabStoreModels(tempLabStore);
-            auditLabStore(tempLabStore);
-
-            tempConfig = normalizeConfig(obj.config);
-
-            const migratedState = normalizeState(obj.state);
-            if (!migratedState){
-                throw new Error('invalid-state');
-            }
-            tempS = migratedState;
-
-            const basePatternDB = rebuildBigDataFromAuditedShoes(tempLabStore.rawShoes);
-
-            if (!validateOpenShoeConsistency(tempLabStore, tempS, basePatternDB)){
-                console.warn('Import: currentOpenShoe failed validation, purged.');
-                tempLabStore.currentOpenShoe = null;
-                tempS = createInitialState();
-            }
-
-            const liveDb = buildLiveBigDataFromStores(tempLabStore.rawShoes, tempLabStore.currentOpenShoe);
-            rebuildLiveStateMetrics(tempS, tempLabStore.currentOpenShoe);
-            recalcDBStats(liveDb);
-
-            LabStore = tempLabStore;
-            S = tempS;
-            Config = tempConfig;
-            BigData = liveDb;
-
-            document.getElementById('cfgM').value = Config.m;
-            document.getElementById('cfgS').value = Config.s;
-            document.getElementById('cfgBins').value = Config.nBins;
-
-            bSt = null; bDB = null; bLab = null;
-
-            saveDatabase();
-            saveState();
-            localStorage.setItem(CF_K, JSON.stringify(Config));
-
-            drawKeypad();
-            clearCurrentInput();
-            render();
-
-            alert(
-                '✅ 匯入成功！\n' +
-                '已載入已結算鞋數: ' + LabStore.rawShoes.length + '\n' +
-                '目前開放鞋局數: ' + (LabStore.currentOpenShoe ? LabStore.currentOpenShoe.hands.length : 0)
-            );
-        }catch(err){
-            console.error('Import Error:', err);
-            alert('匯入失敗：檔案不完整、格式不正確，或舊資料不符合可重演格式。');
-        }finally{
-            e.target.value = '';
-        }
-    };
-
-    reader.readAsText(e.target.files[0]);
-}
-
-function renderRoads(){
-    const bead = document.getElementById('grid-bead');
-    const big = document.getElementById('grid-big');
-    bead.innerHTML = '';
-    big.innerHTML = '';
-
-    for (let c = 0; c < Math.max(12, Math.ceil(S.history.length / 6)); c++){
-        const col = document.createElement('div');
-        col.className = 'road-col';
-        for (let r = 0; r < 6; r++){
-            const cell = document.createElement('div');
-            cell.className = 'cell-lg';
-            const idx = c * 6 + r;
-            const d = S.history[idx];
-            if (d){
-                const dot = document.createElement('div');
-                dot.className = 'bead-dot ' + d.w;
-                cell.appendChild(dot);
-                if (d.bp) cell.classList.add('has-bp');
-                if (d.pp) cell.classList.add('has-pp');
-            }
-            col.appendChild(cell);
-        }
-        bead.appendChild(col);
-    }
-
-    const meta = buildBigRoadMeta(S.history);
-    for (let c = 0; c < Math.max(24, meta.maxCol + 1); c++){
-        const col = document.createElement('div');
-        col.className = 'road-col';
-        for (let r = 0; r < 6; r++){
-            const cell = document.createElement('div');
-            cell.className = 'cell-lg';
-            const d = meta.grid[c + "," + r];
-            if (d){
-                const cir = document.createElement('div');
-                cir.className = 'circle-hollow ' + d.v;
-                cell.appendChild(cir);
-                if (d.ties){
-                    const tLine = document.createElement('div');
-                    tLine.className = 'tie-line';
-                    cell.appendChild(tLine);
-                    if (d.ties > 1){
-                        const tText = document.createElement('span');
-                        tText.className = 'tie-text';
-                        tText.innerText = d.ties;
-                        cell.appendChild(tText);
-                    }
-                }
-                if (d.bp) cell.classList.add('has-bp');
-                if (d.pp) cell.classList.add('has-pp');
-            }
-            col.appendChild(cell);
-        }
-        big.appendChild(col);
-    }
-
-    const derived = getDerivedRoads(meta);
-    drawDerivedGrid('grid-eye', derived.eye, 'eye');
-    drawDerivedGrid('grid-small', derived.small, 'small');
-    drawDerivedGrid('grid-roach', derived.roach, 'roach');
-}
-
-function drawDerivedGrid(domId, arr, type){
-    const el = document.getElementById(domId);
-    el.innerHTML = '';
-
-    const grid = {};
-    let last = null, startCol = 0, c = 0, r = 0, maxCol = 0;
-
-    for (let i = 0; i < arr.length; i++){
-        const res = arr[i];
-        if (last === null || res !== last){
-            if (last !== null){
-                startCol += 1;
-                while (grid[startCol + ",0"] !== undefined) startCol += 1;
-            }
-            c = startCol; r = 0;
-        } else {
-            const nr = r + 1;
-            if (nr <= 5 && grid[c + "," + nr] === undefined) r = nr;
-            else {
-                c += 1;
-                while (grid[c + "," + r] !== undefined) c += 1;
-            }
-        }
-        grid[c + "," + r] = res;
-        last = res;
-        maxCol = Math.max(maxCol, c);
-    }
-
-    for (let i = 0; i < Math.max(24, maxCol + 1); i++){
-        const col = document.createElement('div');
-        col.className = 'road-col';
-        for (let j = 0; j < 6; j++){
-            const cell = document.createElement('div');
-            cell.className = 'cell-sm';
-            const val = grid[i + "," + j];
-            if (val){
-                const item = document.createElement('div');
-                if (type === 'eye') item.className = 'circle-hollow ' + val;
-                else if (type === 'small') item.className = 'circle-solid ' + val;
-                else item.className = 'slash ' + val;
-                cell.appendChild(item);
-            }
-            col.appendChild(cell);
-        }
-        el.appendChild(col);
-    }
-}
-
-function fmtStat(h, r){
-    return !r ? '0/0 (0%)' : h + '/' + r + ' (' + (h / r * 100).toFixed(1) + '%)';
-}
-
-function updateDBUI(){
-    const sS = document.getElementById('shoeStats');
-    const gS = document.getElementById('globalStats');
-
-    if (sS){
-        sS.innerHTML =
-            '<div class="db-stat-item"><span>主預測</span><span>' + fmtStat(S.shoePerf.hits, S.shoePerf.recs) + '</span></div>' +
-            '<div class="db-stat-item"><span>和局</span><span style="color:var(--t-color)">' + fmtStat(S.shoePerf.tHits, S.shoePerf.tRecs) + '</span></div>' +
-            '<div class="db-stat-item"><span>莊對</span><span style="color:var(--b-color)">' + fmtStat(S.shoePerf.bpHits, S.shoePerf.bpRecs) + '</span></div>' +
-            '<div class="db-stat-item"><span>閒對</span><span style="color:var(--p-color)">' + fmtStat(S.shoePerf.ppHits, S.shoePerf.ppRecs) + '</span></div>';
-    }
-
-    if (gS){
-        gS.innerHTML =
-            '<div class="db-stat-item"><span>總局數</span><span style="color:var(--highlight)">' + BigData.totalHands + '</span></div>' +
-            '<div class="db-stat-item"><span>Pattern 回測</span><span>' + fmtStat(BigData.acc.hits, BigData.acc.recs) + '</span></div>' +
-            '<div class="db-stat-item"><span>和局</span><span style="color:var(--t-color)">' + fmtStat(BigData.acc.tHits, BigData.acc.tRecs) + '</span></div>' +
-            '<div class="db-stat-item"><span>對子</span><span style="color:var(--highlight)">' + fmtStat(BigData.acc.bpHits + BigData.acc.ppHits, BigData.acc.bpRecs + BigData.acc.ppRecs) + '</span></div>';
-    }
-}
-
-function render(livePrediction){
-    let remain = 0;
-    const remainCardsArr = Object.values(S.deck);
-    for (let i = 0; i < remainCardsArr.length; i++) remain += remainCardsArr[i];
-
-    document.getElementById('hdrRemain').innerText = remain;
-    document.getElementById('hdrRound').innerText = S.history.length;
-    renderRoads();
-
-    const ob = document.getElementById('oracleBox');
-    const om = document.getElementById('oracleMain');
-    const rb = document.getElementById('reasonBadge');
-    const alertBox = document.getElementById('trendAlert');
-
-    if (livePrediction === null || livePrediction === undefined){
-        try{
-            const policy = getDeployedPolicy();
-            const features = {
-                F_Base: {},
-                F_Comp: { running_count:S.runningCount, remain_cards:remain },
-                F_Path: extractPathFeaturesCore(S.history)
-            };
-            const ptnKey = getPatternKeyBeforePush();
-            const cp = ptnKey ? canonicalPatternLive(ptnKey, BigData.patterns[ptnKey]) : null;
-            const externalState = cp ? { has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P } : { has_pattern:false };
-            livePrediction = executePolicyChain(policy.model, features, policy.tau, externalState, policy.options, false);
-        }catch(e){
-            livePrediction = { decision:'PASS', ev:{ B:0, P:0, T:0 }, isWarmup:false };
-        }
-    }
-
-    if (S.history.length < 1){
-        om.innerText = '等待輸入';
-        rb.innerHTML = '實驗室預測模型待命中';
-        ob.className = 'oracle-box pass';
-        alertBox.innerText = '📊 專家策略引擎運行中';
-        alertBox.className = 'trend-alert alert-safe';
-        S.lastRecSide = 'PASS';
-    } else if (S.isLegacyPartial){
-        om.innerText = '⚠️ 降級模式';
-        rb.innerHTML = '無歷史決策快照，部分指標無法還原';
-        ob.className = 'oracle-box degraded';
-        alertBox.innerText = '⚠️ 舊版相容模式：請換靴或重置';
-        alertBox.className = 'trend-alert alert-warn';
-        S.lastRecSide = 'PASS';
-    } else if (livePrediction.isWarmup){
-        om.innerText = '🔒 規律收集中';
-        rb.innerHTML = '暖機保護中 (已收集 ' + S.history.length + '/' + WARMUP_HANDS + ')';
-        ob.className = 'oracle-box locked';
-        alertBox.innerText = '⚠️ 樣本不足，強制觀望';
-        alertBox.className = 'trend-alert alert-safe';
-        S.lastRecSide = 'PASS';
-    } else {
-        if (livePrediction.decision === 'B'){
-            ob.className = 'oracle-box banker';
-            om.innerText = '🔥 推薦莊家';
-            alertBox.innerText = '⚡ 專家優勢突破閥值';
-            alertBox.className = 'trend-alert alert-high';
-        } else if (livePrediction.decision === 'P'){
-            ob.className = 'oracle-box player';
-            om.innerText = '🔥 推薦閒家';
-            alertBox.innerText = '⚡ 專家優勢突破閥值';
-            alertBox.className = 'trend-alert alert-high';
-        } else {
-            ob.className = 'oracle-box pass';
-            om.innerText = '🛡️ 觀望 (PASS)';
-            alertBox.innerText = '📊 趨勢不明，建議等待';
-            alertBox.className = 'trend-alert alert-safe';
-        }
-
-        const tc = remain > 0 ? (S.runningCount / Math.max(0.5, remain / 52)).toFixed(2) : '0.00';
-        const ev = (livePrediction.ev[livePrediction.decision] || 0).toFixed(4);
-        rb.innerHTML = '真數 (TC): ' + tc + ' | 預期淨利 (EV): ' + ev;
-        S.lastRecSide = livePrediction.decision;
-    }
-
-    const ptn = patternStatsForCurrent();
-    let fT = 0, fBP = 0, fPP = 0;
-    const hasPatternData = ptn && !ptn.weak;
-
-    if (hasPatternData){
-        fT = ptn.tieP;
-        fBP = ptn.bpP;
-        fPP = ptn.ppP;
-    }
-
-    S.lastSideBets = { tie:fT >= Config.s, bp:fBP >= Config.s, pp:fPP >= Config.s };
-
-    const setSB = function(id, label, p, isPair, hasData){
-        const e = document.getElementById(id);
-        if (!hasData){
-            e.innerText = label + ' --%';
-            e.className = 'sidebet-pill';
-        } else {
-            e.innerText = label + ' ' + (p * 100).toFixed(1) + '%';
-            e.className = p >= Config.s ? (isPair ? 'sidebet-pill active-pair' : 'sidebet-pill active') : 'sidebet-pill';
-        }
-    };
-
-    setSB('sbTie', '和局', fT, false, hasPatternData);
-    setSB('sbBP', '莊對', fBP, true, hasPatternData);
-    setSB('sbPP', '閒對', fPP, true, hasPatternData);
-
-    updateDBUI();
-    saveState();
-}
-
-function toggleDB(){
-    recalcDBStats(BigData);
-    document.getElementById('dbPanel').classList.toggle('open');
-    updateDBUI();
-}
-
 function init(){
     const cfgRaw = readStorageWithFallback('bac_cfg_');
     if (cfgRaw.value){
@@ -2612,7 +1973,7 @@ function init(){
             migrateLabStoreModels(LabStore);
             auditLabStore(LabStore);
         }catch(e){
-            LabStore = { schema_version:'v56', rawShoes:[], currentOpenShoe:null, experiments:[] };
+            LabStore = { schema_version:'v57', rawShoes:[], currentOpenShoe:null, experiments:[] };
         }
         migrateToCurrentKey(labRaw.key, LAB_K, labRaw.value);
     }
