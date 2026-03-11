@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>百家樂量化終端 - v57 Native FS</title>
+    <title>百家樂量化終端 - v60 Final</title>
     <style>
         :root {
             --bg: #09090b; --card: #18181b; --border: #27272a;
@@ -15,20 +15,32 @@
         * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-            background: var(--bg); color: var(--text-main);
-            margin: 0; padding: 0; user-select: none; overflow-x: hidden;
+            background: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            overflow-x: hidden;
         }
+
         .sticky-hud {
             position: sticky; top: 0; z-index: 1000;
             background: rgba(18, 18, 21, 0.94);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border-bottom: 1px solid rgba(255,255,255,0.1);
             padding: env(safe-area-inset-top) 8px 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
         }
         .hud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .hud-stats { font-size: 12px; font-weight: 800; color: var(--text-muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .version-badge { background: var(--highlight); color: #000; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; }
+        .hud-stats {
+            font-size: 12px; font-weight: 800; color: var(--text-muted);
+            display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+        }
+        .version-badge {
+            background: var(--highlight); color: #000;
+            font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px;
+        }
         .hud-stats span.val { color: var(--text-main); margin-left: 3px; font-variant-numeric: tabular-nums; }
         .hud-actions { display: flex; gap: 6px; }
         .hud-btn {
@@ -37,17 +49,30 @@
             cursor: pointer; transition: 0.1s;
         }
         .hud-btn:active { transform: scale(0.95); }
-        .btn-undo { color: var(--warning); } .btn-reset { color: var(--b-color); }
+        .btn-undo { color: var(--warning); }
+        .btn-reset { color: var(--b-color); }
 
         .oracle-box {
             text-align: center; padding: 12px 8px; border-radius: 12px;
             border: 2px solid var(--border); background: #000; position: relative; transition: 0.3s;
         }
-        .oracle-box.banker { border-color: var(--b-color); background: linear-gradient(180deg, rgba(239,68,68,0.15) 0%, #000 100%); }
-        .oracle-box.player { border-color: var(--p-color); background: linear-gradient(180deg, rgba(59,130,246,0.15) 0%, #000 100%); }
+        .oracle-box.banker {
+            border-color: var(--b-color);
+            background: linear-gradient(180deg, rgba(239,68,68,0.15) 0%, #000 100%);
+        }
+        .oracle-box.player {
+            border-color: var(--p-color);
+            background: linear-gradient(180deg, rgba(59,130,246,0.15) 0%, #000 100%);
+        }
         .oracle-box.pass { border-color: #3f3f46; }
-        .oracle-box.locked { border-color: var(--highlight); background: repeating-linear-gradient(45deg, rgba(234,179,8,0.05), rgba(234,179,8,0.05) 10px, #000 10px, #000 20px); }
-        .oracle-box.degraded { border-color: var(--warning); background: repeating-linear-gradient(45deg, rgba(249,115,22,0.05), rgba(249,115,22,0.05) 10px, #000 10px, #000 20px); }
+        .oracle-box.locked {
+            border-color: var(--highlight);
+            background: repeating-linear-gradient(45deg, rgba(234, 179, 8, 0.05), rgba(234, 179, 8, 0.05) 10px, #000 10px, #000 20px);
+        }
+        .oracle-box.degraded {
+            border-color: var(--warning);
+            background: repeating-linear-gradient(45deg, rgba(249, 115, 22, 0.05), rgba(249, 115, 22, 0.05) 10px, #000 10px, #000 20px);
+        }
 
         .oracle-main { font-size: 26px; font-weight: 900; margin-bottom: 6px; letter-spacing: 1px; }
         .oracle-box.banker .oracle-main { color: var(--b-color); text-shadow: 0 0 10px rgba(239,68,68,0.5); }
@@ -56,32 +81,47 @@
         .oracle-box.degraded .oracle-main { color: var(--warning); font-size: 20px; }
 
         .reason-badge {
-            display: inline-flex; font-size: 11px; font-weight: 800;
-            padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,0.1);
-            color: var(--text-main); align-items: center; gap: 6px; flex-wrap: wrap;
+            display: inline-flex; font-size: 11px; font-weight: 800; padding: 4px 10px;
+            border-radius: 8px; background: rgba(255,255,255,0.1); color: var(--text-main);
+            align-items: center; gap: 6px; flex-wrap: wrap;
         }
 
         .trend-alert {
             font-size: 12px; font-weight: 900; margin-bottom: 6px; letter-spacing: 0.5px;
             padding: 4px; border-radius: 6px; text-align: center;
         }
-        .alert-high { color: #fff; background: rgba(249,115,22,0.3); border: 1px solid var(--warning); animation: pulse 1.5s infinite alternate; }
+        .alert-high {
+            color: #fff; background: rgba(249, 115, 22, 0.3);
+            border: 1px solid var(--warning); animation: pulse 1.5s infinite alternate;
+        }
         .alert-safe { color: var(--text-muted); background: rgba(255,255,255,0.05); }
-        .alert-warn { color: var(--warning); background: rgba(249,115,22,0.1); border: 1px dashed var(--warning); }
+        .alert-warn { color: var(--warning); background: rgba(249, 115, 22, 0.1); border: 1px dashed var(--warning); }
 
-        .sidebet-container { display: flex; justify-content: center; gap: 6px; border-top: 1px dashed #333; padding-top: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .sidebet-container {
+            display: flex; justify-content: center; gap: 6px;
+            border-top: 1px dashed #333; padding-top: 10px; margin-top: 10px; flex-wrap: wrap;
+        }
         .sidebet-pill {
             font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 6px;
-            background: rgba(255,255,255,0.05); color: var(--text-muted);
-            border: 1px solid transparent; font-variant-numeric: tabular-nums; transition: 0.3s;
+            background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid transparent;
+            font-variant-numeric: tabular-nums; transition: 0.3s;
         }
-        .sidebet-pill.active { background: rgba(34,197,94,.15); color: var(--t-color); border-color: var(--t-color); animation: pulse 1.5s infinite alternate; }
-        .sidebet-pill.active-pair { background: rgba(234,179,8,.15); color: var(--highlight); border-color: var(--highlight); animation: pulse 1.5s infinite alternate; }
+        .sidebet-pill.active {
+            background: rgba(34,197,94,.15); color: var(--t-color); border-color: var(--t-color);
+            animation: pulse 1.5s infinite alternate;
+        }
+        .sidebet-pill.active-pair {
+            background: rgba(234,179,8,.15); color: var(--highlight); border-color: var(--highlight);
+            animation: pulse 1.5s infinite alternate;
+        }
 
         @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
 
         .scroll-container { padding: 12px; padding-bottom: 70px; }
-        .roads-card, .input-card { background: var(--card); border-radius: 12px; padding: 10px; border: 1px solid var(--border); margin-bottom: 12px; }
+        .roads-card, .input-card {
+            background: var(--card); border-radius: 12px; padding: 10px;
+            border: 1px solid var(--border); margin-bottom: 12px;
+        }
         .road-title { font-size: 11px; font-weight: 800; color: var(--text-muted); margin: 4px 0; text-transform: uppercase; }
         .road-container {
             width: 100%; overflow-x: auto; background: #fff; padding: 4px;
@@ -94,7 +134,8 @@
             position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
             background: #fff; border: 0.5px solid #eee;
         }
-        .cell-lg { width: 16px; height: 16px; } .cell-sm { width: 8px; height: 8px; }
+        .cell-lg { width: 16px; height: 16px; }
+        .cell-sm { width: 8px; height: 8px; }
 
         .bead-dot { width: 12px; height: 12px; border-radius: 50%; z-index: 1; }
         .circle-hollow { width: 12px; height: 12px; border-radius: 50%; border: 2px solid transparent; z-index: 1; background: transparent; }
@@ -105,28 +146,48 @@
         .P, .Blue { background-color: var(--p-color); border-color: var(--p-color); }
         .T { background-color: var(--t-color); border-color: var(--t-color); }
 
-        .has-bp::before { content:''; position:absolute; top:0px; left:0px; width:4px; height:4px; background:var(--b-color); border-radius:50%; border:1px solid #fff; z-index:3; }
-        .has-pp::after { content:''; position:absolute; bottom:0px; right:0px; width:4px; height:4px; background:var(--p-color); border-radius:50%; border:1px solid #fff; z-index:3; }
+        .has-bp::before {
+            content:''; position:absolute; top:0px; left:0px; width:4px; height:4px;
+            background:var(--b-color); border-radius:50%; border:1px solid #fff; z-index:3;
+        }
+        .has-pp::after {
+            content:''; position:absolute; bottom:0px; right:0px; width:4px; height:4px;
+            background:var(--p-color); border-radius:50%; border:1px solid #fff; z-index:3;
+        }
         .tie-line { position: absolute; width: 100%; height: 2px; background: var(--t-color); transform: rotate(-45deg); z-index: 2; }
-        .tie-text { position: absolute; font-size: 10px; font-weight: 900; color: var(--t-color); z-index: 4; text-shadow: 0 0 2px #fff, 0 0 2px #fff; }
+        .tie-text {
+            position: absolute; font-size: 10px; font-weight: 900; color: var(--t-color);
+            z-index: 4; text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+        }
         .slash.R { background: linear-gradient(to bottom left, transparent 40%, var(--b-color) 40%, var(--b-color) 60%, transparent 60%); }
         .slash.Blue { background: linear-gradient(to bottom left, transparent 40%, var(--p-color) 40%, var(--p-color) 60%, transparent 60%); }
-        .derived-roads { display: flex; gap: 4px; } .derived-col { flex: 1; min-width: 0; }
+        .derived-roads { display: flex; gap: 4px; }
+        .derived-col { flex: 1; min-width: 0; }
 
-        .order-select { background: #27272a; color: #fff; border: 1px solid #3f3f46; border-radius: 6px; font-size: 12px; padding: 4px 6px; font-weight: bold; outline: none; }
+        .order-select {
+            background: #27272a; color: #fff; border: 1px solid #3f3f46;
+            border-radius: 6px; font-size: 12px; padding: 4px 6px; font-weight: bold; outline: none;
+        }
         .table-layout { display: flex; gap: 8px; margin-top: 8px; }
-        .table-side { flex: 1; background: #000; border-radius: 12px; padding: 8px; border: 1px solid var(--border); }
-        .side-label { text-align: center; font-size: 11px; font-weight: 900; margin-bottom: 8px; padding: 4px 0; border-radius: 6px; }
+        .table-side {
+            flex: 1; background: #000; border-radius: 12px; padding: 8px; border: 1px solid var(--border);
+        }
+        .side-label {
+            text-align: center; font-size: 11px; font-weight: 900; margin-bottom: 8px; padding: 4px 0; border-radius: 6px;
+        }
         .side-label.p { background: rgba(59,130,246,.15); color: var(--p-color); }
         .side-label.b { background: rgba(239,68,68,.15); color: var(--b-color); }
 
         .cards-row { display: flex; gap: 4px; }
         .playing-card {
-            flex: 1; aspect-ratio: 2/3; background: #27272a; border-radius: 8px;
-            border: 1px solid #3f3f46; display: flex; align-items: center; justify-content: center;
-            font-size: 20px; font-weight: 900; color: #fff; cursor: pointer; transition: 0.2s;
+            flex: 1; aspect-ratio: 2/3; background: #27272a; border-radius: 8px; border: 1px solid #3f3f46;
+            display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900;
+            color: #fff; cursor: pointer; transition: 0.2s;
         }
-        .playing-card.active { border-color: var(--highlight); background: #333; box-shadow: 0 0 10px rgba(234,179,8,.3); color: var(--highlight); transform: translateY(-2px); }
+        .playing-card.active {
+            border-color: var(--highlight); background: #333; box-shadow: 0 0 10px rgba(234,179,8,.3);
+            color: var(--highlight); transform: translateY(-2px);
+        }
         .playing-card.filled { background: #e4e4e7; color: #000; }
         .playing-card.disabled { opacity: 0.2; pointer-events: none; }
 
@@ -138,7 +199,10 @@
         .key:active { background: #3f3f46; transform: scale(0.95); }
         .key-val { font-size: 18px; font-weight: 900; }
         .key-count { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-        .key.action-clear { grid-column: span 2; color: var(--warning); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+        .key.action-clear {
+            grid-column: span 2; color: var(--warning); display: flex; align-items: center;
+            justify-content: center; font-size: 14px; font-weight: 800;
+        }
 
         .submit-btn {
             width: 100%; padding: 16px; background: #27272a; color: #777; font-size: 16px;
@@ -148,8 +212,9 @@
 
         .fab-btn {
             position: fixed; bottom: 20px; right: 20px; background: var(--highlight); color: #000;
-            width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 22px; z-index: 900; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer;
+            width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 22px; z-index: 900; border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer;
         }
         .database-panel {
             position: fixed; bottom: -100%; left: 0; width: 100%; height: 90vh; background: #111;
@@ -158,25 +223,38 @@
             padding: 20px; overflow-y: auto;
         }
         .database-panel.open { bottom: 0; }
-        .db-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .db-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+            border-bottom: 1px solid #333; padding-bottom: 10px;
+        }
         .db-title { font-size: 18px; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 8px; }
         .db-close { background: none; border: none; color: var(--text-muted); font-size: 30px; cursor: pointer; line-height: 1; }
-        .db-section { background: #1a1a1a; border-radius: 12px; padding: 14px; margin-bottom: 14px; border: 1px solid #333; }
+        .db-section {
+            background: #1a1a1a; border-radius: 12px; padding: 14px; margin-bottom: 14px; border: 1px solid #333;
+        }
         .db-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; font-weight: 700; }
         .db-stat-item { display: flex; justify-content: space-between; padding: 8px; background: #111; border-radius: 8px; gap: 8px; }
-        .param-input { background: #27272a; border: 1px solid #3f3f46; color: #fff; border-radius: 6px; width: 60px; text-align: center; font-size: 12px; padding: 4px; }
+        .param-input {
+            background: #27272a; border: 1px solid #3f3f46; color: #fff;
+            border-radius: 6px; width: 60px; text-align: center; font-size: 12px; padding: 4px;
+        }
         .lab-btn {
-            background: var(--lab); border: none; color: #fff; padding: 12px; font-size: 14px; margin-bottom: 10px;
-            width: 100%; border-radius: 8px; font-weight: 900; cursor: pointer; box-shadow: 0 0 10px rgba(14,165,233,0.3);
+            background: var(--lab); border: none; color: #fff; padding: 12px; font-size: 14px;
+            margin-bottom: 10px; width: 100%; border-radius: 8px; font-weight: 900; cursor: pointer;
+            box-shadow: 0 0 10px rgba(14,165,233,0.3);
         }
         .lab-btn:active { transform: scale(0.98); }
+
+        #saveStatus {
+            margin-top: 12px; font-size: 12px; color: var(--text-muted); word-break: break-all;
+        }
     </style>
 </head>
 <body>
     <div class="sticky-hud">
         <div class="hud-header">
             <div class="hud-stats">
-                <span class="version-badge">v57 Native FS</span>
+                <span class="version-badge">v60 Final</span>
                 <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
                 <span>局:<span class="val" id="hdrRound">0</span></span>
             </div>
@@ -199,7 +277,7 @@
 
     <div class="scroll-container">
         <div class="roads-card">
-            <div class="road-title">珠盤路 & 大路</div>
+            <div class="road-title">珠盤路 &amp; 大路</div>
             <div class="road-container"><div class="road-grid" id="grid-bead"></div></div>
             <div class="road-container"><div class="road-grid" id="grid-big"></div></div>
             <div class="road-title" style="margin-top:10px;">下三路</div>
@@ -220,7 +298,6 @@
                     <input type="checkbox" id="autoGuide" checked onchange="evaluateDrawRules()"> 🛡️ 智慧防呆
                 </label>
             </div>
-
             <div class="table-layout">
                 <div class="table-side">
                     <div class="side-label p">閒 PLAYER</div>
@@ -239,7 +316,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="keypad" id="keypad"></div>
             <button class="submit-btn" id="submitBtn" onclick="submitHand()" disabled>請依照發牌順序輸入</button>
         </div>
@@ -249,24 +325,23 @@
 
     <div class="database-panel" id="dbPanel">
         <div class="db-header">
-            <div class="db-title">實驗室控制台 <span class="version-badge">v57 File System</span></div>
+            <div class="db-title">實驗室控制台 <span class="version-badge">v60 Final</span></div>
             <button class="db-close" onclick="toggleDB()">×</button>
         </div>
 
         <div class="db-section" style="border-color: var(--lab);">
-            <h3 style="color:var(--lab); margin-top:0;">🔬 執行量化實驗室</h3>
+            <h3 style="color:var(--lab); margin-top:0;">🔬 執行量化實驗室 (The Quant Lab)</h3>
             <button class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
             <div style="font-size:11px; color:#888; line-height:1.4;">
                 嚴格 Expanding-History Walk-Forward 驗證。<br>
-                1. Rolling Evaluation<br>
-                2. Final Holdout<br>
-                3. v53/v54/v55 相容匯入修正<br>
-                4. 原生檔案存取機制 (FileSystem API)
+                1. <b>Rolling Evaluation</b> (歷史靴依序線上學習評測)<br>
+                2. <b>Final Holdout</b> (最後20%完全獨立測試)<br>
+                💡 <b>v60 聲明：</b> 支援歷史快照重演、舊版相容匯入、決定論審計與可選儲存位置匯出。
             </div>
         </div>
 
         <div class="db-section" style="border-color: var(--highlight);">
-            <h3 style="color:var(--highlight); margin-top:0;">🤖 部署策略設定</h3>
+            <h3 style="color:var(--highlight); margin-top:0;">🤖 部署策略設定 (Deployed Policy)</h3>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span style="font-size:12px; color:var(--text-muted); font-weight:800;">期望值下注閥值 (Tau)</span>
                 <input type="number" id="cfgM" class="param-input" step="0.001" onchange="saveConfig()">
@@ -276,76 +351,101 @@
                 <input type="number" id="cfgS" class="param-input" step="0.01" onchange="saveConfig()">
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12px; color:var(--text-muted); font-weight:800;">ECE Bin 數量</span>
-                <input type="number" id="cfgBins" class="param-input" value="10" step="1" min="5" max="20" onchange="saveConfig()">
+                <span style="font-size:12px; color:var(--text-muted); font-weight:800;">ECE Bin 數量 (實驗室用)</span>
+                <input type="number" id="cfgBins" class="param-input" step="1" min="5" max="20" onchange="saveConfig()">
             </div>
         </div>
 
         <div class="db-section" style="border-color: var(--p-color);">
-            <h3>🎯 本靴戰況</h3>
+            <h3>🎯 實時戰況</h3>
             <div class="db-stat-grid" id="shoeStats"></div>
         </div>
 
         <div class="db-section">
-            <h3>📈 全域 Pattern 回測</h3>
+            <h3>📈 歷史資料庫統計</h3>
             <div class="db-stat-grid" id="globalStats"></div>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
-            <button class="hud-btn" style="background:#2563eb; color:#fff; border:none;" onclick="exportDB()">📤 原生匯出 (JSON)</button>
+            <button class="hud-btn" style="background:#2563eb; color:#fff; border:none;" onclick="exportDB()">📤 匯出資料庫 (JSON)</button>
             <button class="hud-btn" style="background:#16a34a; color:#fff; border:none;" onclick="document.getElementById('impFile').click()">📥 匯入資料庫</button>
-            <input type="file" id="impFile" style="display:none" onchange="importDB(event)">
+            <input type="file" id="impFile" style="display:none" accept=".json,application/json" onchange="importDB(event)">
             <button class="hud-btn" style="background:var(--danger); color:#fff; border:none; grid-column:span 2;" onclick="resetAll()">⚠️ 徹底清除所有數據</button>
         </div>
+
+        <div id="saveStatus">尚未匯出</div>
     </div>
 
 <script>
 /* =========================================================
-   v57
-   修正重點：
-   1. 導入 File System Access API (`showSaveFilePicker`) 支援桌面端自訂儲存位置。
-   2. 導入 Web Share API (`navigator.share`) 支援手機端 WebView/PWA 強制呼叫系統分享選單 (可選「儲存到檔案」)。
-   3. 保留傳統 `<a>` 下載作為最後的相容性降級防線。
+   v60 Final
+   - 匯出：支援 showSaveFilePicker + 下載 fallback
+   - 匯入：支援 v52 ~ v60 全快照
+   - 重演：open shoe 以 policy_snapshot 還原面板
+   - 相容：舊版無 snapshot 進入降級模式
+   - 審計：保留決定論驗證邏輯
 ========================================================= */
 
-const DB_K = 'bac_db_v57';
-const LAB_K = 'bac_lab_v57';
-const ST_K = 'bac_st_v57';
-const CF_K = 'bac_cfg_v57';
-const LEGACY_KEYS = ['v56','v55','v54','v53','v52','v51','v50','v49','v48','v47','v46','v45','v44','v43','v42','v41','v40','v39','v38','v37','v36','v35','v34','v33','v32','v31_14','v31_13','v31_12','v31_11','v31_10'];
+const APP_VERSION = 'v60';
+const CURRENT_MODEL_ID = 'expert_wf_v24_final';
+const DB_K = 'bac_db_v60';
+const LAB_K = 'bac_lab_v60';
+const ST_K = 'bac_st_v60';
+const CF_K = 'bac_cfg_v60';
+
+const LEGACY_KEYS = [
+    'v60','v59','v58','v57','v56','v55','v54','v53','v52',
+    'v51','v50','v49','v48','v47','v46','v45','v44','v43','v42','v41','v40',
+    'v39','v38','v37','v36','v35','v34','v33','v32','v31_14','v31_13','v31_12','v31_11','v31_10'
+];
+
+const LEGACY_MODEL_IDS = new Set([
+    'expert_wf_v20_time_machine',
+    'expert_wf_v21_snapshot',
+    'expert_wf_v22_immutable',
+    'expert_wf_v23_unforgeable',
+    CURRENT_MODEL_ID
+]);
+
 const SIDEBET_MIN_N = 12;
 const WARMUP_HANDS = 15;
 const PATTERN_CAP = 50000;
 
+const countWeights = {1:1, 2:1, 3:2, 4:2, 5:1, 6:-1, 7:-2, 8:-2, 9:-2, 10:0, 11:0, 12:0, 13:0};
+const NAIVE_PRIORS = { B: 0.4586, P: 0.4462, T: 0.0952 };
+const PAYOUTS = { B: 0.95, P: 1.0, T: 8.0 };
+
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0}, isPolluted:false };
-let LabStore = { schema_version:'v57', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version: APP_VERSION, rawShoes: [], currentOpenShoe: null, experiments: [] };
 let S = null;
-let Config = { m:0.005, s:0.08, nBins:10 };
+let Config = { m: 0.005, s: 0.08, nBins: 10 };
+
 let bSt = null, bDB = null, bLab = null;
 let cOrder = ['p1','b1','p2','b2','p3','b3'];
 let cIdx = 0;
+let lastSavedFileHandle = null;
 
-const countWeights = {1:1, 2:1, 3:2, 4:2, 5:1, 6:-1, 7:-2, 8:-2, 9:-2, 10:0, 11:0, 12:0, 13:0};
-const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
-const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
+/* -------------------- 基礎工具 -------------------- */
+function deepCopy(v) { return JSON.parse(JSON.stringify(v)); }
 
-function deepCopy(obj){
-    return JSON.parse(JSON.stringify(obj));
+function safeNum(v, d) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
 }
 
-function approxEq(a, b, eps){
-    eps = eps || 1e-10;
-    return Math.abs(Number(a) - Number(b)) <= eps;
+function safeInt(v, d) {
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : d;
 }
 
-function readStorageWithFallback(primaryPrefix){
-    let bestValue = localStorage.getItem(primaryPrefix + 'v57');
-    let bestKey = primaryPrefix + 'v57';
-    if (bestValue === null){
-        for (let i = 0; i < LEGACY_KEYS.length; i++){
+function readStorageWithFallback(primaryPrefix) {
+    let bestValue = localStorage.getItem(primaryPrefix + APP_VERSION);
+    let bestKey = primaryPrefix + APP_VERSION;
+    if (bestValue === null) {
+        for (let i = 0; i < LEGACY_KEYS.length; i++) {
             const k = primaryPrefix + LEGACY_KEYS[i];
             const v = localStorage.getItem(k);
-            if (v !== null){
+            if (v !== null) {
                 bestValue = v;
                 bestKey = k;
                 break;
@@ -355,61 +455,84 @@ function readStorageWithFallback(primaryPrefix){
     return { key: bestKey, value: bestValue };
 }
 
-function migrateToCurrentKey(sourceKey, targetKey, rawValue){
-    if (sourceKey && sourceKey !== targetKey && rawValue !== null){
+function migrateToCurrentKey(sourceKey, targetKey, rawValue) {
+    if (sourceKey && sourceKey !== targetKey && rawValue !== null) {
         localStorage.setItem(targetKey, rawValue);
     }
 }
 
-function migrateOutcomeContract(hand){
-    if (hand && hand.outcome){
-        if (hand.outcome.w && hand.outcome.winner && hand.outcome.w !== hand.outcome.winner){
-            console.warn("Audit Failure: Conflicting outcome contracts detected. Marking as tampered.");
+function setSaveStatus(message, isError) {
+    const el = document.getElementById('saveStatus');
+    if (!el) return;
+    el.textContent = message;
+    el.style.color = isError ? 'var(--danger)' : 'var(--text-muted)';
+}
+
+function migrateOutcomeContract(hand) {
+    if (hand && hand.outcome) {
+        if (hand.outcome.w && hand.outcome.winner && hand.outcome.w !== hand.outcome.winner) {
             hand.outcome.winner = 'TAMPERED';
-        } else if (hand.outcome.w && !hand.outcome.winner){
+        } else if (hand.outcome.w && !hand.outcome.winner) {
             hand.outcome.winner = hand.outcome.w;
             delete hand.outcome.w;
         }
     }
 }
 
-function isValidConfig(c){
-    return c && typeof c === 'object' &&
-        typeof c.m === 'number' &&
-        typeof c.s === 'number' &&
-        typeof c.nBins === 'number';
+function isValidDeck(deck) {
+    if (!deck || typeof deck !== 'object') return false;
+    for (let i = 1; i <= 13; i++) {
+        if (typeof deck[i] !== 'number' || !Number.isFinite(deck[i]) || deck[i] < 0 || deck[i] > 32) return false;
+    }
+    return true;
 }
 
-function normalizeConfig(c){
-    let m = Number(c && c.m); m = isNaN(m) ? 0.005 : Math.max(-1, Math.min(1, m));
-    let s = Number(c && c.s); s = isNaN(s) ? 0.08 : Math.max(0, Math.min(1, s));
-    let nBins = parseInt(c && c.nBins, 10); nBins = isNaN(nBins) ? 10 : Math.max(5, Math.min(20, nBins));
-    return { m:m, s:s, nBins:nBins };
+function derivePhysicalRunningCount(deck) {
+    let rc = 0;
+    for (let i = 1; i <= 13; i++) rc += (32 - deck[i]) * (countWeights[i] || 0);
+    return rc;
 }
 
-function createExpertModel(modelId){
+function normalizeConfig(c) {
+    let m = safeNum(c && c.m, 0.005);
+    let s = safeNum(c && c.s, 0.08);
+    let nBins = safeInt(c && c.nBins, 10);
+    m = Math.max(-1, Math.min(1, m));
+    s = Math.max(0, Math.min(1, s));
+    nBins = Math.max(5, Math.min(20, nBins));
+    return { m, s, nBins };
+}
+
+function generateShoeId() {
+    return 'shoe_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+}
+
+function fmtStat(h, r) {
+    return !r ? '0/0 (0%)' : h + '/' + r + ' (' + (h / r * 100).toFixed(1) + '%)';
+}
+
+/* -------------------- 模型 -------------------- */
+function createCoreModel(modelId) {
     return {
-        id: modelId,
-        basePriors: NAIVE_PRIORS,
-        fit: function(){
-            this.basePriors = NAIVE_PRIORS;
-            return this;
-        },
-        predict: function(features, externalState){
+        id: LEGACY_MODEL_IDS.has(modelId) ? modelId : CURRENT_MODEL_ID,
+        fit: function() { this.basePriors = NAIVE_PRIORS; return this; },
+        predict: function(features, externalState) {
             let pB = this.basePriors.B;
             let pP = this.basePriors.P;
 
             const path = features.F_Path;
-            if (path){
+            if (path) {
                 let road_boost_B = 0;
                 let road_boost_P = 0;
 
-                if (path.trend_len >= 3){
+                if (path.trend_len >= 3) {
                     if (path.trend_side === 'B') road_boost_B += 0.02;
                     if (path.trend_side === 'P') road_boost_P += 0.02;
                 }
+
                 if (path.ask_B_red >= 2) road_boost_B += 0.01;
                 if (path.ask_P_red >= 2) road_boost_P += 0.01;
+
                 if (path.recent_shoe_bias === 'B') road_boost_B += 0.005;
                 if (path.recent_shoe_bias === 'P') road_boost_P += 0.005;
 
@@ -417,19 +540,15 @@ function createExpertModel(modelId){
                 pP += road_boost_P;
             }
 
-            if (externalState && externalState.has_pattern && externalState.pattern_N >= 10){
+            if (externalState && externalState.has_pattern && externalState.pattern_N >= 10) {
                 const data_B_prob = externalState.pattern_B / externalState.pattern_N;
                 const data_P_prob = externalState.pattern_P / externalState.pattern_N;
                 const weight = Math.min(0.15, externalState.pattern_N * 0.005);
-
                 pB = pB * (1 - weight) + data_B_prob * weight;
                 pP = pP * (1 - weight) + data_P_prob * weight;
             }
 
-            const tc = features.F_Comp
-                ? features.F_Comp.running_count / Math.max(0.5, (features.F_Comp.remain_cards || 416) / 52)
-                : 0;
-
+            const tc = features.F_Comp ? features.F_Comp.running_count / Math.max(0.5, (features.F_Comp.remain_cards || 416) / 52) : 0;
             pB -= tc * 0.0005;
             pP += tc * 0.0005;
 
@@ -437,379 +556,183 @@ function createExpertModel(modelId){
             pP = Math.max(0, pP);
 
             const sum = pB + pP + this.basePriors.T;
-            return {
-                B: pB / sum,
-                P: pP / sum,
-                T: this.basePriors.T / sum
-            };
+            return { B: pB / sum, P: pP / sum, T: this.basePriors.T / sum };
         }
     };
 }
 
-const MODEL_REGISTRY = {
-    expert_wf_v21_snapshot: () => createExpertModel('expert_wf_v21_snapshot').fit([]),
-    expert_wf_v22_immutable: () => createExpertModel('expert_wf_v22_immutable').fit([]),
-    expert_wf_v23_unforgeable: () => createExpertModel('expert_wf_v23_unforgeable').fit([]),
-    expert_wf_v24_detseal: () => createExpertModel('expert_wf_v24_detseal').fit([]),
-    expert_wf_v25_native: () => createExpertModel('expert_wf_v25_native').fit([])
-};
-
-function getModelById(id){
-    const factory = MODEL_REGISTRY[id];
-    if (!factory) return null;
-    return factory();
-}
-
-function getDeployedPolicy(){
+function getDeployedPolicy() {
     return {
-        model: getModelById('expert_wf_v25_native'),
+        model: Object.create(createCoreModel(CURRENT_MODEL_ID)).fit([]),
         tau: Config.m,
         options: { allowTieBet: false }
     };
 }
 
-function generateShoeId(){
-    return 'shoe_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-}
-
-function createInitialState(){
-    const newState = {
+/* -------------------- State -------------------- */
+function createInitialState() {
+    const st = {
         shoeId: Date.now(),
         deck: {},
         history: [],
         runningCount: 0,
-        shoePerf: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0},
+        shoePerf: { recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0 },
         stats: { ev:{p:0,h:0,r:[]}, trend:{p:0,h:0,r:[]}, derived:{p:0,h:0,r:[]}, ml:{p:0,h:0,r:[]}, shoe:{p:0,h:0,r:[]}, power:{p:0,h:0,r:[]} },
         shadow: { ev:null, trend:null, derived:null, ml:null, shoe:null, power:null },
         lastRecSide: null,
         lastSideBets: { tie:false, bp:false, pp:false },
         isLegacyPartial: false
     };
-    for (let i = 1; i <= 13; i++) newState.deck[i] = 32;
-    return newState;
+    for (let i = 1; i <= 13; i++) st.deck[i] = 32;
+    return st;
 }
 
-function resetShoeVarsInit(){
+function resetShoeVarsInit() {
     S = createInitialState();
     return S;
 }
 
-function baccaratValue(rank){
-    return rank >= 10 ? 0 : rank;
-}
+function normalizeState(obj) {
+    if (!obj || typeof obj !== 'object') return null;
 
-// 🚨 v57: 原生跨平台檔案系統介面 (Native File System API)
-async function downloadBlobNative(filename, text, mimeType){
-    const blob = new Blob([text], { type: mimeType || 'application/json' });
-    
-    // 1. 嘗試使用 Native File System Access API (桌面端 / 最新 Android)
-    if (window.showSaveFilePicker) {
-        try {
-            const handle = await window.showSaveFilePicker({
-                suggestedName: filename,
-                types: [{
-                    description: 'JSON Database File',
-                    accept: { 'application/json': ['.json'] },
-                }],
-            });
-            const writable = await handle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-            return true; 
-        } catch (err) {
-            if (err.name !== 'AbortError') {
-                console.warn("File System Access API failed:", err);
-            } else {
-                return false; 
-            }
-        }
-    }
-    
-    // 2. 嘗試使用 Web Share API (iOS Safari / 手機 WebView)
-    if (navigator.share && navigator.canShare) {
-        const file = new File([blob], filename, { type: mimeType || 'application/json' });
-        if (navigator.canShare({ files: [file] })) {
-            try {
-                await navigator.share({
-                    title: 'Baccarat Quant DB Export',
-                    text: '請選擇「儲存到檔案」或分享至其他應用程式',
-                    files: [file]
-                });
-                return true;
-            } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.warn("Web Share API failed:", err);
-                } else {
-                    return false; 
-                }
-            }
-        }
-    }
-    
-    // 3. 終極降級防線：傳統 <a> 標籤隱藏下載
-    try {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function(){
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
-        return true;
-    } catch(err) {
-        console.error("Fallback download failed:", err);
-        throw new Error("您的瀏覽器阻擋了所有檔案匯出方法，請嘗試使用 Safari 或 Chrome 原生瀏覽器。");
-    }
-}
+    const safe = createInitialState();
+    if (!isValidDeck(obj.deck)) return null;
 
-function inferLegacyModelIdFromHand(hand){
-    if (hand && hand.policy_snapshot && typeof hand.policy_snapshot.model_id === 'string'){
-        return hand.policy_snapshot.model_id;
-    }
-    if (hand && hand.live_prediction && typeof hand.live_prediction.model_id === 'string'){
-        return hand.live_prediction.model_id;
+    let deckSum = 0;
+    for (let i = 1; i <= 13; i++) {
+        safe.deck[i] = Math.max(0, Math.min(32, Math.floor(Number(obj.deck[i]))));
+        deckSum += safe.deck[i];
     }
 
-    const spec = hand && hand.audit ? hand.audit.spec_version : null;
-    if (spec === 'v53') return 'expert_wf_v21_snapshot';
-    if (spec === 'v54') return 'expert_wf_v22_immutable';
-    if (spec === 'v55') return 'expert_wf_v23_unforgeable';
-    if (spec === 'v56') return 'expert_wf_v24_detseal';
+    if (Array.isArray(obj.history)) {
+        safe.history = obj.history.map(function(item) {
+            if (typeof item === 'string') return { w: (item === 'B' || item === 'P' || item === 'T') ? item : 'T', bp:false, pp:false, pPt:0, bPt:0 };
+            return {
+                w: (item && (item.w === 'B' || item.w === 'P' || item.w === 'T')) ? item.w : 'T',
+                bp: !!(item && item.bp),
+                pp: !!(item && item.pp),
+                pPt: Math.max(0, Math.min(9, safeInt(item && item.pPt, 0))),
+                bPt: Math.max(0, Math.min(9, safeInt(item && item.bPt, 0)))
+            };
+        });
+    }
 
-    return 'expert_wf_v25_native';
-}
+    const usedCards = 416 - deckSum;
+    if (usedCards < safe.history.length * 4 || usedCards > safe.history.length * 6 || deckSum < 0 || deckSum > 416) {
+        return null;
+    }
 
-function migrateLabStoreModels(targetLabStore){
-    const patchHands = function(hands){
-        if (!Array.isArray(hands)) return;
-
-        for (let i = 0; i < hands.length; i++){
-            const hand = hands[i];
-            const inferred = inferLegacyModelIdFromHand(hand);
-
-            if (hand && hand.live_prediction){
-                if (!hand.live_prediction.model_id){
-                    hand.live_prediction.model_id = inferred;
-                }
-            }
-
-            if (hand && hand.policy_snapshot){
-                if (!hand.policy_snapshot.model_id){
-                    hand.policy_snapshot.model_id = inferred;
-                }
-                if (typeof hand.policy_snapshot.s !== 'number' || !Number.isFinite(hand.policy_snapshot.s)){
-                    hand.policy_snapshot.s = 0.08;
-                }
-            }
-        }
+    safe.runningCount = derivePhysicalRunningCount(safe.deck);
+    safe.lastRecSide = (obj.lastRecSide === 'B' || obj.lastRecSide === 'P' || obj.lastRecSide === 'PASS') ? obj.lastRecSide : null;
+    safe.lastSideBets = {
+        tie: !!(obj.lastSideBets && obj.lastSideBets.tie),
+        bp: !!(obj.lastSideBets && obj.lastSideBets.bp),
+        pp: !!(obj.lastSideBets && obj.lastSideBets.pp)
     };
+    safe.isLegacyPartial = !!obj.isLegacyPartial;
 
-    if (!targetLabStore || typeof targetLabStore !== 'object') return;
-
-    const rawShoes = targetLabStore.rawShoes || [];
-    for (let i = 0; i < rawShoes.length; i++){
-        patchHands(rawShoes[i].hands);
-    }
-
-    if (targetLabStore.currentOpenShoe){
-        patchHands(targetLabStore.currentOpenShoe.hands);
-    }
+    return safe;
 }
 
-function openNewShoe(){
-    if (LabStore.currentOpenShoe && LabStore.currentOpenShoe.hands.length > 0) closeCurrentShoe();
-    LabStore.currentOpenShoe = {
-        shoe_id: generateShoeId(),
-        started_at: Date.now(),
-        ended_at: null,
-        status: 'open',
-        meta: {
-            deck_size_start: 416,
-            order_mode: document.getElementById('orderSel') ? document.getElementById('orderSel').value : 'PBPB',
-            source: 'live_input'
-        },
-        hands: []
-    };
-}
-
-function closeCurrentShoe(){
-    if (LabStore.currentOpenShoe && LabStore.currentOpenShoe.status === 'open'){
-        LabStore.currentOpenShoe.status = 'closed';
-        LabStore.currentOpenShoe.ended_at = Date.now();
-        if (LabStore.currentOpenShoe.hands.length > 0){
-            LabStore.rawShoes.push(deepCopy(LabStore.currentOpenShoe));
-        }
-        LabStore.currentOpenShoe = null;
-    }
-}
-
-function captureObservation(state, features, livePrediction, inputs, sideBetsSnapshot){
-    if (!LabStore.currentOpenShoe) openNewShoe();
-
-    const predCopy = deepCopy(livePrediction || {});
-    if (!predCopy.model_id){
-        predCopy.model_id = getDeployedPolicy().model.id;
-    }
-
-    return {
-        hand_index: LabStore.currentOpenShoe.hands.length + 1,
-        pre_state: {
-            remaining_deck: deepCopy(state.deck),
-            running_count: state.runningCount,
-            history_len: state.history.length
-        },
-        features: deepCopy(features),
-        live_prediction: predCopy,
-        policy_snapshot: {
-            model_id: predCopy.model_id,
-            tau: predCopy.tau || Config.m,
-            s: Config.s,
-            main_decision: predCopy.decision,
-            recommend_tie: !!sideBetsSnapshot.tie,
-            recommend_bp: !!sideBetsSnapshot.bp,
-            recommend_pp: !!sideBetsSnapshot.pp,
-            is_warmup: !!predCopy.isWarmup
-        },
-        input: { cards: deepCopy(inputs) },
-        audit: { created_at: Date.now(), spec_version: 'v57' }
-    };
-}
-
-function commitObservation(observation, outcome){
-    if (!LabStore.currentOpenShoe) return;
-    observation.outcome = outcome;
-    LabStore.currentOpenShoe.hands.push(observation);
-}
-
-function isValidDeck(deck){
-    if (!deck || typeof deck !== 'object') return false;
-    for (let i = 1; i <= 13; i++){
-        if (typeof deck[i] !== 'number' || !Number.isFinite(deck[i]) || deck[i] < 0 || deck[i] > 32) return false;
-    }
-    return true;
-}
-
-function derivePhysicalRunningCount(deck){
-    let rc = 0;
-    for (let i = 1; i <= 13; i++){
-        rc += (32 - deck[i]) * (countWeights[i] || 0);
-    }
-    return rc;
-}
-
-function safeCountLive(v, d){
-    d = d === undefined ? 0 : d;
-    const n = Number(v);
-    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : d;
-}
-
-function canonicalPatternLive(key, raw){
+/* -------------------- BigData -------------------- */
+function canonicalPatternLive(key, raw) {
     if (!/^(B|P)(,(B|P)){2}$/.test(key)) return null;
     if (!raw || typeof raw !== 'object') return null;
 
-    const B = safeCountLive(raw.B), P = safeCountLive(raw.P), T = safeCountLive(raw.T);
+    const B = Math.max(0, Math.floor(safeNum(raw.B, 0)));
+    const P = Math.max(0, Math.floor(safeNum(raw.P, 0)));
+    const T = Math.max(0, Math.floor(safeNum(raw.T, 0)));
     const N = B + P + T;
-    if (N > PATTERN_CAP || N === 0) return null;
+    if (N <= 0 || N > PATTERN_CAP) return null;
 
-    const BP = Math.min(safeCountLive(raw.BP), N);
-    const PP = Math.min(safeCountLive(raw.PP), N);
-    return { B:B, P:P, T:T, BP:BP, PP:PP, N:N };
+    const BP = Math.min(Math.max(0, Math.floor(safeNum(raw.BP, 0))), N);
+    const PP = Math.min(Math.max(0, Math.floor(safeNum(raw.PP, 0))), N);
+
+    return { B, P, T, BP, PP, N };
 }
 
-function normalizeBigData(db){
+function normalizeBigData(db) {
     const safe = {
         totalHands: 0,
         patterns: {},
         acc: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0},
         isPolluted: false
     };
+
     if (!db || typeof db !== 'object') return safe;
 
     let sumN = 0;
-    if (db.patterns && typeof db.patterns === 'object'){
-        const keys = Object.keys(db.patterns);
-        for (let i = 0; i < keys.length; i++){
-            const key = keys[i];
+    if (db.patterns && typeof db.patterns === 'object') {
+        Object.keys(db.patterns).forEach(function(key) {
             const cp = canonicalPatternLive(key, db.patterns[key]);
-            if (!cp){ safe.isPolluted = true; continue; }
+            if (!cp) {
+                safe.isPolluted = true;
+                return;
+            }
             sumN += cp.N;
-            if (sumN > PATTERN_CAP){
-                return deepCopy(safe);
+            if (sumN > PATTERN_CAP) {
+                safe.isPolluted = true;
+                return;
             }
             safe.patterns[key] = cp;
-        }
+        });
     }
     safe.totalHands = sumN;
     return safe;
 }
 
-function recalcDBStats(db){
+function recalcDBStats(db) {
     db.acc = {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0};
     let sumN = 0;
     const validPatterns = {};
     let polluted = false;
 
-    const keys = Object.keys(db.patterns || {});
-    for (let i = 0; i < keys.length; i++){
-        const key = keys[i];
+    Object.keys(db.patterns).forEach(function(key) {
         const cp = canonicalPatternLive(key, db.patterns[key]);
-        if (!cp){ polluted = true; continue; }
+        if (!cp) {
+            polluted = true;
+            return;
+        }
 
         sumN += cp.N;
-        if (sumN > PATTERN_CAP){
-            db.patterns = {};
-            db.totalHands = 0;
-            db.acc = {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0};
-            db.isPolluted = true;
-            return false;
+        if (sumN > PATTERN_CAP) {
+            polluted = true;
+            return;
         }
 
         validPatterns[key] = cp;
+
         const bpBase = cp.B + cp.P;
         const allBase = bpBase + cp.T;
 
-        if (bpBase >= 5){
-            if (cp.B / bpBase >= 0.55){
+        if (bpBase >= 5) {
+            if (cp.B / bpBase >= 0.55) {
                 db.acc.recs += bpBase;
                 db.acc.hits += cp.B;
-            } else if (cp.P / bpBase >= 0.55){
+            } else if (cp.P / bpBase >= 0.55) {
                 db.acc.recs += bpBase;
                 db.acc.hits += cp.P;
             }
         }
 
-        if (cp.N >= SIDEBET_MIN_N){
-            if ((cp.T + 0.5) / (allBase + 5) >= Config.s){
-                db.acc.tRecs += allBase;
-                db.acc.tHits += cp.T;
-            }
-            if ((cp.BP + 0.4) / (allBase + 5) >= Config.s){
-                db.acc.bpRecs += allBase;
-                db.acc.bpHits += cp.BP;
-            }
-            if ((cp.PP + 0.4) / (allBase + 5) >= Config.s){
-                db.acc.ppRecs += allBase;
-                db.acc.ppHits += cp.PP;
-            }
+        if (cp.N >= SIDEBET_MIN_N) {
+            if ((cp.T + 0.5) / (allBase + 5) >= Config.s) { db.acc.tRecs += allBase; db.acc.tHits += cp.T; }
+            if ((cp.BP + 0.4) / (allBase + 5) >= Config.s) { db.acc.bpRecs += allBase; db.acc.bpHits += cp.BP; }
+            if ((cp.PP + 0.4) / (allBase + 5) >= Config.s) { db.acc.ppRecs += allBase; db.acc.ppHits += cp.PP; }
         }
-    }
+    });
 
     db.patterns = validPatterns;
     db.totalHands = sumN;
     db.isPolluted = polluted;
-    return true;
+    return !polluted;
 }
 
-function updatePatternDB(dbWrapper, key, w, bp, pp, cap){
+function updatePatternDB(dbWrapper, key, w, bp, pp, cap) {
     cap = cap === undefined ? PATTERN_CAP : cap;
     if (!key || dbWrapper.totalHands >= cap) return;
 
     let cp = dbWrapper.patterns[key] || { B:0, P:0, T:0, BP:0, PP:0, N:0 };
-
     if (w === 'B') cp.B += 1;
     else if (w === 'P') cp.P += 1;
     else if (w === 'T') cp.T += 1;
@@ -825,145 +748,109 @@ function updatePatternDB(dbWrapper, key, w, bp, pp, cap){
     dbWrapper.totalHands += 1;
 }
 
-function buildWalkForwardDB(shoes){
-    const wf_db = {
-        patterns: {},
-        totalHands: 0,
-        acc: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0},
-        isPolluted: false
-    };
-
-    for (let i = 0; i < shoes.length; i++){
+function buildWalkForwardDB(shoes) {
+    const wf_db = normalizeBigData({});
+    for (let i = 0; i < shoes.length; i++) {
         const shoe = shoes[i];
         let simHist = [];
-
-        for (let j = 0; j < shoe.hands.length; j++){
+        for (let j = 0; j < shoe.hands.length; j++) {
             const h = shoe.hands[j];
             const winner = h.outcome.winner || h.outcome.w;
             const pure = simHist.filter(x => x.w !== 'T').map(x => x.w);
-            const key = pure.length >= 3 ? pure.slice(-3).join(',') : null;
-            if (key){
-                updatePatternDB(wf_db, key, winner, h.outcome.bp, h.outcome.pp);
-            }
-            simHist.push({
-                w: winner,
-                pPt: h.outcome.pPt,
-                bPt: h.outcome.bPt,
-                bp: h.outcome.bp,
-                pp: h.outcome.pp
-            });
+            const ptnKey = pure.length >= 3 ? pure.slice(-3).join(',') : null;
+            if (ptnKey) updatePatternDB(wf_db, ptnKey, winner, !!h.outcome.bp, !!h.outcome.pp);
+            simHist.push({ w:winner, pPt:h.outcome.pPt, bPt:h.outcome.bPt, bp:!!h.outcome.bp, pp:!!h.outcome.pp });
         }
     }
-
     recalcDBStats(wf_db);
     return wf_db;
 }
 
-function rebuildBigDataFromAuditedShoes(rawShoes){
+function rebuildBigDataFromAuditedShoes(rawShoes) {
     return buildWalkForwardDB(rawShoes || []);
 }
 
-function buildLiveBigDataFromStores(rawShoes, currentOpenShoe){
-    const liveDb = rebuildBigDataFromAuditedShoes(rawShoes || []);
-
-    if (currentOpenShoe && currentOpenShoe.status === 'open' && Array.isArray(currentOpenShoe.hands)){
-        let simHist = [];
-        for (let i = 0; i < currentOpenShoe.hands.length; i++){
-            const h = currentOpenShoe.hands[i];
-            const winner = h.outcome.winner || h.outcome.w;
-            const pure = simHist.filter(x => x.w !== 'T').map(x => x.w);
-            const key = pure.length >= 3 ? pure.slice(-3).join(',') : null;
-            if (key){
-                updatePatternDB(liveDb, key, winner, h.outcome.bp, h.outcome.pp);
-            }
-            simHist.push({
-                w: winner,
-                pPt: h.outcome.pPt,
-                bPt: h.outcome.bPt,
-                bp: h.outcome.bp,
-                pp: h.outcome.pp
-            });
-        }
+function buildLiveBigDataFromStores(rawShoes, currentOpenShoe) {
+    const db = rebuildBigDataFromAuditedShoes(rawShoes || []);
+    if (!currentOpenShoe || currentOpenShoe.status !== 'open' || !Array.isArray(currentOpenShoe.hands)) {
+        recalcDBStats(db);
+        return db;
     }
 
-    recalcDBStats(liveDb);
-    return liveDb;
-}
-
-function buildBigRoadMeta(history){
-    const grid = {}, cols = [];
-    let last = null, startCol = 0, c = 0, r = 0, lastCoord = null, maxCol = 0;
-
-    for (let i = 0; i < history.length; i++){
-        const d = history[i];
-        if (d.w === 'T'){
-            if (lastCoord && grid[lastCoord]) grid[lastCoord].ties = (grid[lastCoord].ties || 0) + 1;
-            continue;
-        }
-
-        if (last === null || d.w !== last){
-            if (last !== null){
-                startCol += 1;
-                while (grid[startCol + ",0"] !== undefined) startCol += 1;
-            }
-            c = startCol; r = 0;
-        } else {
-            const nr = r + 1;
-            if (nr <= 5 && grid[c + "," + nr] === undefined){
-                r = nr;
-            } else {
-                c += 1;
-                while (grid[c + "," + r] !== undefined) c += 1;
-            }
-        }
-
-        const key = c + "," + r;
-        grid[key] = { v:d.w, bp:d.bp, pp:d.pp, ties:0, c:c, r:r };
-        if (!cols[c]) cols[c] = [];
-        cols[c][r] = grid[key];
-        last = d.w;
-        lastCoord = key;
-        maxCol = Math.max(maxCol, c);
+    let simHist = [];
+    for (let i = 0; i < currentOpenShoe.hands.length; i++) {
+        const h = currentOpenShoe.hands[i];
+        const winner = h.outcome && (h.outcome.winner || h.outcome.w);
+        if (!winner) continue;
+        const pure = simHist.filter(x => x.w !== 'T').map(x => x.w);
+        const ptnKey = pure.length >= 3 ? pure.slice(-3).join(',') : null;
+        if (ptnKey) updatePatternDB(db, ptnKey, winner, !!h.outcome.bp, !!h.outcome.pp);
+        simHist.push({ w:winner, pPt:h.outcome.pPt, bPt:h.outcome.bPt, bp:!!h.outcome.bp, pp:!!h.outcome.pp });
     }
 
-    return { grid:grid, cols:cols, maxCol:maxCol };
+    recalcDBStats(db);
+    return db;
 }
 
-function getDerivedRoads(meta){
-    const nodes = Object.values(meta.grid).sort((a,b) => a.c - b.c || a.r - b.r);
-    const seq1 = [], seq2 = [], seq3 = [];
+/* -------------------- 預測鏈 -------------------- */
+function normalizeProbs(raw, strict) {
+    strict = strict === undefined ? true : strict;
+    const vals = [raw && raw.B, raw && raw.P, raw && raw.T].map(Number);
+    if (vals.some(v => !Number.isFinite(v) || v < 0)) {
+        if (strict) throw new Error('Invalid model probabilities');
+        return { B: NAIVE_PRIORS.B, P: NAIVE_PRIORS.P, T: NAIVE_PRIORS.T };
+    }
+    const z = vals[0] + vals[1] + vals[2];
+    if (z <= 0) {
+        if (strict) throw new Error('Probability sum must be > 0');
+        return { B: NAIVE_PRIORS.B, P: NAIVE_PRIORS.P, T: NAIVE_PRIORS.T };
+    }
+    return { B: vals[0] / z, P: vals[1] / z, T: vals[2] / z };
+}
 
-    const colH = function(c){
-        let h = 0;
-        while (meta.grid[c + "," + h] !== undefined) h++;
-        return h;
+function calc_ev(probs, payouts) {
+    return {
+        B: probs.B * payouts.B + probs.P * (-1) + probs.T * 0,
+        P: probs.P * payouts.P + probs.B * (-1) + probs.T * 0,
+        T: probs.T * payouts.T + (probs.B + probs.P) * (-1)
     };
-
-    for (let i = 0; i < nodes.length; i++){
-        const node = nodes[i];
-        const c = node.c, r = node.r;
-
-        const calc = function(off, seq){
-            if (r === 0){
-                if (c >= off + 1) seq.push(colH(c - 1) === colH(c - off - 1) ? 'R' : 'Blue');
-            } else {
-                if (c >= off){
-                    const a = !!meta.grid[(c - off) + "," + r];
-                    const b = !!meta.grid[(c - off) + "," + (r - 1)];
-                    seq.push(a === b ? 'R' : 'Blue');
-                }
-            }
-        };
-
-        calc(1, seq1);
-        calc(2, seq2);
-        calc(3, seq3);
-    }
-
-    return { eye:seq1, small:seq2, roach:seq3 };
 }
 
-function simulatePathDerivation(histArr, hyp){
+function make_decision(ev, tau, options) {
+    options = options || { allowTieBet: false };
+    let candidates = [{ side:'B', ev:ev.B }, { side:'P', ev:ev.P }];
+    if (options.allowTieBet) candidates.push({ side:'T', ev:ev.T });
+    candidates.sort((a, b) => b.ev - a.ev);
+    const best = candidates[0];
+    if (!Number.isFinite(best.ev) || best.ev <= tau) return { side:'PASS', expected_ev:0 };
+    return { side:best.side, expected_ev:best.ev };
+}
+
+function executePolicyChain(model, features, tau, externalState, options, strict) {
+    options = options || { allowTieBet:false };
+    strict = strict === undefined ? true : strict;
+
+    if (features.F_Path && features.F_Path.history_len < WARMUP_HANDS) {
+        return { probs: NAIVE_PRIORS, ev:{B:0,P:0,T:0}, decision:'PASS', tau:tau, isWarmup:true };
+    }
+
+    const rawProbs = model.predict(features, externalState);
+    const probs = normalizeProbs(rawProbs, strict);
+    const evs = calc_ev(probs, PAYOUTS);
+    const decision = make_decision(evs, tau, options);
+    return { probs, ev:evs, decision:decision.side, tau:tau, isWarmup:false };
+}
+
+function settleDecision(decision, winner, payouts) {
+    if (decision === 'PASS') return 0;
+    if (decision === 'B') return winner === 'B' ? payouts.B : (winner === 'T' ? 0 : -1);
+    if (decision === 'P') return winner === 'P' ? payouts.P : (winner === 'T' ? 0 : -1);
+    if (decision === 'T') return winner === 'T' ? payouts.T : -1;
+    return 0;
+}
+
+/* -------------------- 路徑特徵 -------------------- */
+function simulatePathDerivation(histArr, hyp) {
     const sim = histArr.slice();
     sim.push({ w:hyp });
     const m = buildBigRoadMeta(sim);
@@ -975,14 +862,14 @@ function simulatePathDerivation(histArr, hyp){
     };
 }
 
-function extractPathFeaturesCore(historyArray){
+function extractPathFeaturesCore(historyArray) {
     const pure = historyArray.filter(x => x.w !== 'T').map(x => x.w);
 
     let cSide = null, cLen = 0;
-    if (pure.length > 0){
+    if (pure.length > 0) {
         cSide = pure[pure.length - 1];
         cLen = 1;
-        for (let i = pure.length - 2; i >= 0; i--){
+        for (let i = pure.length - 2; i >= 0; i--) {
             if (pure[i] === cSide) cLen++;
             else break;
         }
@@ -990,11 +877,11 @@ function extractPathFeaturesCore(historyArray){
 
     let recentB = 0, recentP = 0, recentBias = null;
     const recentHist = pure.slice(-15);
-    for (let i = 0; i < recentHist.length; i++){
+    for (let i = 0; i < recentHist.length; i++) {
         if (recentHist[i] === 'B') recentB++;
         else if (recentHist[i] === 'P') recentP++;
     }
-    if (recentHist.length >= 10){
+    if (recentHist.length >= 10) {
         if (recentB / recentHist.length >= 0.6) recentBias = 'B';
         else if (recentP / recentHist.length >= 0.6) recentBias = 'P';
     }
@@ -1014,257 +901,119 @@ function extractPathFeaturesCore(historyArray){
     };
 }
 
-function getPatternKeyBeforePush(){
-    const pure = S.history.filter(x => x.w !== 'T').map(x => x.w);
-    return pure.length >= 3 ? pure.slice(-3).join(',') : null;
+function extractPathFeatures() {
+    return extractPathFeaturesCore(S.history);
 }
 
-function patternStatsForCurrent(){
-    const key = getPatternKeyBeforePush();
-    if (!key) return null;
-
-    const cp = canonicalPatternLive(key, BigData.patterns[key]);
-    if (!cp) return null;
-
-    const bpBase = cp.B + cp.P;
-    const allBase = bpBase + cp.T;
-
-    if (cp.N < SIDEBET_MIN_N){
-        return {
-            key:key, b:cp.B, pl:cp.P, t:cp.T, bp:cp.BP, pp:cp.PP, n:cp.N,
-            mainB:0, mainP:0, tieP:0, bpP:0, ppP:0, weak:true
-        };
-    }
-
-    return {
-        key:key, b:cp.B, pl:cp.P, t:cp.T, bp:cp.BP, pp:cp.PP, n:cp.N,
-        mainB: bpBase > 0 ? cp.B / bpBase : 0,
-        mainP: bpBase > 0 ? cp.P / bpBase : 0,
-        tieP: (cp.T + 0.5) / (allBase + 5),
-        bpP: (cp.BP + 0.4) / (allBase + 5),
-        ppP: (cp.PP + 0.4) / (allBase + 5),
-        weak:false
+/* -------------------- 觀測快照 -------------------- */
+function openNewShoe() {
+    if (LabStore.currentOpenShoe && LabStore.currentOpenShoe.hands.length > 0) closeCurrentShoe();
+    LabStore.currentOpenShoe = {
+        shoe_id: generateShoeId(),
+        started_at: Date.now(),
+        ended_at: null,
+        status: 'open',
+        meta: {
+            deck_size_start: 416,
+            order_mode: document.getElementById('orderSel') ? document.getElementById('orderSel').value : 'PBPB',
+            source: 'live_input'
+        },
+        hands: []
     };
 }
 
-function normalizeProbs(raw, strict){
-    strict = strict === undefined ? true : strict;
-    const vals = [raw && raw.B, raw && raw.P, raw && raw.T].map(Number);
-
-    if (vals.some(v => !Number.isFinite(v) || v < 0)){
-        if (strict) throw new Error('Invalid model probabilities');
-        return { B:NAIVE_PRIORS.B, P:NAIVE_PRIORS.P, T:NAIVE_PRIORS.T };
-    }
-
-    const z = vals[0] + vals[1] + vals[2];
-    if (z <= 0){
-        if (strict) throw new Error('Probability sum must be > 0');
-        return { B:NAIVE_PRIORS.B, P:NAIVE_PRIORS.P, T:NAIVE_PRIORS.T };
-    }
-
-    return { B:vals[0]/z, P:vals[1]/z, T:vals[2]/z };
-}
-
-function calc_ev(probs, payouts){
-    return {
-        B: probs.B * payouts.B + probs.P * (-1) + probs.T * 0,
-        P: probs.P * payouts.P + probs.B * (-1) + probs.T * 0,
-        T: probs.T * payouts.T + (probs.B + probs.P) * (-1)
-    };
-}
-
-function make_decision(ev, tau, options){
-    options = options || { allowTieBet:false };
-    let candidates = [{ side:'B', ev:ev.B }, { side:'P', ev:ev.P }];
-    if (options.allowTieBet) candidates.push({ side:'T', ev:ev.T });
-    candidates.sort((a,b) => b.ev - a.ev);
-
-    const best = candidates[0];
-    if (!Number.isFinite(best.ev) || best.ev <= tau) return { side:'PASS', expected_ev:0 };
-    return { side:best.side, expected_ev:best.ev };
-}
-
-function executePolicyChain(model, features, tau, externalState, options, strict){
-    options = options || { allowTieBet:false };
-    strict = strict === undefined ? true : strict;
-
-    if (features.F_Path && features.F_Path.history_len < WARMUP_HANDS){
-        return { probs:NAIVE_PRIORS, ev:{B:0,P:0,T:0}, decision:'PASS', tau:tau, isWarmup:true };
-    }
-
-    const rawProbs = model.predict(features, externalState);
-    const probs = normalizeProbs(rawProbs, strict);
-    const evs = calc_ev(probs, PAYOUTS);
-    const decision = make_decision(evs, tau, options);
-
-    return {
-        probs: probs,
-        ev: evs,
-        decision: decision.side,
-        tau: tau,
-        isWarmup: false
-    };
-}
-
-function settleDecision(decision, winner, payouts){
-    if (decision === 'PASS') return 0;
-    if (decision === 'B') return winner === 'B' ? payouts.B : (winner === 'T' ? 0 : -1);
-    if (decision === 'P') return winner === 'P' ? payouts.P : (winner === 'T' ? 0 : -1);
-    if (decision === 'T') return winner === 'T' ? payouts.T : -1;
-    return 0;
-}
-
-function computeLogLoss(samples){
-    if (!samples.length) return 0;
-    const eps = 1e-15;
-    let sum = 0;
-    samples.forEach(s => { sum -= Math.log(Math.max(s.probs[s.winner], eps)); });
-    return sum / samples.length;
-}
-
-function computeBrierScore(samples){
-    if (!samples.length) return 0;
-    let sum = 0;
-    samples.forEach(function(s){
-        sum += (
-            Math.pow(s.probs.B - (s.winner === 'B' ? 1 : 0), 2) +
-            Math.pow(s.probs.P - (s.winner === 'P' ? 1 : 0), 2) +
-            Math.pow(s.probs.T - (s.winner === 'T' ? 1 : 0), 2)
-        );
-    });
-    return sum / samples.length;
-}
-
-function initCalibrationBins(nBins){
-    nBins = nBins === undefined ? 10 : nBins;
-    const mk = () => Array.from({ length:nBins }, () => ({ n:0, sumP:0, sumY:0 }));
-    return { nBins:nBins, B:mk(), P:mk(), T:mk() };
-}
-
-function updateCalibrationBins(bins, probs, winner){
-    const keys = ['B','P','T'];
-    for (let i = 0; i < keys.length; i++){
-        const k = keys[i];
-        const p = probs[k];
-        const y = winner === k ? 1 : 0;
-        let idx = Math.floor(p * bins.nBins);
-        if (idx === bins.nBins) idx = bins.nBins - 1;
-        bins[k][idx].n += 1;
-        bins[k][idx].sumP += p;
-        bins[k][idx].sumY += y;
-    }
-}
-
-function mergeCalibrationBins(dst, src){
-    const keys = ['B','P','T'];
-    for (let ki = 0; ki < keys.length; ki++){
-        const k = keys[ki];
-        for (let i = 0; i < dst.nBins; i++){
-            dst[k][i].n += src[k][i].n;
-            dst[k][i].sumP += src[k][i].sumP;
-            dst[k][i].sumY += src[k][i].sumY;
+function closeCurrentShoe() {
+    if (LabStore.currentOpenShoe && LabStore.currentOpenShoe.status === 'open') {
+        LabStore.currentOpenShoe.status = 'closed';
+        LabStore.currentOpenShoe.ended_at = Date.now();
+        if (LabStore.currentOpenShoe.hands.length > 0) {
+            LabStore.rawShoes.push(deepCopy(LabStore.currentOpenShoe));
         }
+        LabStore.currentOpenShoe = null;
     }
 }
 
-function computeECEFromBins(bins){
-    const totalN = bins.B.reduce((a,b) => a + b.n, 0);
-    if (totalN === 0) return { ece_B:0, ece_P:0, ece_T:0, ece_macro:0 };
-
-    const calc = function(arr){
-        let ece = 0;
-        for (let i = 0; i < arr.length; i++){
-            const b = arr[i];
-            if (b.n === 0) continue;
-            ece += (b.n / totalN) * Math.abs((b.sumY / b.n) - (b.sumP / b.n));
-        }
-        return ece;
+function captureObservation(state, features, livePrediction, inputs, sideBetsSnapshot) {
+    if (!LabStore.currentOpenShoe) openNewShoe();
+    return {
+        hand_index: LabStore.currentOpenShoe.hands.length + 1,
+        pre_state: {
+            remaining_deck: deepCopy(state.deck),
+            running_count: state.runningCount,
+            history_len: state.history.length
+        },
+        features: deepCopy(features),
+        live_prediction: deepCopy(livePrediction),
+        policy_snapshot: {
+            model_id: CURRENT_MODEL_ID,
+            tau: livePrediction.tau || Config.m,
+            s: Config.s,
+            main_decision: livePrediction.decision,
+            recommend_tie: !!sideBetsSnapshot.tie,
+            recommend_bp: !!sideBetsSnapshot.bp,
+            recommend_pp: !!sideBetsSnapshot.pp,
+            is_warmup: !!livePrediction.isWarmup
+        },
+        input: { cards: deepCopy(inputs) },
+        audit: { created_at: Date.now(), spec_version: APP_VERSION }
     };
-
-    const ece_B = calc(bins.B), ece_P = calc(bins.P), ece_T = calc(bins.T);
-    return { ece_B:ece_B, ece_P:ece_P, ece_T:ece_T, ece_macro:(ece_B + ece_P + ece_T) / 3 };
 }
 
-function rollingForecastOrigin(shoes, trainN, valM, testK, stepK){
-    return {
-        shoes: shoes,
-        trainN: trainN,
-        valM: valM,
-        testK: testK,
-        stepK: stepK,
-        startIdx: 0,
-        next: function(){
-            if (this.startIdx + this.trainN + this.valM + this.testK <= this.shoes.length){
-                const result = {
-                    history: this.shoes.slice(0, this.startIdx + this.trainN + this.valM),
-                    test: this.shoes.slice(this.startIdx + this.trainN + this.valM, this.startIdx + this.trainN + this.valM + this.testK)
-                };
-                this.startIdx += this.stepK;
-                return { value:result, done:false };
+function commitObservation(observation, outcome) {
+    if (!LabStore.currentOpenShoe) return;
+    observation.outcome = outcome;
+    LabStore.currentOpenShoe.hands.push(observation);
+}
+
+function migrateLabStoreModels(targetLabStore) {
+    const allShoes = []
+        .concat(targetLabStore.rawShoes || [])
+        .concat(targetLabStore.currentOpenShoe ? [targetLabStore.currentOpenShoe] : []);
+
+    allShoes.forEach(function(shoe) {
+        if (!shoe || !Array.isArray(shoe.hands)) return;
+        shoe.hands.forEach(function(hand) {
+            if (hand.policy_snapshot && !hand.policy_snapshot.model_id) {
+                hand.policy_snapshot.model_id = CURRENT_MODEL_ID;
             }
-            return { done:true };
-        }
-    };
+        });
+    });
 }
 
-function aggregateRuns(runs, nBins){
-    nBins = nBins === undefined ? 10 : nBins;
-    if (!Array.isArray(runs) || runs.length === 0) return null;
+/* -------------------- 決定論審計 -------------------- */
+function approxEq(a, b, eps) {
+    eps = eps === undefined ? 1e-10 : eps;
+    return Math.abs(Number(a) - Number(b)) <= eps;
+}
 
-    const out = {
-        split_count: runs.length,
-        n_test_hands: 0,
-        bet_count: 0,
-        log_loss_num: 0,
-        brier_num: 0,
-        predicted_ev_sum: 0,
-        realized_return_sum: 0,
-        worst_split_max_drawdown: 0
-    };
-    const globalBins = initCalibrationBins(nBins);
-
-    for (let i = 0; i < runs.length; i++){
-        const r = runs[i];
-        out.n_test_hands += r.n_test_hands;
-        out.bet_count += r.bet_count;
-        out.log_loss_num += r.log_loss * r.n_test_hands;
-        out.brier_num += r.brier * r.n_test_hands;
-        out.predicted_ev_sum += r.predicted_ev_sum;
-        out.realized_return_sum += r.realized_return_sum;
-        out.worst_split_max_drawdown = Math.max(out.worst_split_max_drawdown, r.max_drawdown);
-        if (r.calibration_bins) mergeCalibrationBins(globalBins, r.calibration_bins);
+function computeExpectedSidebetFlags(cp, thresholdS) {
+    let fT = 0, fBP = 0, fPP = 0;
+    if (cp && cp.N >= SIDEBET_MIN_N) {
+        const allBase = cp.B + cp.P + cp.T;
+        fT = (cp.T + 0.5) / (allBase + 5);
+        fBP = (cp.BP + 0.4) / (allBase + 5);
+        fPP = (cp.PP + 0.4) / (allBase + 5);
     }
-
-    const finalECE = computeECEFromBins(globalBins);
     return {
-        split_count: out.split_count,
-        n_test_hands: out.n_test_hands,
-        bet_count: out.bet_count,
-        log_loss: out.n_test_hands ? out.log_loss_num / out.n_test_hands : 0,
-        brier_multiclass_raw: out.n_test_hands ? out.brier_num / out.n_test_hands : 0,
-        ece_macro: finalECE.ece_macro,
-        ece_details: finalECE,
-        coverage: out.n_test_hands ? out.bet_count / out.n_test_hands : 0,
-        predicted_ev_sum: out.predicted_ev_sum,
-        realized_return_sum: out.realized_return_sum,
-        worst_split_max_drawdown: out.worst_split_max_drawdown
+        recommend_tie: fT >= thresholdS,
+        recommend_bp: fBP >= thresholdS,
+        recommend_pp: fPP >= thresholdS
     };
 }
 
-function performDeterministicAudit(hand, simHistory, runningCount, remainCards, currentWfDb){
-    if (!hand.policy_snapshot || !hand.live_prediction) return false;
+function performDeterministicAudit(hand, simHistory, runningCount, remainCards, currentWfDb) {
+    if (!hand.policy_snapshot || !hand.live_prediction) return true;
 
     const snap = hand.policy_snapshot;
     const pred = hand.live_prediction;
 
-    if (!snap.model_id && pred && pred.model_id) snap.model_id = pred.model_id;
-    if (!snap.model_id) snap.model_id = inferLegacyModelIdFromHand(hand);
-    if (typeof snap.s !== 'number' || !Number.isFinite(snap.s)) snap.s = 0.08;
+    if (snap.main_decision !== 'B' && snap.main_decision !== 'P' && snap.main_decision !== 'PASS') return false;
+    if (typeof snap.recommend_tie !== 'boolean' || typeof snap.recommend_bp !== 'boolean' || typeof snap.recommend_pp !== 'boolean') return false;
+    if (typeof snap.is_warmup !== 'boolean' || typeof snap.tau !== 'number') return false;
+    if (typeof snap.s !== 'number') snap.s = Config.s;
 
-    const model = getModelById(snap.model_id);
-    if (!model) return false;
-
-    const reconstructedFeatures = {
+    const model = Object.create(createCoreModel(snap.model_id || CURRENT_MODEL_ID)).fit([]);
+    const features = {
         F_Base: {},
         F_Comp: { running_count: runningCount, remain_cards: remainCards },
         F_Path: extractPathFeaturesCore(simHistory)
@@ -1276,48 +1025,41 @@ function performDeterministicAudit(hand, simHistory, runningCount, remainCards, 
     const externalState = cp ? { has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P } : { has_pattern:false };
 
     let expectedPrediction;
-    try{
-        expectedPrediction = executePolicyChain(model, reconstructedFeatures, snap.tau, externalState, { allowTieBet:false }, false);
-    }catch(e){
+    try {
+        expectedPrediction = executePolicyChain(model, features, snap.tau, externalState, { allowTieBet:false }, false);
+    } catch (e) {
         expectedPrediction = { decision:'PASS', tau:snap.tau, isWarmup:false, probs:NAIVE_PRIORS, ev:{B:0,P:0,T:0} };
     }
 
-    if (!['B','P','PASS'].includes(snap.main_decision)) return false;
-    if (typeof snap.recommend_tie !== 'boolean' || typeof snap.recommend_bp !== 'boolean' || typeof snap.recommend_pp !== 'boolean') return false;
-    if (typeof snap.is_warmup !== 'boolean' || typeof snap.tau !== 'number') return false;
+    if (snap.main_decision !== pred.decision) return false;
+    if (snap.main_decision !== expectedPrediction.decision) return false;
+    if (!approxEq(snap.tau, pred.tau)) return false;
+    if (!approxEq(snap.tau, expectedPrediction.tau)) return false;
+    if (!!snap.is_warmup !== !!pred.isWarmup) return false;
+    if (!!snap.is_warmup !== !!expectedPrediction.isWarmup) return false;
 
-    if (snap.main_decision !== pred.decision || snap.main_decision !== expectedPrediction.decision) return false;
-    if (!approxEq(snap.tau, pred.tau, 1e-12) || !approxEq(snap.tau, expectedPrediction.tau, 1e-12)) return false;
-    if (snap.is_warmup !== !!pred.isWarmup || snap.is_warmup !== !!expectedPrediction.isWarmup) return false;
-
-    if (!pred.probs || !expectedPrediction.probs) return false;
-    if (!approxEq(pred.probs.B, expectedPrediction.probs.B)) return false;
-    if (!approxEq(pred.probs.P, expectedPrediction.probs.P)) return false;
-    if (!approxEq(pred.probs.T, expectedPrediction.probs.T)) return false;
-
-    let expected_fT = 0, expected_fBP = 0, expected_fPP = 0;
-    if (cp && cp.N >= SIDEBET_MIN_N){
-        const allBase = cp.B + cp.P + cp.T;
-        expected_fT = (cp.T + 0.5) / (allBase + 5);
-        expected_fBP = (cp.BP + 0.4) / (allBase + 5);
-        expected_fPP = (cp.PP + 0.4) / (allBase + 5);
+    if (pred.probs && expectedPrediction.probs) {
+        if (!approxEq(pred.probs.B, expectedPrediction.probs.B, 1e-8)) return false;
+        if (!approxEq(pred.probs.P, expectedPrediction.probs.P, 1e-8)) return false;
+        if (!approxEq(pred.probs.T, expectedPrediction.probs.T, 1e-8)) return false;
     }
 
-    if (snap.recommend_tie !== (expected_fT >= snap.s)) return false;
-    if (snap.recommend_bp !== (expected_fBP >= snap.s)) return false;
-    if (snap.recommend_pp !== (expected_fPP >= snap.s)) return false;
+    const expectedSidebets = computeExpectedSidebetFlags(cp, snap.s);
+    if (snap.recommend_tie !== expectedSidebets.recommend_tie) return false;
+    if (snap.recommend_bp !== expectedSidebets.recommend_bp) return false;
+    if (snap.recommend_pp !== expectedSidebets.recommend_pp) return false;
 
     return true;
 }
 
-function validateOpenShoeConsistency(targetLabStore, currentState, basePatternDB){
-    if (!targetLabStore.currentOpenShoe){
+function validateOpenShoeConsistency(targetLabStore, currentState, basePatternDB) {
+    if (!targetLabStore.currentOpenShoe) {
         return currentState.history.length === 0 && currentState.runningCount === 0;
     }
 
     if (!currentState || !Array.isArray(currentState.history)) return false;
-    const oShoe = targetLabStore.currentOpenShoe;
 
+    const oShoe = targetLabStore.currentOpenShoe;
     if (oShoe.status !== 'open' || oShoe.hands.length !== currentState.history.length) return false;
 
     let isShoeValid = true;
@@ -1327,61 +1069,62 @@ function validateOpenShoeConsistency(targetLabStore, currentState, basePatternDB
     const validSlots = ['p1','p2','p3','b1','b2','b3'];
     let auditWfDb = deepCopy(basePatternDB || rebuildBigDataFromAuditedShoes(targetLabStore.rawShoes));
 
-    for (let i = 0; i < oShoe.hands.length; i++){
+    for (let i = 0; i < oShoe.hands.length; i++) {
         const hand = oShoe.hands[i];
         migrateOutcomeContract(hand);
 
-        if (!hand || !hand.outcome || !hand.input || !hand.input.cards || !hand.pre_state || !isValidDeck(hand.pre_state.remaining_deck)) { isShoeValid = false; break; }
-        if (!hand.features || !hand.features.F_Comp || !hand.features.F_Path) { isShoeValid = false; break; }
-        if (!['B','P','T'].includes(hand.outcome.winner)) { isShoeValid = false; break; }
+        if (!hand || !hand.outcome || !hand.input || !hand.input.cards || !hand.pre_state || !isValidDeck(hand.pre_state.remaining_deck)) {
+            isShoeValid = false; break;
+        }
+        if (hand.outcome.winner !== 'B' && hand.outcome.winner !== 'P' && hand.outcome.winner !== 'T') {
+            isShoeValid = false; break;
+        }
 
-        const physicalRC = derivePhysicalRunningCount(hand.pre_state.remaining_deck);
-        if (hand.pre_state.running_count !== physicalRC || hand.features.F_Comp.running_count !== physicalRC){ isShoeValid = false; break; }
-
-        let expectedRemainCards = 0;
-        for (let r = 1; r <= 13; r++) expectedRemainCards += hand.pre_state.remaining_deck[r];
-        if (hand.features.F_Comp.remain_cards !== expectedRemainCards){ isShoeValid = false; break; }
-
-        if (i === 0){
-            if (hand.pre_state.history_len !== 0 || hand.pre_state.running_count !== 0 || expectedRemainCards !== 416){ isShoeValid = false; break; }
-            for (let r = 1; r <= 13; r++){ if (hand.pre_state.remaining_deck[r] !== 32){ isShoeValid = false; break; } }
+        if (i === 0) {
+            if (hand.pre_state.history_len !== 0 || hand.pre_state.running_count !== 0) { isShoeValid = false; break; }
+            for (let r = 1; r <= 13; r++) {
+                if (hand.pre_state.remaining_deck[r] !== 32) { isShoeValid = false; break; }
+            }
             if (!isShoeValid) break;
             runningDeck = deepCopy(hand.pre_state.remaining_deck);
             runningCount = hand.pre_state.running_count;
         } else {
-            if (hand.pre_state.history_len !== i || hand.pre_state.running_count !== runningCount){ isShoeValid = false; break; }
-            for (let r = 1; r <= 13; r++){ if (hand.pre_state.remaining_deck[r] !== runningDeck[r]){ isShoeValid = false; break; } }
-            if (!isShoeValid) break;
-        }
-
-        const expectedPathFeatures = extractPathFeaturesCore(replayHistory);
-        const recordedPath = hand.features.F_Path;
-        if (
-            recordedPath.history_len !== expectedPathFeatures.history_len ||
-            recordedPath.trend_side !== expectedPathFeatures.trend_side ||
-            recordedPath.trend_len !== expectedPathFeatures.trend_len ||
-            recordedPath.recent_shoe_bias !== expectedPathFeatures.recent_shoe_bias ||
-            recordedPath.ask_B_red !== expectedPathFeatures.ask_B_red ||
-            recordedPath.ask_P_red !== expectedPathFeatures.ask_P_red
-        ){
-            isShoeValid = false; break;
+            if (hand.pre_state.history_len !== i || hand.pre_state.running_count !== runningCount) { isShoeValid = false; break; }
+            for (let r = 1; r <= 13; r++) {
+                if (hand.pre_state.remaining_deck[r] !== runningDeck[r]) { isShoeValid = false; break; }
+            }
         }
 
         let remainCards = 0;
-        for (const k in runningDeck){ if (runningDeck.hasOwnProperty(k)) remainCards += runningDeck[k]; }
+        for (const k in runningDeck) if (runningDeck.hasOwnProperty(k)) remainCards += runningDeck[k];
 
-        if (hand.policy_snapshot){
-            if (!performDeterministicAudit(hand, replayHistory, runningCount, remainCards, auditWfDb)){
+        if (hand.features && hand.features.F_Path) {
+            const expectedPath = extractPathFeaturesCore(replayHistory);
+            const rec = hand.features.F_Path;
+            if (
+                rec.history_len !== expectedPath.history_len ||
+                rec.trend_side !== expectedPath.trend_side ||
+                rec.trend_len !== expectedPath.trend_len ||
+                rec.recent_shoe_bias !== expectedPath.recent_shoe_bias ||
+                rec.ask_B_red !== expectedPath.ask_B_red ||
+                rec.ask_P_red !== expectedPath.ask_P_red
+            ) {
+                isShoeValid = false; break;
+            }
+        }
+
+        if (hand.policy_snapshot) {
+            if (!performDeterministicAudit(hand, replayHistory, runningCount, remainCards, auditWfDb)) {
                 isShoeValid = false; break;
             }
         }
 
         let pPts = 0, bPts = 0;
-        for (let idx = 0; idx < validSlots.length; idx++){
+        for (let idx = 0; idx < validSlots.length; idx++) {
             const key = validSlots[idx];
             const rank = hand.input.cards[key];
-            if (rank !== null && rank !== undefined && countWeights[rank] !== undefined){
-                if (runningDeck[rank] <= 0){ isShoeValid = false; break; }
+            if (rank !== null && rank !== undefined && countWeights[rank] !== undefined) {
+                if (runningDeck[rank] <= 0) { isShoeValid = false; break; }
                 runningDeck[rank] -= 1;
                 runningCount += countWeights[rank];
                 if (key.indexOf('p') === 0) pPts += baccaratValue(rank);
@@ -1400,33 +1143,32 @@ function validateOpenShoeConsistency(targetLabStore, currentState, basePatternDB
             hand.outcome.winner !== expectedWinner ||
             hand.outcome.pPt !== pFinal ||
             hand.outcome.bPt !== bFinal ||
-            hand.outcome.bp !== expectedBP ||
-            hand.outcome.pp !== expectedPP
-        ){
+            !!hand.outcome.bp !== expectedBP ||
+            !!hand.outcome.pp !== expectedPP
+        ) {
             isShoeValid = false; break;
         }
 
-        const pureForPtn = replayHistory.filter(x => x.w !== 'T').map(x => x.w);
-        const ptnKeyToUpdate = pureForPtn.length >= 3 ? pureForPtn.slice(-3).join(',') : null;
-        if (ptnKeyToUpdate){
-            updatePatternDB(auditWfDb, ptnKeyToUpdate, expectedWinner, expectedBP, expectedPP);
-        }
+        const pure = replayHistory.filter(x => x.w !== 'T').map(x => x.w);
+        const ptnKeyToUpdate = pure.length >= 3 ? pure.slice(-3).join(',') : null;
+        if (ptnKeyToUpdate) updatePatternDB(auditWfDb, ptnKeyToUpdate, expectedWinner, expectedBP, expectedPP);
 
         replayHistory.push({ w:expectedWinner, pPt:pFinal, bPt:bFinal, bp:expectedBP, pp:expectedPP });
     }
 
-    if (isShoeValid){
+    if (isShoeValid) {
         if (runningCount !== currentState.runningCount) isShoeValid = false;
-        if (isShoeValid){
-            for (let r = 1; r <= 13; r++){
-                if (runningDeck[r] !== currentState.deck[r]){ isShoeValid = false; break; }
+        if (isShoeValid) {
+            for (let r = 1; r <= 13; r++) {
+                if (runningDeck[r] !== currentState.deck[r]) { isShoeValid = false; break; }
             }
         }
         if (isShoeValid && replayHistory.length !== currentState.history.length) isShoeValid = false;
-        if (isShoeValid){
-            for (let i = 0; i < replayHistory.length; i++){
-                const a = replayHistory[i], b = currentState.history[i];
-                if (!b || a.w !== b.w || a.pPt !== b.pPt || a.bPt !== b.bPt || a.bp !== b.bp || a.pp !== b.pp){
+        if (isShoeValid) {
+            for (let i = 0; i < replayHistory.length; i++) {
+                const a = replayHistory[i];
+                const b = currentState.history[i];
+                if (!b || a.w !== b.w || a.pPt !== b.pPt || a.bPt !== b.bPt || a.bp !== b.bp || a.pp !== b.pp) {
                     isShoeValid = false; break;
                 }
             }
@@ -1436,17 +1178,15 @@ function validateOpenShoeConsistency(targetLabStore, currentState, basePatternDB
     return isShoeValid;
 }
 
-function auditLabStore(targetLabStore){
+function auditLabStore(targetLabStore) {
     const validShoes = [];
     const seenShoeIds = new Set();
     const validSlots = ['p1','p2','p3','b1','b2','b3'];
+
     const rawShoesArray = targetLabStore.rawShoes || [];
-
-    migrateLabStoreModels(targetLabStore);
-
-    for (let shoeIdx = 0; shoeIdx < rawShoesArray.length; shoeIdx++){
+    for (let shoeIdx = 0; shoeIdx < rawShoesArray.length; shoeIdx++) {
         const shoe = rawShoesArray[shoeIdx];
-        try{
+        try {
             if (!shoe || typeof shoe !== 'object') continue;
             if (shoe.status !== 'closed' || !Array.isArray(shoe.hands) || shoe.hands.length === 0) continue;
             if (!shoe.shoe_id || seenShoeIds.has(shoe.shoe_id)) continue;
@@ -1458,62 +1198,70 @@ function auditLabStore(targetLabStore){
             let simHistory = [];
             let auditWfDb = rebuildBigDataFromAuditedShoes(validShoes);
 
-            for (let i = 0; i < shoe.hands.length; i++){
+            for (let i = 0; i < shoe.hands.length; i++) {
                 const hand = shoe.hands[i];
                 migrateOutcomeContract(hand);
 
-                if (!hand || !hand.live_prediction || !hand.live_prediction.probs || !hand.outcome || !hand.input || !hand.input.cards) { isShoeValid = false; break; }
-                if (!hand.features || !hand.features.F_Comp || !hand.features.F_Path) { isShoeValid = false; break; }
-                if (!hand.pre_state || !isValidDeck(hand.pre_state.remaining_deck)) { isShoeValid = false; break; }
-                if (hand.hand_index !== expectedIndex) { isShoeValid = false; break; }
-                if (!['B','P','T'].includes(hand.outcome.winner)) { isShoeValid = false; break; }
-
-                const physicalRC = derivePhysicalRunningCount(hand.pre_state.remaining_deck);
-                if (hand.pre_state.running_count !== physicalRC || hand.features.F_Comp.running_count !== physicalRC){ isShoeValid = false; break; }
-
-                let expectedRemainCards = 0;
-                for (let r = 1; r <= 13; r++) expectedRemainCards += hand.pre_state.remaining_deck[r];
-                if (hand.features.F_Comp.remain_cards !== expectedRemainCards){ isShoeValid = false; break; }
-
-                if (i === 0){
-                    if (hand.pre_state.history_len !== 0 || hand.pre_state.running_count !== 0 || expectedRemainCards !== 416){ isShoeValid = false; break; }
-                    for (let r = 1; r <= 13; r++){ if (hand.pre_state.remaining_deck[r] !== 32){ isShoeValid = false; break; } }
-                    if (!isShoeValid) break;
-
-                    runningDeck = deepCopy(hand.pre_state.remaining_deck);
-                    runningCount = hand.pre_state.running_count;
-                    simHistory = [];
-                } else {
-                    if (hand.pre_state.history_len !== i || hand.pre_state.running_count !== runningCount){ isShoeValid = false; break; }
-                    for (let r = 1; r <= 13; r++){ if (hand.pre_state.remaining_deck[r] !== runningDeck[r]){ isShoeValid = false; break; } }
-                    if (!isShoeValid) break;
-                }
-
-                const expectedPathFeatures = extractPathFeaturesCore(simHistory);
-                const recordedPath = hand.features.F_Path;
-                if (
-                    recordedPath.history_len !== expectedPathFeatures.history_len ||
-                    recordedPath.trend_side !== expectedPathFeatures.trend_side ||
-                    recordedPath.trend_len !== expectedPathFeatures.trend_len ||
-                    recordedPath.recent_shoe_bias !== expectedPathFeatures.recent_shoe_bias ||
-                    recordedPath.ask_B_red !== expectedPathFeatures.ask_B_red ||
-                    recordedPath.ask_P_red !== expectedPathFeatures.ask_P_red
-                ){
+                if (!hand || !hand.outcome || !hand.input || !hand.input.cards || !hand.pre_state || !isValidDeck(hand.pre_state.remaining_deck)) {
                     isShoeValid = false; break;
                 }
+                if (hand.hand_index !== expectedIndex) { isShoeValid = false; break; }
+                if (hand.outcome.winner !== 'B' && hand.outcome.winner !== 'P' && hand.outcome.winner !== 'T') { isShoeValid = false; break; }
 
-                if (hand.policy_snapshot){
-                    if (!performDeterministicAudit(hand, simHistory, runningCount, expectedRemainCards, auditWfDb)){
+                const expectedRemainCards = Object.values(hand.pre_state.remaining_deck).reduce((a, b) => a + b, 0);
+                const physicalRC = derivePhysicalRunningCount(hand.pre_state.remaining_deck);
+                if (hand.pre_state.running_count !== physicalRC) { isShoeValid = false; break; }
+
+                if (i === 0) {
+                    if (hand.pre_state.history_len !== 0 || hand.pre_state.running_count !== 0 || expectedRemainCards !== 416) {
+                        isShoeValid = false; break;
+                    }
+                    for (let r = 1; r <= 13; r++) {
+                        if (hand.pre_state.remaining_deck[r] !== 32) { isShoeValid = false; break; }
+                    }
+                    if (!isShoeValid) break;
+                    runningDeck = deepCopy(hand.pre_state.remaining_deck);
+                    runningCount = hand.pre_state.running_count;
+                } else {
+                    if (hand.pre_state.history_len !== i || hand.pre_state.running_count !== runningCount) { isShoeValid = false; break; }
+                    for (let r = 1; r <= 13; r++) {
+                        if (hand.pre_state.remaining_deck[r] !== runningDeck[r]) { isShoeValid = false; break; }
+                    }
+                }
+
+                if (hand.features && hand.features.F_Comp) {
+                    if (hand.features.F_Comp.running_count !== physicalRC || hand.features.F_Comp.remain_cards !== expectedRemainCards) {
+                        isShoeValid = false; break;
+                    }
+                }
+
+                if (hand.features && hand.features.F_Path) {
+                    const expectedPath = extractPathFeaturesCore(simHistory);
+                    const recordedPath = hand.features.F_Path;
+                    if (
+                        recordedPath.history_len !== expectedPath.history_len ||
+                        recordedPath.trend_side !== expectedPath.trend_side ||
+                        recordedPath.trend_len !== expectedPath.trend_len ||
+                        recordedPath.recent_shoe_bias !== expectedPath.recent_shoe_bias ||
+                        recordedPath.ask_B_red !== expectedPath.ask_B_red ||
+                        recordedPath.ask_P_red !== expectedPath.ask_P_red
+                    ) {
+                        isShoeValid = false; break;
+                    }
+                }
+
+                if (hand.policy_snapshot) {
+                    if (!performDeterministicAudit(hand, simHistory, runningCount, expectedRemainCards, auditWfDb)) {
                         isShoeValid = false; break;
                     }
                 }
 
                 let pPts = 0, bPts = 0;
-                for (let kIdx = 0; kIdx < validSlots.length; kIdx++){
+                for (let kIdx = 0; kIdx < validSlots.length; kIdx++) {
                     const key = validSlots[kIdx];
                     const rank = hand.input.cards[key];
-                    if (rank !== null && rank !== undefined && countWeights[rank] !== undefined){
-                        if (runningDeck[rank] <= 0){ isShoeValid = false; break; }
+                    if (rank !== null && rank !== undefined && countWeights[rank] !== undefined) {
+                        if (runningDeck[rank] <= 0) { isShoeValid = false; break; }
                         runningDeck[rank] -= 1;
                         runningCount += countWeights[rank];
                         if (key.indexOf('p') === 0) pPts += baccaratValue(rank);
@@ -1532,35 +1280,34 @@ function auditLabStore(targetLabStore){
                     hand.outcome.winner !== expectedWinner ||
                     hand.outcome.pPt !== pFinal ||
                     hand.outcome.bPt !== bFinal ||
-                    hand.outcome.bp !== expectedBP ||
-                    hand.outcome.pp !== expectedPP
-                ){
+                    !!hand.outcome.bp !== expectedBP ||
+                    !!hand.outcome.pp !== expectedPP
+                ) {
                     isShoeValid = false; break;
                 }
 
-                const pureForPtn = simHistory.filter(x => x.w !== 'T').map(x => x.w);
-                const ptnKeyToUpdate = pureForPtn.length >= 3 ? pureForPtn.slice(-3).join(',') : null;
-                if (ptnKeyToUpdate){
-                    updatePatternDB(auditWfDb, ptnKeyToUpdate, expectedWinner, expectedBP, expectedPP);
-                }
+                const pure = simHistory.filter(x => x.w !== 'T').map(x => x.w);
+                const ptnKeyToUpdate = pure.length >= 3 ? pure.slice(-3).join(',') : null;
+                if (ptnKeyToUpdate) updatePatternDB(auditWfDb, ptnKeyToUpdate, expectedWinner, expectedBP, expectedPP);
 
                 simHistory.push({ w:expectedWinner, pPt:pFinal, bPt:bFinal, bp:expectedBP, pp:expectedPP });
                 expectedIndex++;
             }
 
-            if (isShoeValid){
+            if (isShoeValid) {
                 validShoes.push(shoe);
                 seenShoeIds.add(shoe.shoe_id);
             }
-        }catch(e){
-            console.warn('Audit Warning: dropping shoe', shoe ? shoe.shoe_id : 'unknown', e);
+        } catch (e) {
+            console.warn('Audit Warning: dropping corrupted shoe.', e);
         }
     }
 
-    targetLabStore.rawShoes = validShoes.sort((a,b) => (a.started_at || 0) - (b.started_at || 0));
+    targetLabStore.rawShoes = validShoes.sort((a, b) => (a.started_at || 0) - (b.started_at || 0));
 }
 
-function rebuildLiveStateMetrics(stateToRebuild, openShoe){
+/* -------------------- 面板重演 -------------------- */
+function rebuildLiveStateMetrics(stateToRebuild, openShoe) {
     stateToRebuild.shoePerf = {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0};
     stateToRebuild.lastRecSide = null;
     stateToRebuild.lastSideBets = { tie:false, bp:false, pp:false };
@@ -1570,24 +1317,24 @@ function rebuildLiveStateMetrics(stateToRebuild, openShoe){
 
     const hasValidOpenShoe = openShoe && openShoe.status === 'open' && openShoe.hands.length === stateToRebuild.history.length;
 
-    for (let i = 0; i < stateToRebuild.history.length; i++){
+    for (let i = 0; i < stateToRebuild.history.length; i++) {
         const hOutcome = stateToRebuild.history[i];
 
-        if (hasValidOpenShoe && openShoe.hands[i].policy_snapshot){
+        if (hasValidOpenShoe && openShoe.hands[i].policy_snapshot) {
             const snap = openShoe.hands[i].policy_snapshot;
 
-            if (hOutcome.w !== 'T'){
-                if (snap.main_decision !== 'PASS'){
+            if (hOutcome.w !== 'T') {
+                if (snap.main_decision !== 'PASS') {
                     stateToRebuild.shoePerf.recs += 1;
                     if (snap.main_decision === hOutcome.w) stateToRebuild.shoePerf.hits += 1;
                 }
             }
 
-            if (snap.recommend_tie){ stateToRebuild.shoePerf.tRecs += 1; if (hOutcome.w === 'T') stateToRebuild.shoePerf.tHits += 1; }
-            if (snap.recommend_bp){ stateToRebuild.shoePerf.bpRecs += 1; if (hOutcome.bp) stateToRebuild.shoePerf.bpHits += 1; }
-            if (snap.recommend_pp){ stateToRebuild.shoePerf.ppRecs += 1; if (hOutcome.pp) stateToRebuild.shoePerf.ppHits += 1; }
+            if (snap.recommend_tie) { stateToRebuild.shoePerf.tRecs += 1; if (hOutcome.w === 'T') stateToRebuild.shoePerf.tHits += 1; }
+            if (snap.recommend_bp) { stateToRebuild.shoePerf.bpRecs += 1; if (hOutcome.bp) stateToRebuild.shoePerf.bpHits += 1; }
+            if (snap.recommend_pp) { stateToRebuild.shoePerf.ppRecs += 1; if (hOutcome.pp) stateToRebuild.shoePerf.ppHits += 1; }
 
-            if (i === stateToRebuild.history.length - 1){
+            if (i === stateToRebuild.history.length - 1) {
                 stateToRebuild.lastRecSide = snap.main_decision;
                 stateToRebuild.lastSideBets = {
                     tie: snap.recommend_tie,
@@ -1601,39 +1348,140 @@ function rebuildLiveStateMetrics(stateToRebuild, openShoe){
     }
 }
 
-function annihilateLiveState(options){
-    const rebuildBigData = options && options.rebuildBigData;
-    console.warn("Annihilation Protocol Activated. Purging live state and ghosts.");
-    LabStore.currentOpenShoe = null;
-    resetShoeVarsInit();
-    
-    if (rebuildBigData){
-        auditLabStore(LabStore);
-        BigData = rebuildBigDataFromAuditedShoes(LabStore.rawShoes);
-    }
-    
-    bSt = null; bDB = null; bLab = null;
-    saveDatabase();
-    saveState();
-    drawKeypad();
-    clearCurrentInput();
-    render();
+/* -------------------- 資料評估 -------------------- */
+function computeLogLoss(samples) {
+    if (!samples.length) return 0;
+    const eps = 1e-15;
+    let sum = 0;
+    samples.forEach(s => { sum -= Math.log(Math.max(s.probs[s.winner], eps)); });
+    return sum / samples.length;
 }
 
-function runExperiment(spec){
-    auditLabStore(LabStore);
-    const basePatternDB = rebuildBigDataFromAuditedShoes(LabStore.rawShoes);
+function computeBrierScore(samples) {
+    if (!samples.length) return 0;
+    let sum = 0;
+    samples.forEach(function(s) {
+        sum += (
+            Math.pow(s.probs.B - (s.winner === 'B' ? 1 : 0), 2) +
+            Math.pow(s.probs.P - (s.winner === 'P' ? 1 : 0), 2) +
+            Math.pow(s.probs.T - (s.winner === 'T' ? 1 : 0), 2)
+        );
+    });
+    return sum / samples.length;
+}
 
-    if (!validateOpenShoeConsistency(LabStore, S, basePatternDB)){
+function initCalibrationBins(nBins) {
+    const mk = () => Array.from({ length:nBins }, () => ({ n:0, sumP:0, sumY:0 }));
+    return { nBins, B:mk(), P:mk(), T:mk() };
+}
+
+function updateCalibrationBins(bins, probs, winner) {
+    ['B','P','T'].forEach(function(k) {
+        const p = probs[k];
+        const y = winner === k ? 1 : 0;
+        let idx = Math.floor(p * bins.nBins);
+        if (idx === bins.nBins) idx = bins.nBins - 1;
+        bins[k][idx].n += 1;
+        bins[k][idx].sumP += p;
+        bins[k][idx].sumY += y;
+    });
+}
+
+function mergeCalibrationBins(dst, src) {
+    ['B','P','T'].forEach(function(k) {
+        for (let i = 0; i < dst.nBins; i++) {
+            dst[k][i].n += src[k][i].n;
+            dst[k][i].sumP += src[k][i].sumP;
+            dst[k][i].sumY += src[k][i].sumY;
+        }
+    });
+}
+
+function computeECEFromBins(bins) {
+    const totalN = bins.B.reduce((a, b) => a + b.n, 0);
+    if (totalN === 0) return { ece_B:0, ece_P:0, ece_T:0, ece_macro:0 };
+
+    function calc(arr) {
+        let ece = 0;
+        for (let i = 0; i < arr.length; i++) {
+            const b = arr[i];
+            if (b.n === 0) continue;
+            ece += (b.n / totalN) * Math.abs((b.sumY / b.n) - (b.sumP / b.n));
+        }
+        return ece;
+    }
+
+    const ece_B = calc(bins.B), ece_P = calc(bins.P), ece_T = calc(bins.T);
+    return { ece_B, ece_P, ece_T, ece_macro:(ece_B + ece_P + ece_T) / 3 };
+}
+
+function rollingForecastOrigin(shoes, trainN, valM, testK, stepK) {
+    return {
+        shoes, trainN, valM, testK, stepK, startIdx:0,
+        next: function() {
+            if (this.startIdx + this.trainN + this.valM + this.testK <= this.shoes.length) {
+                const result = {
+                    history: this.shoes.slice(0, this.startIdx + this.trainN + this.valM),
+                    test: this.shoes.slice(this.startIdx + this.trainN + this.valM, this.startIdx + this.trainN + this.valM + this.testK)
+                };
+                this.startIdx += this.stepK;
+                return { value: result, done: false };
+            }
+            return { done: true };
+        }
+    };
+}
+
+function aggregateRuns(runs, nBins) {
+    if (!Array.isArray(runs) || runs.length === 0) return null;
+    const out = {
+        split_count: runs.length, n_test_hands:0, bet_count:0,
+        log_loss_num:0, brier_num:0, predicted_ev_sum:0, realized_return_sum:0, worst_split_max_drawdown:0
+    };
+    const globalBins = initCalibrationBins(nBins);
+
+    for (let i = 0; i < runs.length; i++) {
+        const r = runs[i];
+        out.n_test_hands += r.n_test_hands;
+        out.bet_count += r.bet_count;
+        out.log_loss_num += r.log_loss * r.n_test_hands;
+        out.brier_num += r.brier * r.n_test_hands;
+        out.predicted_ev_sum += r.predicted_ev_sum;
+        out.realized_return_sum += r.realized_return_sum;
+        out.worst_split_max_drawdown = Math.max(out.worst_split_max_drawdown, r.max_drawdown);
+        if (r.calibration_bins) mergeCalibrationBins(globalBins, r.calibration_bins);
+    }
+
+    const finalECE = computeECEFromBins(globalBins);
+
+    return {
+        split_count: out.split_count,
+        n_test_hands: out.n_test_hands,
+        bet_count: out.bet_count,
+        log_loss: out.n_test_hands ? out.log_loss_num / out.n_test_hands : 0,
+        brier_multiclass_raw: out.n_test_hands ? out.brier_num / out.n_test_hands : 0,
+        ece_macro: finalECE.ece_macro,
+        ece_details: finalECE,
+        coverage: out.n_test_hands ? out.bet_count / out.n_test_hands : 0,
+        predicted_ev_sum: out.predicted_ev_sum,
+        realized_return_sum: out.realized_return_sum,
+        worst_split_max_drawdown: out.worst_split_max_drawdown
+    };
+}
+
+function runExperiment(spec) {
+    auditLabStore(LabStore);
+
+    const baseBigData = rebuildBigDataFromAuditedShoes(LabStore.rawShoes);
+    if (!validateOpenShoeConsistency(LabStore, S, baseBigData)) {
         annihilateLiveState({ rebuildBigData:true });
-        alert("檢測到目前牌局狀態受污染，系統已自動清洗並重啟。");
+        alert('檢測到目前牌局狀態受污染，系統已自動清洗並重啟。');
         return null;
     }
 
     const closedShoes = LabStore.rawShoes;
-
-    if (spec.split_config.stepK < spec.split_config.testK){
-        alert("實驗設定錯誤：stepK 不可小於 testK。");
+    if (spec.split_config.stepK < spec.split_config.testK) {
+        alert('實驗設定錯誤：stepK 不可小於 testK。');
         return null;
     }
 
@@ -1642,61 +1490,66 @@ function runExperiment(spec){
     const holdoutShoes = closedShoes.slice(holdoutStart);
     const minNeed = spec.split_config.trainN + spec.split_config.valM + spec.split_config.testK;
 
-    if (devShoes.length < minNeed){
+    if (devShoes.length < minNeed) {
         alert(
-            "實驗鞋靴不足！\n" +
-            "目前已結算鞋數: " + closedShoes.length + "\n" +
-            "開發集保留: " + devShoes.length + "\n" +
-            "最少需求: " + minNeed
+            '實驗鞋靴不足！\n' +
+            '目前已結算鞋數: ' + closedShoes.length + '\n' +
+            '開發集保留 (扣除20% Holdout): ' + devShoes.length + '\n' +
+            '單次測試最少需求: ' + minNeed
         );
         return null;
     }
 
+    const policy = getDeployedPolicy();
     const runs = [];
     const validSlots = ['p1','p2','p3','b1','b2','b3'];
-    const generator = rollingForecastOrigin(devShoes, spec.split_config.trainN, spec.split_config.valM, spec.split_config.testK, spec.split_config.stepK);
+
+    const generator = rollingForecastOrigin(
+        devShoes,
+        spec.split_config.trainN,
+        spec.split_config.valM,
+        spec.split_config.testK,
+        spec.split_config.stepK
+    );
+
     let splitStep = generator.next();
 
-    while (!splitStep.done){
+    while (!splitStep.done) {
         const split = splitStep.value;
         const wf_db = buildWalkForwardDB(split.history);
         const testSamples = [];
         const splitBins = initCalibrationBins(spec.calibration.nBins);
         let predicted_ev_sum = 0, realized_return_sum = 0, currentBankroll = 0, peakBankroll = 0, max_drawdown = 0, betCount = 0;
 
-        for (let i = 0; i < split.test.length; i++){
+        for (let i = 0; i < split.test.length; i++) {
             const shoe = split.test[i];
             let simHistory = [];
             let simDeck = {};
             for (let j = 1; j <= 13; j++) simDeck[j] = 32;
             let simRC = 0;
 
-            for (let j = 0; j < shoe.hands.length; j++){
+            for (let j = 0; j < shoe.hands.length; j++) {
                 const h = shoe.hands[j];
                 const winner = h.outcome.winner || h.outcome.w;
                 const pure = simHistory.filter(x => x.w !== 'T').map(x => x.w);
                 const ptnKey = pure.length >= 3 ? pure.slice(-3).join(',') : null;
                 const cp = ptnKey ? wf_db.patterns[ptnKey] : null;
-                const externalState = cp ? { has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P } : { has_pattern:false };
+                const simulatedExternalState = cp ? { has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P } : { has_pattern:false };
 
                 let reconstructedRemainCards = 0;
-                for (const key in simDeck){ if (simDeck.hasOwnProperty(key)) reconstructedRemainCards += simDeck[key]; }
+                for (const key in simDeck) if (simDeck.hasOwnProperty(key)) reconstructedRemainCards += simDeck[key];
 
                 const reconstructedFeatures = {
                     F_Base: {},
-                    F_Comp: { running_count:simRC, remain_cards:reconstructedRemainCards },
+                    F_Comp: { running_count: simRC, remain_cards: reconstructedRemainCards },
                     F_Path: extractPathFeaturesCore(simHistory)
                 };
 
-                const modelId = (h.policy_snapshot && h.policy_snapshot.model_id) ? h.policy_snapshot.model_id : getDeployedPolicy().model.id;
-                const model = getModelById(modelId);
-                const tau = (h.policy_snapshot && h.policy_snapshot.tau !== undefined) ? h.policy_snapshot.tau : Config.m;
-
-                const res = executePolicyChain(model, reconstructedFeatures, tau, externalState, { allowTieBet:false }, false);
+                const res = executePolicyChain(policy.model, reconstructedFeatures, policy.tau, simulatedExternalState, policy.options, false);
                 testSamples.push({ probs:res.probs, winner:winner, decision:res.decision });
                 updateCalibrationBins(splitBins, res.probs, winner);
 
-                if (res.decision !== 'PASS'){
+                if (res.decision !== 'PASS') {
                     betCount++;
                     predicted_ev_sum += res.ev[res.decision];
                     const r = settleDecision(res.decision, winner, PAYOUTS);
@@ -1710,14 +1563,12 @@ function runExperiment(spec){
                 const bp = (h.input.cards.b1 === h.input.cards.b2 && h.input.cards.b1 !== null && h.input.cards.b1 !== undefined);
                 const pp = (h.input.cards.p1 === h.input.cards.p2 && h.input.cards.p1 !== null && h.input.cards.p1 !== undefined);
 
-                if (ptnKey){
-                    updatePatternDB(wf_db, ptnKey, winner, bp, pp);
-                }
+                if (ptnKey) updatePatternDB(wf_db, ptnKey, winner, bp, pp);
 
-                for (let kIdx = 0; kIdx < validSlots.length; kIdx++){
+                for (let kIdx = 0; kIdx < validSlots.length; kIdx++) {
                     const key = validSlots[kIdx];
                     const rank = h.input.cards[key];
-                    if (rank !== null && rank !== undefined && countWeights[rank] !== undefined){
+                    if (rank !== null && rank !== undefined && countWeights[rank] !== undefined) {
                         simDeck[rank] -= 1;
                         simRC += countWeights[rank];
                     }
@@ -1729,6 +1580,7 @@ function runExperiment(spec){
 
         runs.push({
             test_shoe_ids: split.test.map(s => s.shoe_id),
+            selected_tau: policy.tau,
             n_test_hands: testSamples.length,
             bet_count: betCount,
             log_loss: computeLogLoss(testSamples),
@@ -1752,14 +1604,14 @@ function runExperiment(spec){
     const holdoutBins = initCalibrationBins(spec.calibration.nBins);
     let holdout_realized_return = 0, holdout_predicted_ev = 0, holdout_bet_count = 0;
 
-    for (let i = 0; i < holdoutShoes.length; i++){
+    for (let i = 0; i < holdoutShoes.length; i++) {
         const shoe = holdoutShoes[i];
         let simHistory = [];
         let simDeck = {};
         for (let j = 1; j <= 13; j++) simDeck[j] = 32;
         let simRC = 0;
 
-        for (let j = 0; j < shoe.hands.length; j++){
+        for (let j = 0; j < shoe.hands.length; j++) {
             const h = shoe.hands[j];
             const winner = h.outcome.winner || h.outcome.w;
             const pure = simHistory.filter(x => x.w !== 'T').map(x => x.w);
@@ -1768,23 +1620,19 @@ function runExperiment(spec){
             const externalState = cp ? { has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P } : { has_pattern:false };
 
             let reconstructedRemainCards = 0;
-            for (const key in simDeck){ if (simDeck.hasOwnProperty(key)) reconstructedRemainCards += simDeck[key]; }
+            for (const key in simDeck) if (simDeck.hasOwnProperty(key)) reconstructedRemainCards += simDeck[key];
 
             const reconstructedFeatures = {
                 F_Base: {},
-                F_Comp: { running_count:simRC, remain_cards:reconstructedRemainCards },
+                F_Comp: { running_count: simRC, remain_cards: reconstructedRemainCards },
                 F_Path: extractPathFeaturesCore(simHistory)
             };
 
-            const modelId = (h.policy_snapshot && h.policy_snapshot.model_id) ? h.policy_snapshot.model_id : getDeployedPolicy().model.id;
-            const model = getModelById(modelId);
-            const tau = (h.policy_snapshot && h.policy_snapshot.tau !== undefined) ? h.policy_snapshot.tau : Config.m;
-
-            const res = executePolicyChain(model, reconstructedFeatures, tau, externalState, { allowTieBet:false }, false);
+            const res = executePolicyChain(policy.model, reconstructedFeatures, policy.tau, externalState, policy.options, false);
             holdoutSamples.push({ probs:res.probs, winner:winner, decision:res.decision });
             updateCalibrationBins(holdoutBins, res.probs, winner);
 
-            if (res.decision !== 'PASS'){
+            if (res.decision !== 'PASS') {
                 holdout_bet_count++;
                 holdout_predicted_ev += res.ev[res.decision];
                 holdout_realized_return += settleDecision(res.decision, winner, PAYOUTS);
@@ -1793,14 +1641,12 @@ function runExperiment(spec){
             const bp = (h.input.cards.b1 === h.input.cards.b2 && h.input.cards.b1 !== null && h.input.cards.b1 !== undefined);
             const pp = (h.input.cards.p1 === h.input.cards.p2 && h.input.cards.p1 !== null && h.input.cards.p1 !== undefined);
 
-            if (ptnKey){
-                updatePatternDB(holdout_wf_db, ptnKey, winner, bp, pp);
-            }
+            if (ptnKey) updatePatternDB(holdout_wf_db, ptnKey, winner, bp, pp);
 
-            for (let kIdx = 0; kIdx < validSlots.length; kIdx++){
+            for (let kIdx = 0; kIdx < validSlots.length; kIdx++) {
                 const key = validSlots[kIdx];
                 const rank = h.input.cards[key];
-                if (rank !== null && rank !== undefined && countWeights[rank] !== undefined){
+                if (rank !== null && rank !== undefined && countWeights[rank] !== undefined) {
                     simDeck[rank] -= 1;
                     simRC += countWeights[rank];
                 }
@@ -1825,12 +1671,12 @@ function runExperiment(spec){
     let currentVerdict = 'FLAT_RETURN_BASELINE';
     const isHoldoutValid = holdout_metrics !== null && holdout_metrics.n_test_hands >= 10;
 
-    if (aggregate.n_test_hands < 50 || !isHoldoutValid){
+    if (aggregate.n_test_hands < 50 || !isHoldoutValid) {
         currentVerdict = 'INSUFFICIENT_DATA (LOW CONFIDENCE)';
     } else {
-        if (aggregate.realized_return_sum > 0 && holdout_metrics.realized_return_sum > 0){
+        if (aggregate.realized_return_sum > 0 && holdout_metrics.realized_return_sum > 0) {
             currentVerdict = 'POSITIVE_RETURN_BASELINE';
-        } else if (aggregate.realized_return_sum > 0 && holdout_metrics.realized_return_sum <= 0){
+        } else if (aggregate.realized_return_sum > 0 && holdout_metrics.realized_return_sum <= 0) {
             currentVerdict = 'INCONCLUSIVE_HOLDOUT (OVERFITTING RISK)';
         } else {
             currentVerdict = 'NEGATIVE_RETURN_BASELINE';
@@ -1841,14 +1687,15 @@ function runExperiment(spec){
         run_id: 'exp_' + Date.now(),
         created_at: Date.now(),
         spec_version: 'ExperimentSpec_v1.0',
-        lab_version: 'v57-native',
+        lab_version: 'v60-final',
         data_scope: {
             closed_shoe_count: closedShoes.length,
             dev_shoe_count: devShoes.length,
             holdout_shoe_count: holdoutShoes.length
         },
         split_config: spec.split_config,
-        selected_config: { tau: Config.m, allowTieBet: false, nBins: spec.calibration.nBins },
+        model_registry: { deployed: policy.model.id },
+        selected_config: { tau:policy.tau, allowTieBet:policy.options.allowTieBet, nBins:spec.calibration.nBins },
         split_runs: runs.map((r, idx) => ({
             split_index: idx,
             test_shoe_ids: r.test_shoe_ids,
@@ -1865,126 +1712,977 @@ function runExperiment(spec){
     return record;
 }
 
-window.invokeQuantLab = function(){
+window.invokeQuantLab = function() {
     const totalShoes = LabStore.rawShoes.length;
     let tN = 50, vM = 0, tK = 10, sK = 10;
     const devShoesCount = Math.floor(totalShoes * 0.8);
-    if (devShoesCount < (tN + vM + tK)){
-        tN = 2; vM = 0; tK = 1; sK = 1;
-    }
+    if (devShoesCount < (tN + vM + tK)) { tN = 2; vM = 0; tK = 1; sK = 1; }
 
     const spec = {
         split_config: { trainN:tN, valM:vM, testK:tK, stepK:sK },
         calibration: { nBins: Config.nBins }
     };
 
-    try{
+    try {
         const rec = runExperiment(spec);
-        if (rec){
+        if (rec) {
             saveDatabase();
-            console.log('QUANT LAB REPORT', deepCopy(rec));
+            console.log('QUANT LAB OOS REPORT:', deepCopy(rec));
             alert(
-                "✅ 實驗室運行完畢！\n" +
-                "Verdict: " + rec.verdict + "\n" +
-                "Rolling OOS 淨利: " + rec.aggregate_metrics.realized_return_sum.toFixed(2) + "\n" +
-                "Final Holdout 淨利: " + (rec.holdout_metrics ? rec.holdout_metrics.realized_return_sum.toFixed(2) : "N/A")
+                '✅ 實驗室運行完畢！\n' +
+                'Verdict: ' + rec.verdict + '\n' +
+                'Rolling OOS 淨利: ' + rec.aggregate_metrics.realized_return_sum.toFixed(2) + ' 單位\n' +
+                'Final Holdout 淨利: ' + (rec.holdout_metrics ? rec.holdout_metrics.realized_return_sum.toFixed(2) : 'N/A')
             );
         }
-    }catch(e){
+    } catch (e) {
         console.error('實驗室發生錯誤:', e);
-        alert('實驗室運行失敗，請查看 F12 Console。');
+        alert('實驗室運行失敗，請查看 Console。');
     }
 };
 
-function normalizeState(obj){
-    if (!obj || typeof obj !== 'object') return null;
+/* -------------------- UI / 牌路 -------------------- */
+function baccaratValue(rank) { return rank >= 10 ? 0 : rank; }
 
-    const toCount = function(v, d, max){
-        d = d === undefined ? 0 : d;
-        max = max === undefined ? Infinity : max;
-        const n = Number(v);
-        return Number.isFinite(n) && n >= 0 ? Math.min(max, Math.floor(n)) : d;
-    };
-    const toBool = v => (v === true || v === 'true' || v === 1 || v === '1');
-    const normW = v => (v === 'B' || v === 'P' || v === 'T') ? v : 'T';
-
-    const safe = {
-        shoeId: obj.shoeId || Date.now(),
-        deck: {},
-        history: [],
-        runningCount: 0,
-        shoePerf: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0},
-        stats: { ev:{p:0,h:0,r:[]}, trend:{p:0,h:0,r:[]}, derived:{p:0,h:0,r:[]}, ml:{p:0,h:0,r:[]}, shoe:{p:0,h:0,r:[]}, power:{p:0,h:0,r:[]} },
-        shadow: { ev:null, trend:null, derived:null, ml:null, shoe:null, power:null },
-        lastRecSide: null,
-        lastSideBets: { tie:false, bp:false, pp:false },
-        isLegacyPartial: false
-    };
-
-    let deckSum = 0;
-    if (!isValidDeck(obj.deck)) return null;
-
-    for (let i = 1; i <= 13; i++){
-        safe.deck[i] = toCount(obj.deck[i], 32, 32);
-        deckSum += safe.deck[i];
-    }
-
-    if (Array.isArray(obj.history)){
-        safe.history = obj.history.map(function(item){
-            if (typeof item === 'string') return { w:normW(item), bp:false, pp:false, pPt:0, bPt:0 };
-            return {
-                w: normW(item.w),
-                bp: toBool(item.bp),
-                pp: toBool(item.pp),
-                pPt: toCount(item.pPt, 0, 9),
-                bPt: toCount(item.bPt, 0, 9)
-            };
-        });
-    }
-
-    const usedCards = 416 - deckSum;
-    if (usedCards < safe.history.length * 4 || usedCards > safe.history.length * 6 || deckSum < 0 || deckSum > 416) return null;
-
-    safe.runningCount = derivePhysicalRunningCount(safe.deck);
-    return safe;
+function getVal(id) {
+    const el = document.getElementById('slot-' + id);
+    const v = el ? el.dataset.val : null;
+    return v ? parseInt(v, 10) : null;
 }
 
-function init(){
-    const cfgRaw = readStorageWithFallback('bac_cfg_');
-    if (cfgRaw.value){
-        try{
-            Object.assign(Config, normalizeConfig(JSON.parse(cfgRaw.value)));
-        }catch(e){}
-        migrateToCurrentKey(cfgRaw.key, CF_K, cfgRaw.value);
+function getPendingCounts() {
+    const pending = {};
+    for (let i = 1; i <= 13; i++) pending[i] = 0;
+    ['p1','p2','p3','b1','b2','b3'].forEach(function(id) {
+        const v = getVal(id);
+        if (v) pending[v]++;
+    });
+    return pending;
+}
+
+function drawKeypad() {
+    const k = document.getElementById('keypad');
+    k.innerHTML = '';
+    const pending = getPendingCounts();
+
+    for (let i = 1; i <= 13; i++) {
+        const remain = Math.max(0, (S.deck[i] || 0) - pending[i]);
+        const b = document.createElement('div');
+        b.className = 'key';
+        b.innerHTML = '<div class="key-val">' + (i===1?'A':i===11?'J':i===12?'Q':i===13?'K':i) + '</div><div class="key-count">' + remain + '</div>';
+        b.onclick = function() { inputRank(i); };
+        k.appendChild(b);
     }
-    Config = normalizeConfig(Config);
+
+    const clr = document.createElement('div');
+    clr.className = 'key action-clear';
+    clr.innerText = '⌫ 清空重填';
+    clr.onclick = clearCurrentInput;
+    k.appendChild(clr);
+}
+
+function setActiveSlot(id) {
+    const el = document.getElementById('slot-' + id);
+    if (!el || el.classList.contains('disabled')) return;
+    document.querySelectorAll('.playing-card').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    cIdx = cOrder.indexOf(id);
+}
+
+function inputRank(rank) {
+    const pending = getPendingCounts();
+    if (((S.deck[rank] || 0) - pending[rank]) <= 0) return;
+
+    while (cIdx < cOrder.length && document.getElementById('slot-' + cOrder[cIdx]).classList.contains('disabled')) cIdx++;
+    if (cIdx >= cOrder.length) return;
+
+    const target = document.getElementById('slot-' + cOrder[cIdx]);
+    target.innerText = rank===1?'A':rank===11?'J':rank===12?'Q':rank===13?'K':String(rank);
+    target.dataset.val = String(rank);
+    target.classList.add('filled');
+    cIdx++;
+
+    evaluateDrawRules();
+    drawKeypad();
+
+    while (cIdx < cOrder.length && document.getElementById('slot-' + cOrder[cIdx]).classList.contains('disabled')) cIdx++;
+    if (cIdx < cOrder.length) setActiveSlot(cOrder[cIdx]);
+}
+
+function clearCurrentInput() {
+    cIdx = 0;
+    const ids = ['p1','p2','p3','b1','b2','b3'];
+    for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+        const e = document.getElementById('slot-' + id);
+        e.innerText = '';
+        e.dataset.val = '';
+        e.classList.remove('filled', 'active');
+        if (id === 'p3' || id === 'b3') e.classList.add('disabled');
+        else e.classList.remove('disabled');
+    }
+    setActiveSlot(cOrder[0]);
+    evaluateDrawRules();
+    drawKeypad();
+}
+
+function changeOrder() {
+    cOrder = document.getElementById('orderSel').value === 'PBPB'
+        ? ['p1','b1','p2','b2','p3','b3']
+        : ['p1','p2','b1','b2','p3','b3'];
+    clearCurrentInput();
+}
+
+function evaluateDrawRules() {
+    const isAuto = document.getElementById('autoGuide').checked;
+    const btn = document.getElementById('submitBtn');
+    const p3 = document.getElementById('slot-p3');
+    const b3 = document.getElementById('slot-b3');
+
+    const p1 = getVal('p1');
+    const p2 = getVal('p2');
+    const b1 = getVal('b1');
+    const b2 = getVal('b2');
+
+    if (!p1 || !p2 || !b1 || !b2) {
+        p3.classList.add('disabled');
+        b3.classList.add('disabled');
+        btn.disabled = true;
+        btn.className = 'submit-btn';
+        btn.innerText = '請依照發牌順序輸入';
+        return;
+    }
+
+    if (!isAuto) {
+        p3.classList.remove('disabled');
+        b3.classList.remove('disabled');
+        btn.disabled = false;
+        btn.className = 'submit-btn ready';
+        btn.innerText = '手動覆寫模式：可結算';
+        return;
+    }
+
+    const pT = (baccaratValue(p1) + baccaratValue(p2)) % 10;
+    const bT = (baccaratValue(b1) + baccaratValue(b2)) % 10;
+    const isNat = pT >= 8 || bT >= 8;
+    const p3v = getVal('p3');
+    const b3v = getVal('b3');
+    let needP3 = false;
+    let needB3 = false;
+
+    if (!isNat) {
+        if (pT <= 5) needP3 = true;
+        if (!needP3) {
+            if (bT <= 5) needB3 = true;
+        } else if (p3v !== null) {
+            const p3b = baccaratValue(p3v);
+            if (bT <= 2) needB3 = true;
+            else if (bT === 3 && p3b !== 8) needB3 = true;
+            else if (bT === 4 && p3b >= 2 && p3b <= 7) needB3 = true;
+            else if (bT === 5 && p3b >= 4 && p3b <= 7) needB3 = true;
+            else if (bT === 6 && (p3b === 6 || p3b === 7)) needB3 = true;
+        }
+    }
+
+    if (!needP3) p3.classList.add('disabled'); else p3.classList.remove('disabled');
+    if (needP3 && p3v === null) b3.classList.add('disabled');
+    else { if (!needB3) b3.classList.add('disabled'); else b3.classList.remove('disabled'); }
+
+    let valid = true;
+    let msg = '✓ 牌局合法，點擊結算';
+
+    if (isNat && (p3v !== null || b3v !== null)) { valid = false; msg = '❌ 錯誤：天牌不可補牌'; }
+    if (valid && needP3 && p3v === null) { valid = false; msg = '❌ 錯誤：閒家必須補牌'; }
+    if (valid && !needP3 && p3v !== null) { valid = false; msg = '❌ 錯誤：閒家不可補牌'; }
+
+    if (valid && needP3 && p3v !== null) {
+        if (needB3 && b3v === null) { valid = false; msg = '❌ 錯誤：莊家必須補牌'; }
+        if (!needB3 && b3v !== null) { valid = false; msg = '❌ 錯誤：莊家不可補牌'; }
+    } else if (valid && !needP3) {
+        if (needB3 && b3v === null) { valid = false; msg = '❌ 錯誤：莊家必須補牌'; }
+        if (!needB3 && b3v !== null) { valid = false; msg = '❌ 錯誤：莊家不可補牌'; }
+    }
+
+    btn.disabled = !valid;
+    btn.className = valid ? 'submit-btn ready' : 'submit-btn';
+    btn.innerText = msg;
+}
+
+function buildBigRoadMeta(history) {
+    const grid = {};
+    const cols = [];
+    let last = null, startCol = 0, c = 0, r = 0, lastCoord = null, maxCol = 0;
+
+    for (let i = 0; i < history.length; i++) {
+        const d = history[i];
+        if (d.w === 'T') {
+            if (lastCoord && grid[lastCoord]) grid[lastCoord].ties = (grid[lastCoord].ties || 0) + 1;
+            continue;
+        }
+
+        if (last === null || d.w !== last) {
+            if (last !== null) {
+                startCol += 1;
+                while (grid[startCol + ',0'] !== undefined) startCol += 1;
+            }
+            c = startCol;
+            r = 0;
+        } else {
+            const nr = r + 1;
+            if (nr <= 5 && grid[c + ',' + nr] === undefined) r = nr;
+            else {
+                c += 1;
+                while (grid[c + ',' + r] !== undefined) c += 1;
+            }
+        }
+
+        const key = c + ',' + r;
+        grid[key] = { v:d.w, bp:d.bp, pp:d.pp, ties:0, c:c, r:r };
+        if (!cols[c]) cols[c] = [];
+        cols[c][r] = grid[key];
+        last = d.w;
+        lastCoord = key;
+        maxCol = Math.max(maxCol, c);
+    }
+
+    return { grid, cols, maxCol };
+}
+
+function getDerivedRoads(meta) {
+    const nodes = Object.values(meta.grid).sort((a, b) => a.c - b.c || a.r - b.r);
+    const seq1 = [], seq2 = [], seq3 = [];
+
+    const colH = function(c) {
+        let h = 0;
+        while (meta.grid[c + ',' + h] !== undefined) h++;
+        return h;
+    };
+
+    for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        const c = node.c, r = node.r;
+
+        const calc = function(off, seq) {
+            if (r === 0) {
+                if (c >= off + 1) seq.push(colH(c - 1) === colH(c - off - 1) ? 'R' : 'Blue');
+            } else {
+                if (c >= off) {
+                    const a = !!meta.grid[(c - off) + ',' + r];
+                    const b = !!meta.grid[(c - off) + ',' + (r - 1)];
+                    seq.push(a === b ? 'R' : 'Blue');
+                }
+            }
+        };
+
+        calc(1, seq1);
+        calc(2, seq2);
+        calc(3, seq3);
+    }
+
+    return { eye:seq1, small:seq2, roach:seq3 };
+}
+
+function drawDerivedGrid(domId, arr, type) {
+    const el = document.getElementById(domId);
+    el.innerHTML = '';
+
+    const grid = {};
+    let last = null, startCol = 0, c = 0, r = 0, maxCol = 0;
+
+    for (let i = 0; i < arr.length; i++) {
+        const res = arr[i];
+        if (last === null || res !== last) {
+            if (last !== null) {
+                startCol += 1;
+                while (grid[startCol + ',0'] !== undefined) startCol += 1;
+            }
+            c = startCol;
+            r = 0;
+        } else {
+            const nr = r + 1;
+            if (nr <= 5 && grid[c + ',' + nr] === undefined) r = nr;
+            else {
+                c += 1;
+                while (grid[c + ',' + r] !== undefined) c += 1;
+            }
+        }
+        grid[c + ',' + r] = res;
+        last = res;
+        maxCol = Math.max(maxCol, c);
+    }
+
+    for (let i = 0; i < Math.max(24, maxCol + 1); i++) {
+        const col = document.createElement('div');
+        col.className = 'road-col';
+        for (let j = 0; j < 6; j++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell-sm';
+            const val = grid[i + ',' + j];
+            if (val) {
+                const item = document.createElement('div');
+                if (type === 'eye') item.className = 'circle-hollow ' + val;
+                else if (type === 'small') item.className = 'circle-solid ' + val;
+                else item.className = 'slash ' + val;
+                cell.appendChild(item);
+            }
+            col.appendChild(cell);
+        }
+        el.appendChild(col);
+    }
+}
+
+function renderRoads() {
+    const bead = document.getElementById('grid-bead');
+    const big = document.getElementById('grid-big');
+    bead.innerHTML = '';
+    big.innerHTML = '';
+
+    for (let c = 0; c < Math.max(12, Math.ceil(S.history.length / 6)); c++) {
+        const col = document.createElement('div');
+        col.className = 'road-col';
+        for (let r = 0; r < 6; r++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell-lg';
+            const idx = c * 6 + r;
+            const d = S.history[idx];
+            if (d) {
+                const dot = document.createElement('div');
+                dot.className = 'bead-dot ' + d.w;
+                cell.appendChild(dot);
+                if (d.bp) cell.classList.add('has-bp');
+                if (d.pp) cell.classList.add('has-pp');
+            }
+            col.appendChild(cell);
+        }
+        bead.appendChild(col);
+    }
+
+    const meta = buildBigRoadMeta(S.history);
+    for (let c = 0; c < Math.max(24, meta.maxCol + 1); c++) {
+        const col = document.createElement('div');
+        col.className = 'road-col';
+        for (let r = 0; r < 6; r++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell-lg';
+            const d = meta.grid[c + ',' + r];
+            if (d) {
+                const cir = document.createElement('div');
+                cir.className = 'circle-hollow ' + d.v;
+                cell.appendChild(cir);
+
+                if (d.ties) {
+                    const tLine = document.createElement('div');
+                    tLine.className = 'tie-line';
+                    cell.appendChild(tLine);
+                    if (d.ties > 1) {
+                        const tText = document.createElement('span');
+                        tText.className = 'tie-text';
+                        tText.innerText = d.ties;
+                        cell.appendChild(tText);
+                    }
+                }
+
+                if (d.bp) cell.classList.add('has-bp');
+                if (d.pp) cell.classList.add('has-pp');
+            }
+            col.appendChild(cell);
+        }
+        big.appendChild(col);
+    }
+
+    const derived = getDerivedRoads(meta);
+    drawDerivedGrid('grid-eye', derived.eye, 'eye');
+    drawDerivedGrid('grid-small', derived.small, 'small');
+    drawDerivedGrid('grid-roach', derived.roach, 'roach');
+}
+
+/* -------------------- 預測顯示 -------------------- */
+function getPatternKeyBeforePush() {
+    const pure = S.history.filter(x => x.w !== 'T').map(x => x.w);
+    return pure.length >= 3 ? pure.slice(-3).join(',') : null;
+}
+
+function patternStatsForCurrent() {
+    const key = getPatternKeyBeforePush();
+    if (!key) return null;
+    const cp = canonicalPatternLive(key, BigData.patterns[key]);
+    if (!cp) return null;
+
+    const bpBase = cp.B + cp.P;
+    const allBase = bpBase + cp.T;
+
+    if (cp.N < SIDEBET_MIN_N) {
+        return { key, b:cp.B, pl:cp.P, t:cp.T, bp:cp.BP, pp:cp.PP, n:cp.N, mainB:0, mainP:0, tieP:0, bpP:0, ppP:0, weak:true };
+    }
+
+    return {
+        key, b:cp.B, pl:cp.P, t:cp.T, bp:cp.BP, pp:cp.PP, n:cp.N,
+        mainB: bpBase > 0 ? cp.B / bpBase : 0,
+        mainP: bpBase > 0 ? cp.P / bpBase : 0,
+        tieP: (cp.T + 0.5) / (allBase + 5),
+        bpP: (cp.BP + 0.4) / (allBase + 5),
+        ppP: (cp.PP + 0.4) / (allBase + 5),
+        weak: false
+    };
+}
+
+function updateDBUI() {
+    const sS = document.getElementById('shoeStats');
+    const gS = document.getElementById('globalStats');
+
+    if (sS) {
+        sS.innerHTML =
+            '<div class="db-stat-item"><span>主預測</span><span>' + fmtStat(S.shoePerf.hits, S.shoePerf.recs) + '</span></div>' +
+            '<div class="db-stat-item"><span>和局</span><span style="color:var(--t-color)">' + fmtStat(S.shoePerf.tHits, S.shoePerf.tRecs) + '</span></div>' +
+            '<div class="db-stat-item"><span>莊對</span><span style="color:var(--b-color)">' + fmtStat(S.shoePerf.bpHits, S.shoePerf.bpRecs) + '</span></div>' +
+            '<div class="db-stat-item"><span>閒對</span><span style="color:var(--p-color)">' + fmtStat(S.shoePerf.ppHits, S.shoePerf.ppRecs) + '</span></div>';
+    }
+
+    if (gS) {
+        gS.innerHTML =
+            '<div class="db-stat-item"><span>總局數</span><span style="color:var(--highlight)">' + BigData.totalHands + '</span></div>' +
+            '<div class="db-stat-item"><span>Pattern 回測</span><span>' + fmtStat(BigData.acc.hits, BigData.acc.recs) + '</span></div>' +
+            '<div class="db-stat-item"><span>和局</span><span style="color:var(--t-color)">' + fmtStat(BigData.acc.tHits, BigData.acc.tRecs) + '</span></div>' +
+            '<div class="db-stat-item"><span>對子</span><span style="color:var(--highlight)">' + fmtStat(BigData.acc.bpHits + BigData.acc.ppHits, BigData.acc.bpRecs + BigData.acc.ppRecs) + '</span></div>';
+    }
+}
+
+function render(livePrediction) {
+    let remain = 0;
+    Object.values(S.deck).forEach(v => remain += v);
+
+    document.getElementById('hdrRemain').innerText = remain;
+    document.getElementById('hdrRound').innerText = S.history.length;
+    renderRoads();
+
+    const ob = document.getElementById('oracleBox');
+    const om = document.getElementById('oracleMain');
+    const rb = document.getElementById('reasonBadge');
+    const alertBox = document.getElementById('trendAlert');
+
+    if (livePrediction === null || livePrediction === undefined) {
+        try {
+            const policy = getDeployedPolicy();
+            const features = {
+                F_Base: {},
+                F_Comp: { running_count: S.runningCount, remain_cards: remain },
+                F_Path: extractPathFeaturesCore(S.history)
+            };
+            const ptnKey = getPatternKeyBeforePush();
+            const cp = ptnKey ? canonicalPatternLive(ptnKey, BigData.patterns[ptnKey]) : null;
+            const externalState = cp ? { has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P } : { has_pattern:false };
+            livePrediction = executePolicyChain(policy.model, features, policy.tau, externalState, policy.options, false);
+        } catch (e) {
+            livePrediction = { decision:'PASS', ev:{B:0,P:0,T:0}, isWarmup:false };
+        }
+    }
+
+    if (S.history.length < 1) {
+        om.innerText = '等待輸入';
+        rb.innerHTML = '實驗室預測模型待命中';
+        ob.className = 'oracle-box pass';
+        alertBox.innerText = '📊 專家策略引擎運行中';
+        alertBox.className = 'trend-alert alert-safe';
+        S.lastRecSide = 'PASS';
+    } else if (S.isLegacyPartial) {
+        om.innerText = '⚠️ 降級模式';
+        rb.innerHTML = '無歷史決策快照，部分指標無法還原';
+        ob.className = 'oracle-box degraded';
+        alertBox.innerText = '⚠️ 舊版相容模式：請換靴或重置';
+        alertBox.className = 'trend-alert alert-warn';
+        S.lastRecSide = 'PASS';
+    } else if (livePrediction.isWarmup) {
+        om.innerText = '🔒 規律收集中';
+        rb.innerHTML = '暖機保護中 (已收集 ' + S.history.length + '/' + WARMUP_HANDS + ')';
+        ob.className = 'oracle-box locked';
+        alertBox.innerText = '⚠️ 樣本不足，強制觀望';
+        alertBox.className = 'trend-alert alert-safe';
+        S.lastRecSide = 'PASS';
+    } else {
+        if (livePrediction.decision === 'B') {
+            ob.className = 'oracle-box banker';
+            om.innerText = '🔥 推薦莊家';
+            alertBox.innerText = '⚡ 專家優勢突破閥值';
+            alertBox.className = 'trend-alert alert-high';
+        } else if (livePrediction.decision === 'P') {
+            ob.className = 'oracle-box player';
+            om.innerText = '🔥 推薦閒家';
+            alertBox.innerText = '⚡ 專家優勢突破閥值';
+            alertBox.className = 'trend-alert alert-high';
+        } else {
+            ob.className = 'oracle-box pass';
+            om.innerText = '🛡️ 觀望 (PASS)';
+            alertBox.innerText = '📊 趨勢不明，建議等待';
+            alertBox.className = 'trend-alert alert-safe';
+        }
+
+        const tc = remain > 0 ? (S.runningCount / Math.max(0.5, remain / 52)).toFixed(2) : '0.00';
+        const ev = (livePrediction.ev[livePrediction.decision] || 0).toFixed(4);
+        rb.innerHTML = '真數 (TC): ' + tc + ' | 預期淨利 (EV): ' + ev;
+        S.lastRecSide = livePrediction.decision;
+    }
+
+    const ptn = patternStatsForCurrent();
+    let fT = 0, fBP = 0, fPP = 0;
+    const hasPatternData = ptn && !ptn.weak;
+    if (hasPatternData) {
+        fT = ptn.tieP;
+        fBP = ptn.bpP;
+        fPP = ptn.ppP;
+    }
+
+    S.lastSideBets = { tie:fT >= Config.s, bp:fBP >= Config.s, pp:fPP >= Config.s };
+
+    function setSB(id, label, p, isPair, hasData) {
+        const e = document.getElementById(id);
+        if (!hasData) {
+            e.innerText = label + ' --%';
+            e.className = 'sidebet-pill';
+        } else {
+            e.innerText = label + ' ' + (p * 100).toFixed(1) + '%';
+            e.className = p >= Config.s ? (isPair ? 'sidebet-pill active-pair' : 'sidebet-pill active') : 'sidebet-pill';
+        }
+    }
+
+    setSB('sbTie', '和局', fT, false, hasPatternData);
+    setSB('sbBP', '莊對', fBP, true, hasPatternData);
+    setSB('sbPP', '閒對', fPP, true, hasPatternData);
+
+    updateDBUI();
+    saveState();
+}
+
+/* -------------------- 匯出 / 匯入 -------------------- */
+function formatExportTimestamp(ts) {
+    const d = new Date(ts || Date.now());
+    const pad = n => String(n).padStart(2, '0');
+    return d.getFullYear() +
+        pad(d.getMonth() + 1) +
+        pad(d.getDate()) + '_' +
+        pad(d.getHours()) +
+        pad(d.getMinutes()) +
+        pad(d.getSeconds());
+}
+
+function buildExportFilename() {
+    return 'bac_v60_export_' + formatExportTimestamp(Date.now()) + '.json';
+}
+
+function canUseNativeSavePicker() {
+    return !!(window.isSecureContext && typeof window.showSaveFilePicker === 'function');
+}
+
+function triggerBrowserDownload(filename, text, mimeType) {
+    const blob = new Blob([text], { type: mimeType || 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(function() {
+        if (a.parentNode) document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 300);
+
+    return { mode:'download', name:filename };
+}
+
+async function saveWithNativePicker(filename, text) {
+    const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+            description: 'JSON 檔案',
+            accept: { 'application/json': ['.json'] }
+        }],
+        excludeAcceptAllOption: false
+    });
+
+    const writable = await handle.createWritable();
+    await writable.write(text);
+    await writable.close();
+
+    lastSavedFileHandle = handle;
+    return { mode:'picker', name:handle.name };
+}
+
+function buildSafeExportPayload() {
+    const exportLabStore = deepCopy(LabStore);
+    let exportState = deepCopy(S);
+    const exportConfig = deepCopy(Config);
+
+    migrateLabStoreModels(exportLabStore);
+    auditLabStore(exportLabStore);
+
+    const basePatternDB = rebuildBigDataFromAuditedShoes(exportLabStore.rawShoes);
+    if (!validateOpenShoeConsistency(exportLabStore, exportState, basePatternDB)) {
+        console.warn('Export: currentOpenShoe 驗證失敗，匯出檔將不包含未完成鞋。');
+        exportLabStore.currentOpenShoe = null;
+        exportState = createInitialState();
+    }
+
+    const exportBigData = buildLiveBigDataFromStores(exportLabStore.rawShoes, exportLabStore.currentOpenShoe);
+    rebuildLiveStateMetrics(exportState, exportLabStore.currentOpenShoe);
+    recalcDBStats(exportBigData);
+
+    return {
+        version: APP_VERSION,
+        exported_at: Date.now(),
+        bigData: exportBigData,
+        labStore: exportLabStore,
+        state: exportState,
+        config: exportConfig,
+        export_meta: {
+            closed_shoes: exportLabStore.rawShoes.length,
+            open_hands: exportLabStore.currentOpenShoe ? exportLabStore.currentOpenShoe.hands.length : 0
+        }
+    };
+}
+
+async function exportDB() {
+    try {
+        setSaveStatus('正在準備匯出…', false);
+
+        const payload = buildSafeExportPayload();
+        const filename = buildExportFilename();
+        const text = JSON.stringify(payload, null, 2);
+        let result = null;
+
+        if (canUseNativeSavePicker()) {
+            try {
+                result = await saveWithNativePicker(filename, text);
+                setSaveStatus('已儲存檔案：' + result.name + '（你已自行選擇儲存位置）', false);
+                alert(
+                    '✅ 匯出成功！\n' +
+                    '檔名：' + result.name + '\n' +
+                    '已結算鞋數：' + payload.export_meta.closed_shoes + '\n' +
+                    '未結算局數：' + payload.export_meta.open_hands + '\n\n' +
+                    '本次已由你在系統視窗中自行選擇儲存位置。'
+                );
+                return;
+            } catch (err) {
+                if (err && err.name === 'AbortError') {
+                    setSaveStatus('你已取消匯出。', true);
+                    return;
+                }
+                console.warn('showSaveFilePicker 失敗，改用下載模式：', err);
+            }
+        }
+
+        result = triggerBrowserDownload(filename, text, 'application/json;charset=utf-8');
+        setSaveStatus('已交給瀏覽器下載：' + result.name + '（實際儲存資料夾由瀏覽器/系統決定）', false);
+        alert(
+            '✅ 匯出成功！\n' +
+            '檔名：' + result.name + '\n' +
+            '已結算鞋數：' + payload.export_meta.closed_shoes + '\n' +
+            '未結算局數：' + payload.export_meta.open_hands + '\n\n' +
+            '目前瀏覽器未提供可選擇資料夾的存檔視窗，已改用一般下載模式。'
+        );
+    } catch (e) {
+        console.error('Export Error:', e);
+        setSaveStatus('匯出失敗：' + e.message, true);
+        alert('匯出失敗：' + e.message);
+    }
+}
+
+function isSupportedSnapshotObject(o) {
+    if (!o || typeof o !== 'object') return false;
+    if (!o.labStore || typeof o.labStore !== 'object') return false;
+    if (!Array.isArray(o.labStore.rawShoes)) return false;
+    if (!o.state || typeof o.state !== 'object') return false;
+    if (!Array.isArray(o.state.history)) return false;
+    if (!o.state.deck || typeof o.state.deck !== 'object' || !isValidDeck(o.state.deck)) return false;
+    if (!o.config || typeof o.config !== 'object') return false;
+    return true;
+}
+
+function importDB(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const r = new FileReader();
+    r.onload = function(ev) {
+        try {
+            const t = String(ev.target.result || '').replace(/^\uFEFF/, '');
+            const o = JSON.parse(t);
+
+            if (!isSupportedSnapshotObject(o)) {
+                throw new Error('partial-or-invalid-snapshot');
+            }
+
+            let tempLabStore = {
+                schema_version: APP_VERSION,
+                rawShoes: [],
+                currentOpenShoe: null,
+                experiments: []
+            };
+
+            let tempS = createInitialState();
+            let tempConfig = normalizeConfig(o.config);
+
+            tempLabStore.rawShoes = Array.isArray(o.labStore.rawShoes) ? o.labStore.rawShoes : [];
+            tempLabStore.currentOpenShoe = o.labStore.currentOpenShoe || null;
+            tempLabStore.experiments = [];
+            migrateLabStoreModels(tempLabStore);
+            auditLabStore(tempLabStore);
+
+            const migrated = normalizeState(o.state);
+            if (!migrated) throw new Error('invalid-state');
+            tempS = migrated;
+
+            const baseBigData = rebuildBigDataFromAuditedShoes(tempLabStore.rawShoes);
+
+            if (!validateOpenShoeConsistency(tempLabStore, tempS, baseBigData)) {
+                console.warn('Import Audit Failure: Open Shoe corrupted. Purging current open shoe.');
+                tempLabStore.currentOpenShoe = null;
+                tempS = createInitialState();
+                auditLabStore(tempLabStore);
+            }
+
+            const rebuiltBigData = buildLiveBigDataFromStores(tempLabStore.rawShoes, tempLabStore.currentOpenShoe);
+            rebuildLiveStateMetrics(tempS, tempLabStore.currentOpenShoe);
+
+            LabStore = tempLabStore;
+            Config = tempConfig;
+            S = tempS;
+            BigData = rebuiltBigData;
+
+            recalcDBStats(BigData);
+
+            document.getElementById('cfgM').value = Config.m;
+            document.getElementById('cfgS').value = Config.s;
+            document.getElementById('cfgBins').value = Config.nBins;
+
+            bSt = null; bDB = null; bLab = null;
+
+            saveDatabase();
+            saveState();
+            localStorage.setItem(CF_K, JSON.stringify(Config));
+
+            drawKeypad();
+            clearCurrentInput();
+            render();
+
+            setSaveStatus('匯入完成：已載入 ' + LabStore.rawShoes.length + ' 雙已結算鞋。', false);
+            alert('✅ 匯入成功！目前已載入 ' + LabStore.rawShoes.length + ' 雙已結算的鞋靴資料。');
+        } catch (err) {
+            console.error('Import Error:', err);
+            setSaveStatus('匯入失敗：檔案格式不正確或快照不完整。', true);
+            alert('匯入失敗：檔案不完整、格式不正確或為無法識別的快照。');
+        } finally {
+            e.target.value = '';
+        }
+    };
+    r.readAsText(file);
+}
+
+/* -------------------- 提交 / 撤銷 / 重置 -------------------- */
+function submitHand() {
+    if (S.isLegacyPartial) {
+        alert('⚠️ 系統處於舊版相容降級模式，無法進行新局結算。請先點擊「換靴」以重建完整追溯鏈。');
+        return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    if (btn.disabled) return;
+
+    bSt = deepCopy(S);
+    bDB = deepCopy(BigData);
+    bLab = deepCopy(LabStore);
+
+    const vals = { p1:getVal('p1'), p2:getVal('p2'), p3:getVal('p3'), b1:getVal('b1'), b2:getVal('b2'), b3:getVal('b3') };
+    const cons = [];
+    let pPts = 0, bPts = 0;
+    const ids = ['p1','p2','p3','b1','b2','b3'];
+
+    for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+        const v = vals[id];
+        if (v) {
+            cons.push(v);
+            if (id.indexOf('p') === 0) pPts += baccaratValue(v);
+            else bPts += baccaratValue(v);
+        }
+    }
+
+    const pFinal = pPts % 10;
+    const bFinal = bPts % 10;
+    const w = pFinal > bFinal ? 'P' : (bFinal > pFinal ? 'B' : 'T');
+    const bp = cons.length >= 4 && vals.b1 === vals.b2 && vals.b1 !== null && vals.b1 !== undefined;
+    const pp = cons.length >= 4 && vals.p1 === vals.p2 && vals.p1 !== null && vals.p1 !== undefined;
+    const keyToUpdate = getPatternKeyBeforePush();
+
+    let remainCards = 0;
+    Object.values(S.deck).forEach(v => remainCards += v);
+
+    const oldFeatures = {
+        F_Base: {},
+        F_Comp: { running_count: S.runningCount, remain_cards: remainCards },
+        F_Path: extractPathFeatures()
+    };
+
+    let oldPrediction;
+    try {
+        const policy = getDeployedPolicy();
+        const cp = keyToUpdate ? canonicalPatternLive(keyToUpdate, BigData.patterns[keyToUpdate]) : null;
+        const externalState = cp ? { has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P } : { has_pattern:false };
+        oldPrediction = executePolicyChain(policy.model, oldFeatures, policy.tau, externalState, policy.options, false);
+    } catch (e) {
+        oldPrediction = { probs:NAIVE_PRIORS, ev:{B:0,P:0,T:0}, decision:'PASS', tau:Config.m, isWarmup:false };
+    }
+
+    const observation = captureObservation(S, oldFeatures, oldPrediction, vals, S.lastSideBets);
+    commitObservation(observation, { winner:w, pPt:pFinal, bPt:bFinal, bp:bp, pp:pp });
+
+    if (w !== 'T') {
+        if (oldPrediction.decision !== 'PASS') {
+            S.shoePerf.recs += 1;
+            if (oldPrediction.decision === w) S.shoePerf.hits += 1;
+        }
+    }
+    if (S.lastSideBets.tie) { S.shoePerf.tRecs += 1; if (w === 'T') S.shoePerf.tHits += 1; }
+    if (S.lastSideBets.bp) { S.shoePerf.bpRecs += 1; if (bp) S.shoePerf.bpHits += 1; }
+    if (S.lastSideBets.pp) { S.shoePerf.ppRecs += 1; if (pp) S.shoePerf.ppHits += 1; }
+
+    S.history.push({ w:w, pPt:pFinal, bPt:bFinal, bp:bp, pp:pp });
+    for (let i = 0; i < cons.length; i++) {
+        const v = cons[i];
+        S.deck[v] = Math.max(0, (S.deck[v] || 0) - 1);
+        S.runningCount += (countWeights[v] || 0);
+    }
+
+    if (keyToUpdate) updatePatternDB(BigData, keyToUpdate, w, bp, pp);
+
+    recalcDBStats(BigData);
+    saveDatabase();
+    clearCurrentInput();
+    render();
+}
+
+function saveState() {
+    localStorage.setItem(ST_K, JSON.stringify(S));
+}
+
+function saveDatabase() {
+    localStorage.setItem(DB_K, JSON.stringify(BigData));
+    localStorage.setItem(LAB_K, JSON.stringify(LabStore));
+}
+
+function saveConfig() {
+    Config = normalizeConfig({
+        m: document.getElementById('cfgM').value,
+        s: document.getElementById('cfgS').value,
+        nBins: document.getElementById('cfgBins').value
+    });
 
     document.getElementById('cfgM').value = Config.m;
     document.getElementById('cfgS').value = Config.s;
     document.getElementById('cfgBins').value = Config.nBins;
 
+    localStorage.setItem(CF_K, JSON.stringify(Config));
+    recalcDBStats(BigData);
+    render();
+}
+
+function undo() {
+    if (!bSt || !bDB || !bLab) {
+        alert('無可撤銷資料');
+        return;
+    }
+
+    S = deepCopy(bSt);
+    BigData = deepCopy(bDB);
+    LabStore = deepCopy(bLab);
+
+    recalcDBStats(BigData);
+    saveState();
+    saveDatabase();
+    drawKeypad();
+    clearCurrentInput();
+    render();
+}
+
+function resetShoe() {
+    if (!confirm('換靴？本靴路單將清空。\n系統會自動將當前已打過的牌局結算並存入實驗室資料庫。')) return;
+    closeCurrentShoe();
+    resetShoeVarsInit();
+
+    bSt = null; bDB = null; bLab = null;
+
+    saveState();
+    saveDatabase();
+    drawKeypad();
+    clearCurrentInput();
+    render();
+}
+
+function resetAll() {
+    if (!confirm('⚠️ 警告：這將徹底清除本機所有的歷史實驗與牌局資料庫！確定嗎？')) return;
+
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.indexOf('bac_db_') === 0 || k.indexOf('bac_lab_') === 0 || k.indexOf('bac_st_') === 0 || k.indexOf('bac_cfg_') === 0)) {
+            keysToRemove.push(k);
+        }
+    }
+
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    location.reload();
+}
+
+function toggleDB() {
+    recalcDBStats(BigData);
+    document.getElementById('dbPanel').classList.toggle('open');
+    updateDBUI();
+}
+
+/* -------------------- 啟動 -------------------- */
+function init() {
+    const cfgRaw = readStorageWithFallback('bac_cfg_');
+    if (cfgRaw.value) {
+        try { Config = normalizeConfig(JSON.parse(cfgRaw.value)); } catch (e) {}
+        migrateToCurrentKey(cfgRaw.key, CF_K, cfgRaw.value);
+    }
+    Config = normalizeConfig(Config);
+
+    const elCfgM = document.getElementById('cfgM');
+    const elCfgS = document.getElementById('cfgS');
+    const elCfgBins = document.getElementById('cfgBins');
+    if (elCfgM) elCfgM.value = Config.m;
+    if (elCfgS) elCfgS.value = Config.s;
+    if (elCfgBins) elCfgBins.value = Config.nBins;
+
     BigData = normalizeBigData({});
 
     const labRaw = readStorageWithFallback('bac_lab_');
-    if (labRaw.value){
-        try{
+    if (labRaw.value) {
+        try {
             LabStore = JSON.parse(labRaw.value);
+            if (!LabStore || typeof LabStore !== 'object') throw new Error('invalid lab');
+            if (!Array.isArray(LabStore.rawShoes)) LabStore.rawShoes = [];
+            if (!('currentOpenShoe' in LabStore)) LabStore.currentOpenShoe = null;
+            LabStore.schema_version = APP_VERSION;
             LabStore.experiments = [];
             migrateLabStoreModels(LabStore);
             auditLabStore(LabStore);
-        }catch(e){
-            LabStore = { schema_version:'v57', rawShoes:[], currentOpenShoe:null, experiments:[] };
+        } catch (e) {
+            LabStore = { schema_version:APP_VERSION, rawShoes:[], currentOpenShoe:null, experiments:[] };
         }
         migrateToCurrentKey(labRaw.key, LAB_K, labRaw.value);
+    } else {
+        LabStore = { schema_version:APP_VERSION, rawShoes:[], currentOpenShoe:null, experiments:[] };
     }
 
     const stRaw = readStorageWithFallback('bac_st_');
-    if (stRaw.value){
-        try{
+    if (stRaw.value) {
+        try {
             const migrated = normalizeState(JSON.parse(stRaw.value));
             if (migrated) S = migrated;
             else resetShoeVarsInit();
-        }catch(e){
+        } catch (e) {
             resetShoeVarsInit();
         }
         migrateToCurrentKey(stRaw.key, ST_K, stRaw.value);
@@ -1992,11 +2690,12 @@ function init(){
         resetShoeVarsInit();
     }
 
-    const basePatternDB = rebuildBigDataFromAuditedShoes(LabStore.rawShoes);
+    const baseBigData = rebuildBigDataFromAuditedShoes(LabStore.rawShoes);
 
-    if (!validateOpenShoeConsistency(LabStore, S, basePatternDB)){
-        annihilateLiveState({ rebuildBigData:true });
-        return;
+    if (!validateOpenShoeConsistency(LabStore, S, baseBigData)) {
+        console.warn('Init: open shoe consistency failed, purging live state.');
+        LabStore.currentOpenShoe = null;
+        resetShoeVarsInit();
     }
 
     BigData = buildLiveBigDataFromStores(LabStore.rawShoes, LabStore.currentOpenShoe);
@@ -2009,6 +2708,7 @@ function init(){
 
     saveDatabase();
     saveState();
+    setSaveStatus('尚未匯出', false);
 }
 
 init();
