@@ -1,130 +1,244 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>百家樂量化終端 - v35 Walk-Forward</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>百家樂量化終端 - v56 Deterministic Seal</title>
     <style>
-        :root {
-            --bg: #09090b; --card: #18181b; --border: #27272a;
-            --text-main: #f4f4f5; --text-muted: #a1a1aa;
-            --b-color: #ef4444; --p-color: #3b82f6; --t-color: #22c55e;
-            --highlight: #eab308; --warning: #f97316; --purple: #a855f7;
-            --danger: #ff4d4d; --ok: #16a34a; --lab: #0ea5e9;
+        :root{
+            --bg:#09090b; --card:#18181b; --border:#27272a;
+            --text-main:#f4f4f5; --text-muted:#a1a1aa;
+            --b-color:#ef4444; --p-color:#3b82f6; --t-color:#22c55e;
+            --highlight:#eab308; --warning:#f97316; --danger:#ff4d4d;
+            --ok:#16a34a; --lab:#0ea5e9;
         }
-        * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; user-select: none; overflow-x: hidden; }
-        
-        .sticky-hud {
-            position: sticky; top: 0; z-index: 1000;
-            background: rgba(18, 18, 21, 0.94); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding: env(safe-area-inset-top) 8px 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        *{box-sizing:border-box}
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;
+            background:var(--bg); color:var(--text-main);
+            margin:0; padding:0; user-select:none; overflow-x:hidden;
         }
-        .hud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .hud-stats { font-size: 12px; font-weight: 800; color: var(--text-muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;}
-        .version-badge { background: var(--highlight); color: #000; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; }
-        .hud-stats span.val { color: var(--text-main); margin-left: 3px; font-variant-numeric: tabular-nums;}
-        .hud-actions { display: flex; gap: 6px; }
-        .hud-btn { background: #27272a; border: 1px solid #3f3f46; color: #fff; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 800; cursor: pointer; transition: 0.1s; }
-        .hud-btn:active { transform: scale(0.95); }
-        .btn-undo { color: var(--warning); } .btn-reset { color: var(--b-color); }
+        .sticky-hud{
+            position:sticky; top:0; z-index:1000;
+            background:rgba(18,18,21,.94);
+            backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px);
+            border-bottom:1px solid rgba(255,255,255,.1);
+            padding:env(safe-area-inset-top) 8px 12px;
+            box-shadow:0 4px 20px rgba(0,0,0,.6);
+        }
+        .hud-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
+        .hud-stats{
+            font-size:12px; font-weight:800; color:var(--text-muted);
+            display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+        }
+        .version-badge{
+            background:var(--highlight); color:#000; font-size:10px; font-weight:900;
+            padding:2px 6px; border-radius:4px;
+        }
+        .hud-stats span.val{color:var(--text-main); margin-left:3px; font-variant-numeric:tabular-nums}
+        .hud-actions{display:flex; gap:6px}
+        .hud-btn{
+            background:#27272a; border:1px solid #3f3f46; color:#fff;
+            border-radius:8px; padding:6px 10px; font-size:12px; font-weight:800; cursor:pointer;
+        }
+        .hud-btn:active{transform:scale(.95)}
+        .btn-undo{color:var(--warning)} .btn-reset{color:var(--b-color)}
 
-        .oracle-box { text-align: center; padding: 12px 8px; border-radius: 12px; border: 2px solid var(--border); background: #000; position: relative; transition: 0.3s; }
-        .oracle-box.banker { border-color: var(--b-color); background: linear-gradient(180deg, rgba(239,68,68,0.15) 0%, #000 100%); }
-        .oracle-box.player { border-color: var(--p-color); background: linear-gradient(180deg, rgba(59,130,246,0.15) 0%, #000 100%); }
-        .oracle-box.pass { border-color: #3f3f46; }
-        .oracle-box.locked { border-color: var(--highlight); background: repeating-linear-gradient(45deg, rgba(234, 179, 8, 0.05), rgba(234, 179, 8, 0.05) 10px, #000 10px, #000 20px); }
-        
-        .oracle-main { font-size: 26px; font-weight: 900; margin-bottom: 6px; letter-spacing: 1px; }
-        .oracle-box.banker .oracle-main { color: var(--b-color); text-shadow: 0 0 10px rgba(239,68,68,0.5); }
-        .oracle-box.player .oracle-main { color: var(--p-color); text-shadow: 0 0 10px rgba(59,130,246,0.5); }
-        .oracle-box.locked .oracle-main { color: var(--highlight); }
-        
-        .reason-badge { display: inline-flex; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,0.1); color: var(--text-main); align-items: center; gap: 6px; flex-wrap: wrap;}
-        .str-high { color: var(--highlight); } .str-mid { color: #60a5fa; } .str-low { color: var(--text-muted); }
-        
-        .trend-alert { font-size: 12px; font-weight: 900; margin-bottom: 6px; letter-spacing: 0.5px; padding: 4px; border-radius: 6px; text-align: center;}
-        .alert-high { color: #fff; background: rgba(249, 115, 22, 0.3); border: 1px solid var(--warning); animation: pulse 1.5s infinite alternate;}
-        .alert-safe { color: var(--text-muted); background: rgba(255,255,255,0.05); }
-        .alert-info { color: #93c5fd; background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.35); }
-        
-        .sidebet-container { display: flex; justify-content: center; gap: 6px; border-top: 1px dashed #333; padding-top: 10px; margin-top: 10px; flex-wrap: wrap;}
-        .sidebet-pill { font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid transparent; font-variant-numeric: tabular-nums; transition: 0.3s; }
-        .sidebet-pill.active { background: rgba(34,197,94,.15); color: var(--t-color); border-color: var(--t-color); animation: pulse 1.5s infinite alternate; }
-        .sidebet-pill.active-pair { background: rgba(234,179,8,.15); color: var(--highlight); border-color: var(--highlight); animation: pulse 1.5s infinite alternate; }
+        .oracle-box{
+            text-align:center; padding:12px 8px; border-radius:12px;
+            border:2px solid var(--border); background:#000; transition:.25s;
+        }
+        .oracle-box.banker{
+            border-color:var(--b-color);
+            background:linear-gradient(180deg, rgba(239,68,68,.15) 0%, #000 100%);
+        }
+        .oracle-box.player{
+            border-color:var(--p-color);
+            background:linear-gradient(180deg, rgba(59,130,246,.15) 0%, #000 100%);
+        }
+        .oracle-box.pass{border-color:#3f3f46}
+        .oracle-box.locked{
+            border-color:var(--highlight);
+            background:repeating-linear-gradient(45deg, rgba(234,179,8,.05), rgba(234,179,8,.05) 10px, #000 10px, #000 20px);
+        }
+        .oracle-box.degraded{
+            border-color:var(--warning);
+            background:repeating-linear-gradient(45deg, rgba(249,115,22,.05), rgba(249,115,22,.05) 10px, #000 10px, #000 20px);
+        }
+        .oracle-main{font-size:26px; font-weight:900; margin-bottom:6px; letter-spacing:1px}
+        .oracle-box.banker .oracle-main{color:var(--b-color); text-shadow:0 0 10px rgba(239,68,68,.5)}
+        .oracle-box.player .oracle-main{color:var(--p-color); text-shadow:0 0 10px rgba(59,130,246,.5)}
+        .oracle-box.locked .oracle-main{color:var(--highlight)}
+        .oracle-box.degraded .oracle-main{color:var(--warning); font-size:20px}
 
-        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
+        .reason-badge{
+            display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap;
+            font-size:11px; font-weight:800; padding:4px 10px; border-radius:8px;
+            background:rgba(255,255,255,.1); color:var(--text-main);
+        }
+        .trend-alert{
+            font-size:12px; font-weight:900; margin-bottom:6px;
+            letter-spacing:.5px; padding:4px; border-radius:6px; text-align:center;
+        }
+        .alert-high{
+            color:#fff; background:rgba(249,115,22,.3);
+            border:1px solid var(--warning); animation:pulse 1.5s infinite alternate;
+        }
+        .alert-safe{color:var(--text-muted); background:rgba(255,255,255,.05)}
+        .alert-warn{
+            color:var(--warning); background:rgba(249,115,22,.1);
+            border:1px dashed var(--warning);
+        }
 
-        .scroll-container { padding: 12px; padding-bottom: 70px; }
-        .roads-card, .input-card { background: var(--card); border-radius: 12px; padding: 10px; border: 1px solid var(--border); margin-bottom: 12px; }
-        .road-title { font-size: 11px; font-weight: 800; color: var(--text-muted); margin: 4px 0; text-transform: uppercase; }
-        .road-container { width: 100%; overflow-x: auto; background: #fff; padding: 4px; border-radius: 6px; margin-bottom: 6px; display: block; border: 1px solid #e5e5ea; }
-        .road-grid { display: flex; width: max-content; }
-        .road-col { display: flex; flex-direction: column; }
-        
-        .cell-lg, .cell-sm { position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #fff; border: 0.5px solid #eee; }
-        .cell-lg { width: 16px; height: 16px; } .cell-sm { width: 8px; height: 8px; }
-        
-        .bead-dot { width: 12px; height: 12px; border-radius: 50%; z-index: 1; }
-        .circle-hollow { width: 12px; height: 12px; border-radius: 50%; border: 2px solid transparent; z-index: 1; background: transparent; }
-        .circle-solid { width: 5px; height: 5px; border-radius: 50%; }
-        .slash { width: 6px; height: 6px; }
-        
-        .B, .R { background-color: var(--b-color); border-color: var(--b-color); }
-        .P, .Blue { background-color: var(--p-color); border-color: var(--p-color); }
-        .T { background-color: var(--t-color); border-color: var(--t-color); }
-        
-        .has-bp::before { content:''; position:absolute; top:0px; left:0px; width:4px; height:4px; background:var(--b-color); border-radius:50%; border:1px solid #fff; z-index:3; }
-        .has-pp::after { content:''; position:absolute; bottom:0px; right:0px; width:4px; height:4px; background:var(--p-color); border-radius:50%; border:1px solid #fff; z-index:3; }
-        .tie-line { position: absolute; width: 100%; height: 2px; background: var(--t-color); transform: rotate(-45deg); z-index: 2; }
-        .tie-text { position: absolute; font-size: 10px; font-weight: 900; color: var(--t-color); z-index: 4; text-shadow: 0 0 2px #fff, 0 0 2px #fff; }
-        .slash.R { background: linear-gradient(to bottom left, transparent 40%, var(--b-color) 40%, var(--b-color) 60%, transparent 60%); }
-        .slash.Blue { background: linear-gradient(to bottom left, transparent 40%, var(--p-color) 40%, var(--p-color) 60%, transparent 60%); }
-        .derived-roads { display: flex; gap: 4px; } .derived-col { flex: 1; min-width: 0; }
+        .sidebet-container{
+            display:flex; justify-content:center; gap:6px; flex-wrap:wrap;
+            border-top:1px dashed #333; padding-top:10px; margin-top:10px;
+        }
+        .sidebet-pill{
+            font-size:11px; font-weight:800; padding:4px 8px; border-radius:6px;
+            background:rgba(255,255,255,.05); color:var(--text-muted);
+            border:1px solid transparent; font-variant-numeric:tabular-nums; transition:.25s;
+        }
+        .sidebet-pill.active{
+            background:rgba(34,197,94,.15); color:var(--t-color);
+            border-color:var(--t-color); animation:pulse 1.5s infinite alternate;
+        }
+        .sidebet-pill.active-pair{
+            background:rgba(234,179,8,.15); color:var(--highlight);
+            border-color:var(--highlight); animation:pulse 1.5s infinite alternate;
+        }
+        @keyframes pulse{0%{transform:scale(1)}100%{transform:scale(1.05)}}
 
-        .order-select { background: #27272a; color: #fff; border: 1px solid #3f3f46; border-radius: 6px; font-size: 12px; padding: 4px 6px; font-weight: bold; outline: none; }
-        .table-layout { display: flex; gap: 8px; margin-top: 8px; }
-        .table-side { flex: 1; background: #000; border-radius: 12px; padding: 8px; border: 1px solid var(--border); }
-        .side-label { text-align: center; font-size: 11px; font-weight: 900; margin-bottom: 8px; padding: 4px 0; border-radius: 6px; }
-        .side-label.p { background: rgba(59,130,246,.15); color: var(--p-color); }
-        .side-label.b { background: rgba(239,68,68,.15); color: var(--b-color); }
-        
-        .cards-row { display: flex; gap: 4px; }
-        .playing-card { flex: 1; aspect-ratio: 2/3; background: #27272a; border-radius: 8px; border: 1px solid #3f3f46; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: #fff; cursor: pointer; transition: 0.2s; }
-        .playing-card.active { border-color: var(--highlight); background: #333; box-shadow: 0 0 10px rgba(234,179,8,.3); color: var(--highlight); transform: translateY(-2px); }
-        .playing-card.filled { background: #e4e4e7; color: #000; }
-        .playing-card.disabled { opacity: 0.2; pointer-events: none; }
+        .scroll-container{padding:12px; padding-bottom:70px}
+        .roads-card,.input-card{
+            background:var(--card); border-radius:12px; padding:10px;
+            border:1px solid var(--border); margin-bottom:12px;
+        }
+        .road-title{
+            font-size:11px; font-weight:800; color:var(--text-muted);
+            margin:4px 0; text-transform:uppercase;
+        }
+        .road-container{
+            width:100%; overflow-x:auto; background:#fff; padding:4px;
+            border-radius:6px; margin-bottom:6px; display:block; border:1px solid #e5e5ea;
+        }
+        .road-grid{display:flex; width:max-content}
+        .road-col{display:flex; flex-direction:column}
+        .cell-lg,.cell-sm{
+            position:relative; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+            background:#fff; border:.5px solid #eee;
+        }
+        .cell-lg{width:16px; height:16px}
+        .cell-sm{width:8px; height:8px}
+        .bead-dot{width:12px; height:12px; border-radius:50%; z-index:1}
+        .circle-hollow{
+            width:12px; height:12px; border-radius:50%; border:2px solid transparent;
+            z-index:1; background:transparent;
+        }
+        .circle-solid{width:5px; height:5px; border-radius:50%}
+        .slash{width:6px; height:6px}
+        .B,.R{background-color:var(--b-color); border-color:var(--b-color)}
+        .P,.Blue{background-color:var(--p-color); border-color:var(--p-color)}
+        .T{background-color:var(--t-color); border-color:var(--t-color)}
+        .has-bp::before{
+            content:''; position:absolute; top:0; left:0; width:4px; height:4px;
+            background:var(--b-color); border-radius:50%; border:1px solid #fff; z-index:3;
+        }
+        .has-pp::after{
+            content:''; position:absolute; bottom:0; right:0; width:4px; height:4px;
+            background:var(--p-color); border-radius:50%; border:1px solid #fff; z-index:3;
+        }
+        .tie-line{
+            position:absolute; width:100%; height:2px; background:var(--t-color);
+            transform:rotate(-45deg); z-index:2;
+        }
+        .tie-text{
+            position:absolute; font-size:10px; font-weight:900; color:var(--t-color);
+            z-index:4; text-shadow:0 0 2px #fff,0 0 2px #fff;
+        }
+        .slash.R{background:linear-gradient(to bottom left, transparent 40%, var(--b-color) 40%, var(--b-color) 60%, transparent 60%)}
+        .slash.Blue{background:linear-gradient(to bottom left, transparent 40%, var(--p-color) 40%, var(--p-color) 60%, transparent 60%)}
+        .derived-roads{display:flex; gap:4px}
+        .derived-col{flex:1; min-width:0}
 
-        .keypad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
-        .key { background: #27272a; border-radius: 8px; padding: 10px 0; text-align: center; border: 1px solid #3f3f46; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;}
-        .key:active { background: #3f3f46; transform: scale(0.95); }
-        .key-val { font-size: 18px; font-weight: 900; }
-        .key-count { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-        .key.action-clear { grid-column: span 2; color: var(--warning); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
-        
-        .submit-btn { width: 100%; padding: 16px; background: #27272a; color: #777; font-size: 16px; font-weight: 900; border: none; border-radius: 12px; margin-top: 12px; transition: 0.3s; }
-        .submit-btn.ready { background: var(--ok); color: #000; box-shadow: 0 0 15px rgba(22,163,74,.4); cursor: pointer; }
+        .order-select{
+            background:#27272a; color:#fff; border:1px solid #3f3f46;
+            border-radius:6px; font-size:12px; padding:4px 6px; font-weight:bold; outline:none;
+        }
+        .table-layout{display:flex; gap:8px; margin-top:8px}
+        .table-side{
+            flex:1; background:#000; border-radius:12px; padding:8px; border:1px solid var(--border);
+        }
+        .side-label{text-align:center; font-size:11px; font-weight:900; margin-bottom:8px; padding:4px 0; border-radius:6px}
+        .side-label.p{background:rgba(59,130,246,.15); color:var(--p-color)}
+        .side-label.b{background:rgba(239,68,68,.15); color:var(--b-color)}
 
-        .fab-btn { position: fixed; bottom: 20px; right: 20px; background: var(--highlight); color: #000; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; z-index: 900; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; }
-        .database-panel { position: fixed; bottom: -100%; left: 0; width: 100%; height: 90vh; background: #111; z-index: 2000; border-radius: 20px 20px 0 0; transition: 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); padding: 20px; overflow-y: auto;}
-        .database-panel.open { bottom: 0; }
-        .db-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .db-title { font-size: 18px; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 8px;}
-        .db-close { background: none; border: none; color: var(--text-muted); font-size: 30px; cursor: pointer; line-height: 1; }
-        .db-section { background: #1a1a1a; border-radius: 12px; padding: 14px; margin-bottom: 14px; border: 1px solid #333; }
-        .db-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; font-weight: 700; }
-        .db-stat-item { display: flex; justify-content: space-between; padding: 8px; background: #111; border-radius: 8px; gap: 8px; }
-        .param-input { background: #27272a; border: 1px solid #3f3f46; color: #fff; border-radius: 6px; width: 60px; text-align: center; font-size: 12px; padding: 4px; }
-        .lab-btn { background: var(--lab); border: none; color: #fff; padding: 12px; font-size: 14px; margin-bottom: 10px; width: 100%; border-radius: 8px; font-weight: 900; cursor: pointer; box-shadow: 0 0 10px rgba(14,165,233,0.3);}
-        .lab-btn:active { transform: scale(0.98); }
+        .cards-row{display:flex; gap:4px}
+        .playing-card{
+            flex:1; aspect-ratio:2/3; background:#27272a; border-radius:8px; border:1px solid #3f3f46;
+            display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:#fff;
+            cursor:pointer; transition:.2s;
+        }
+        .playing-card.active{
+            border-color:var(--highlight); background:#333; box-shadow:0 0 10px rgba(234,179,8,.3);
+            color:var(--highlight); transform:translateY(-2px);
+        }
+        .playing-card.filled{background:#e4e4e7; color:#000}
+        .playing-card.disabled{opacity:.2; pointer-events:none}
+
+        .keypad{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-top:12px}
+        .key{
+            background:#27272a; border-radius:8px; padding:10px 0; text-align:center;
+            border:1px solid #3f3f46; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent;
+        }
+        .key:active{background:#3f3f46; transform:scale(.95)}
+        .key-val{font-size:18px; font-weight:900}
+        .key-count{font-size:10px; color:var(--text-muted); margin-top:2px}
+        .key.action-clear{
+            grid-column:span 2; color:var(--warning); display:flex; align-items:center; justify-content:center;
+            font-size:14px; font-weight:800;
+        }
+
+        .submit-btn{
+            width:100%; padding:16px; background:#27272a; color:#777;
+            font-size:16px; font-weight:900; border:none; border-radius:12px; margin-top:12px; transition:.3s;
+        }
+        .submit-btn.ready{
+            background:var(--ok); color:#000; box-shadow:0 0 15px rgba(22,163,74,.4); cursor:pointer;
+        }
+
+        .fab-btn{
+            position:fixed; bottom:20px; right:20px; background:var(--highlight); color:#000;
+            width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+            font-size:22px; z-index:900; border:none; box-shadow:0 4px 15px rgba(0,0,0,.5); cursor:pointer;
+        }
+        .database-panel{
+            position:fixed; bottom:-100%; left:0; width:100%; height:90vh; background:#111; z-index:2000;
+            border-radius:20px 20px 0 0; transition:.4s cubic-bezier(.18,.89,.32,1.28); padding:20px; overflow-y:auto;
+        }
+        .database-panel.open{bottom:0}
+        .db-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #333; padding-bottom:10px}
+        .db-title{font-size:18px; font-weight:900; color:#fff; display:flex; align-items:center; gap:8px}
+        .db-close{background:none; border:none; color:var(--text-muted); font-size:30px; cursor:pointer; line-height:1}
+        .db-section{background:#1a1a1a; border-radius:12px; padding:14px; margin-bottom:14px; border:1px solid #333}
+        .db-stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px; font-weight:700}
+        .db-stat-item{display:flex; justify-content:space-between; padding:8px; background:#111; border-radius:8px; gap:8px}
+        .param-input{
+            background:#27272a; border:1px solid #3f3f46; color:#fff; border-radius:6px;
+            width:60px; text-align:center; font-size:12px; padding:4px;
+        }
+        .lab-btn{
+            background:var(--lab); border:none; color:#fff; padding:12px; font-size:14px; margin-bottom:10px;
+            width:100%; border-radius:8px; font-weight:900; cursor:pointer; box-shadow:0 0 10px rgba(14,165,233,.3);
+        }
+        .lab-btn:active{transform:scale(.98)}
     </style>
 </head>
 <body>
     <div class="sticky-hud">
         <div class="hud-header">
             <div class="hud-stats">
-                <span class="version-badge">v35 Walk-Forward</span>
+                <span class="version-badge">v56 Deterministic</span>
                 <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
                 <span>局:<span class="val" id="hdrRound">0</span></span>
             </div>
@@ -164,7 +278,9 @@
                     <option value="PBPB">閒莊閒莊 (國際標準)</option>
                     <option value="PPBB">閒閒莊莊 (區塊派發)</option>
                 </select>
-                <label style="font-size:12px; color:var(--text-muted); font-weight:800;"><input type="checkbox" id="autoGuide" checked onchange="evaluateDrawRules()"> 🛡️ 智慧防呆</label>
+                <label style="font-size:12px; color:var(--text-muted); font-weight:800;">
+                    <input type="checkbox" id="autoGuide" checked onchange="evaluateDrawRules()"> 🛡️ 智慧防呆
+                </label>
             </div>
             <div class="table-layout">
                 <div class="table-side">
@@ -190,25 +306,25 @@
     </div>
 
     <button class="fab-btn" onclick="toggleDB()">⚙️</button>
+
     <div class="database-panel" id="dbPanel">
         <div class="db-header">
-            <div class="db-title">實驗室控制台 <span class="version-badge">v35 True OOS</span></div>
+            <div class="db-title">實驗室控制台 <span class="version-badge">v56</span></div>
             <button class="db-close" onclick="toggleDB()">×</button>
         </div>
-        
-        <div class="db-section" style="border-color: var(--lab);">
-            <h3 style="color:var(--lab); margin-top:0;">🔬 執行量化實驗室 (The Quant Lab)</h3>
-            <button class="lab-btn" onclick="invokeQuantLab()">🧬 啟動嚴格 Walk-Forward 樣本外驗證</button>
-            <div style="font-size:11px; color:#888; line-height: 1.4;">
-                執行時間保序的嚴格 OOS 回測。測試流程包含：<br>
-                1. <b>Rolling Evaluation</b> (歷史靴無穿越評測)<br>
-                2. <b>Final Holdout</b> (最後20%完全獨立測試)<br>
-                💡 <b>零穿越聲明：</b> 實驗室將完全遮蔽當前全域大數據，強制從 `audited rawShoes` 零起始，透過 Walk-Forward 逐手累積歷史權重，保證評估結果絕對純潔。
+
+        <div class="db-section" style="border-color:var(--lab);">
+            <h3 style="color:var(--lab); margin-top:0;">🔬 執行量化實驗室</h3>
+            <button class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
+            <div style="font-size:11px; color:#888; line-height:1.4;">
+                嚴格 Expanding-History Walk-Forward 驗證。<br>
+                1. Rolling Evaluation<br>
+                2. Final Holdout
             </div>
         </div>
 
-        <div class="db-section" style="border-color: var(--highlight);">
-            <h3 style="color:var(--highlight); margin-top:0;">🤖 部署策略設定 (Deployed Policy)</h3>
+        <div class="db-section" style="border-color:var(--highlight);">
+            <h3 style="color:var(--highlight); margin-top:0;">🤖 部署策略設定</h3>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span style="font-size:12px; color:var(--text-muted); font-weight:800;">期望值下注閥值 (Tau)</span>
                 <input type="number" id="cfgM" class="param-input" step="0.001" onchange="saveConfig()">
@@ -218,25 +334,23 @@
                 <input type="number" id="cfgS" class="param-input" step="0.01" onchange="saveConfig()">
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12px; color:var(--text-muted); font-weight:800;">ECE Bin 數量 (實驗室用)</span>
-                <input type="number" id="cfgBins" class="param-input" value="10" step="1" min="5" max="20" onchange="saveConfig()">
-            </div>
-            <div style="font-size:10px; color:var(--text-muted); margin-top: 8px;">
-                * 註：當前 Live 畫面與實驗室，皆統一套用上方 Tau 值作為唯一決策標準。
+                <span style="font-size:12px; color:var(--text-muted); font-weight:800;">ECE Bin 數量</span>
+                <input type="number" id="cfgBins" class="param-input" step="1" min="5" max="20" onchange="saveConfig()">
             </div>
         </div>
 
-        <div class="db-section" style="border-color: var(--p-color);">
-            <h3>🎯 舊版實時戰況 (Legacy PnL)</h3>
+        <div class="db-section" style="border-color:var(--p-color);">
+            <h3>🎯 本靴戰況</h3>
             <div class="db-stat-grid" id="shoeStats"></div>
         </div>
+
         <div class="db-section">
-            <h3>📈 舊版演算法回測 (Legacy DB)</h3>
+            <h3>📈 全局統計</h3>
             <div class="db-stat-grid" id="globalStats"></div>
         </div>
-        
+
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
-            <button class="hud-btn" style="background:#2563eb; color:#fff; border:none;" onclick="exportDB()">📤 匯出資料庫 (JSON)</button>
+            <button class="hud-btn" style="background:#2563eb; color:#fff; border:none;" onclick="exportDB()">📤 匯出資料庫</button>
             <button class="hud-btn" style="background:#16a34a; color:#fff; border:none;" onclick="document.getElementById('impFile').click()">📥 匯入資料庫</button>
             <input type="file" id="impFile" style="display:none" onchange="importDB(event)">
             <button class="hud-btn" style="background:var(--danger); color:#fff; border:none; grid-column:span 2;" onclick="resetAll()">⚠️ 徹底清除所有數據</button>
@@ -244,368 +358,444 @@
     </div>
 
 <script>
-/* =========================================================
-   📜 系統憲法與歷史紀錄 (System Constitution & History)
-   
-   【最高指令】
-   使用者要求：「唯一要求就是提高勝率」。
-   架構師回應：在百家樂的負期望值 (-1.06%) 物理限制下，提高勝率的唯一數學解方是「嚴格的拒答機制 (PASS/Abstention)」。
-   必須放棄每局都猜的幻想，只在真實物理特徵 (如剩餘牌庫 True Count) 使條件期望值 (Net EV) 轉正時才出手。
+/* =========================
+   v56 Deterministic Seal
+   1) 補回缺失函式
+   2) validateOpenShoeConsistency 顯式吃 basePatternDB
+   3) 降級模式 UI 與底層一致
+========================= */
 
-   【v35 終極對齊：The True Walk-Forward OOS】
-   * 痛點修正：前版實驗室在回放歷史牌局時，錯誤地調用了「當前時刻」的全域 BigData，引發致命的 Future Information Leakage (未來數據穿越)。
-   * 架構重鑄：
-     - 拔除虛假宣稱：實驗室正式正名為「嚴格 Walk-Forward 樣本外驗證」。
-     - 遮蔽全域狀態：回測時強制遮蔽外部 BigData，改為在記憶體中建立 WalkForwardDB。
-     - 動態累積：實驗室會「逐手」重播歷史 rawShoes，並僅使用「t-1 以前」打過的鞋靴來動態推導大數據權重，保證 100% 無穿越的真實 OOS 評估。
-========================================================= */
-const DB_K = 'bac_db_v35';
-const LAB_K = 'bac_lab_v35';
-const ST_K = 'bac_st_v35';
-const CF_K = 'bac_cfg_v35';
-const LEGACY_KEYS = ['v34', 'v33', 'v32', 'v31_14', 'v31_13', 'v31_12', 'v31_11', 'v31_10', 'v31_9', 'v31_8'];
+const DB_K = 'bac_db_v56';
+const LAB_K = 'bac_lab_v56';
+const ST_K = 'bac_st_v56';
+const CF_K = 'bac_cfg_v56';
+const LEGACY_KEYS = ['v55','v54','v53','v52','v51','v50','v49','v48','v47','v46','v45','v44','v43','v42','v41','v40'];
 const SIDEBET_MIN_N = 12;
 const WARMUP_HANDS = 15;
+const PATTERN_CAP = 50000;
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version: 'v35', rawShoes: [], currentOpenShoe: null, experiments: [] };
+let LabStore = { schema_version:'v56', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
-let Config = { m: 0.005, s: 0.08, nBins: 10 };
+let Config = { m:0.005, s:0.08, nBins:10 };
 let bSt = null, bDB = null, bLab = null;
 let cOrder = ['p1','b1','p2','b2','p3','b3'];
 let cIdx = 0;
 
-const countWeights = {1:1, 2:1, 3:2, 4:2, 5:1, 6:-1, 7:-2, 8:-2, 9:-2, 10:0, 11:0, 12:0, 13:0};
-const NAIVE_PRIORS = { B: 0.4586, P: 0.4462, T: 0.0952 };
-const PAYOUTS = { B: 0.95, P: 1.0, T: 8.0 };
+const countWeights = {1:1,2:1,3:2,4:2,5:1,6:-1,7:-2,8:-2,9:-2,10:0,11:0,12:0,13:0};
+const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
+const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
-function readStorageWithFallback(primaryPrefix) {
-    let bestValue = localStorage.getItem(`${primaryPrefix}v35`);
-    let bestKey = `${primaryPrefix}v35`;
-    
-    if (bestValue === null) {
-        for (const suffix of LEGACY_KEYS) {
-            const k = `${primaryPrefix}${suffix}`;
-            const v = localStorage.getItem(k);
-            if (v !== null) {
-                bestValue = v;
-                bestKey = k;
-                break;
+const MODEL_REGISTRY = {
+    expert_wf_v24_detseal: function(){
+        return {
+            id:'expert_wf_v24_detseal',
+            basePriors: NAIVE_PRIORS,
+            fit:function(){ this.basePriors = NAIVE_PRIORS; return this; },
+            predict:function(features, externalState){
+                let pB = this.basePriors.B;
+                let pP = this.basePriors.P;
+
+                const path = features.F_Path;
+                if (path){
+                    let boostB = 0, boostP = 0;
+                    if (path.trend_len >= 3){
+                        if (path.trend_side === 'B') boostB += 0.02;
+                        if (path.trend_side === 'P') boostP += 0.02;
+                    }
+                    if (path.ask_B_red >= 2) boostB += 0.01;
+                    if (path.ask_P_red >= 2) boostP += 0.01;
+                    if (path.recent_shoe_bias === 'B') boostB += 0.005;
+                    if (path.recent_shoe_bias === 'P') boostP += 0.005;
+                    pB += boostB;
+                    pP += boostP;
+                }
+
+                if (externalState && externalState.has_pattern && externalState.pattern_N >= 10){
+                    const dataB = externalState.pattern_B / externalState.pattern_N;
+                    const dataP = externalState.pattern_P / externalState.pattern_N;
+                    const weight = Math.min(0.15, externalState.pattern_N * 0.005);
+                    pB = pB * (1 - weight) + dataB * weight;
+                    pP = pP * (1 - weight) + dataP * weight;
+                }
+
+                const tc = features.F_Comp
+                    ? features.F_Comp.running_count / Math.max(0.5, (features.F_Comp.remain_cards || 416) / 52)
+                    : 0;
+
+                pB -= tc * 0.0005;
+                pP += tc * 0.0005;
+
+                pB = Math.max(0, pB);
+                pP = Math.max(0, pP);
+
+                const sum = pB + pP + this.basePriors.T;
+                return { B:pB/sum, P:pP/sum, T:this.basePriors.T/sum };
             }
-        }
+        };
     }
-    return { key: bestKey, value: bestValue };
+};
+
+function getModelById(id){
+    const fn = MODEL_REGISTRY[id];
+    if (!fn) return null;
+    return fn().fit([]);
 }
 
-function migrateToCurrentKey(sourceKey, targetKey, rawValue) {
-    if (sourceKey && sourceKey !== targetKey && rawValue !== null) {
+function getDeployedPolicy(){
+    return {
+        model: getModelById('expert_wf_v24_detseal'),
+        tau: Config.m,
+        options: { allowTieBet:false }
+    };
+}
+
+function deepCopy(x){ return JSON.parse(JSON.stringify(x)); }
+
+function readStorageWithFallback(primaryPrefix){
+    let bestValue = localStorage.getItem(primaryPrefix + 'v56');
+    let bestKey = primaryPrefix + 'v56';
+    if (bestValue === null){
+        for (let i=0; i<LEGACY_KEYS.length; i++){
+            const k = primaryPrefix + LEGACY_KEYS[i];
+            const v = localStorage.getItem(k);
+            if (v !== null){ bestValue = v; bestKey = k; break; }
+        }
+    }
+    return { key:bestKey, value:bestValue };
+}
+
+function migrateToCurrentKey(sourceKey, targetKey, rawValue){
+    if (sourceKey && sourceKey !== targetKey && rawValue !== null){
         localStorage.setItem(targetKey, rawValue);
     }
 }
 
-function isValidConfig(c) {
-    return c && typeof c === 'object' && typeof c.m === 'number' && typeof c.s === 'number' && typeof c.nBins === 'number';
-}
-
-function normalizeConfig(c) {
-    let m = Number(c?.m); m = isNaN(m) ? 0.005 : Math.max(-1, Math.min(1, m));
-    let s = Number(c?.s); s = isNaN(s) ? 0.08 : Math.max(0, Math.min(1, s));
-    let nBins = parseInt(c?.nBins, 10); nBins = isNaN(nBins) ? 10 : Math.max(5, Math.min(20, nBins));
-    return { m, s, nBins };
-}
-
-/* =========================================================
-   🚨 v35: The True Walk-Forward Hybrid Model
-========================================================= */
-const Hybrid_WalkForward_Model = {
-    id: 'hybrid_wf_v4',
-    fit: function() { this.basePriors = NAIVE_PRIORS; return this; },
-    predict: function(features, externalState) {
-        const tc = features.F_Comp ? features.F_Comp.running_count / Math.max(0.5, (features.F_Comp.remain_cards || 416) / 52) : 0;
-        const shift_tc = tc * 0.0005;
-
-        let pB = this.basePriors.B - shift_tc;
-        let pP = this.basePriors.P + shift_tc;
-        let pT = this.basePriors.T;
-
-        // 1. 動態大數據基底 (使用外部傳入的 Walk-Forward 狀態)
-        if (externalState && externalState.has_pattern && externalState.pattern_N >= 3) {
-            const data_B_prob = externalState.pattern_B / (externalState.pattern_B + externalState.pattern_P || 1);
-            const data_P_prob = externalState.pattern_P / (externalState.pattern_B + externalState.pattern_P || 1);
-            
-            let weight = 0.1; 
-            if (externalState.pattern_N >= 12) weight = 0.3;
-            else if (externalState.pattern_N >= 6) weight = 0.2;
-            
-            pB = pB * (1 - weight) + data_B_prob * weight;
-            pP = pP * (1 - weight) + data_P_prob * weight;
+function migrateOutcomeContract(hand){
+    if (hand && hand.outcome){
+        if (hand.outcome.w && hand.outcome.winner && hand.outcome.w !== hand.outcome.winner){
+            hand.outcome.winner = 'TAMPERED';
+        }else if (hand.outcome.w && !hand.outcome.winner){
+            hand.outcome.winner = hand.outcome.w;
+            delete hand.outcome.w;
         }
-
-        // 2. F_Path_Reconstructable 物理路單特徵
-        const path = features.F_Path;
-        if (path) {
-            if (path.trend_side && path.derived_R_count !== path.derived_B_count) {
-                const trend_multiplier = path.trend_len >= 3 ? 1.5 : 1.0;
-                
-                if (path.derived_R_count > path.derived_B_count) {
-                    const boost = 0.002 * trend_multiplier * (path.derived_R_count - path.derived_B_count);
-                    if (path.trend_side === 'B') { pB += boost; pP -= boost; }
-                    else { pP += boost; pB -= boost; }
-                } 
-                else if (path.derived_B_count > path.derived_R_count) {
-                    const boost = 0.002 * trend_multiplier * (path.derived_B_count - path.derived_R_count);
-                    if (path.trend_side === 'B') { pP += boost; pB -= boost; }
-                    else { pB += boost; pP -= boost; }
-                }
-            }
-            
-            if (path.recent_shoe_bias) {
-                if (path.recent_shoe_bias === 'B') pB += 0.001;
-                else if (path.recent_shoe_bias === 'P') pP += 0.001;
-            }
-        }
-
-        pB = Math.max(0, pB);
-        pP = Math.max(0, pP);
-        const sum = pB + pP + pT;
-        return { B: pB / sum, P: pP / sum, T: pT / sum };
     }
-};
-
-function getDeployedPolicy() {
-    return {
-        model: Object.create(Hybrid_WalkForward_Model).fit([]),
-        tau: Config.m,
-        options: { allowTieBet: false }
-    };
 }
 
-function generateShoeId() { return 'shoe_' + Date.now() + '_' + Math.floor(Math.random() * 1000); }
+function normalizeConfig(c){
+    let m = Number(c && c.m); m = isNaN(m) ? 0.005 : Math.max(-1, Math.min(1, m));
+    let s = Number(c && c.s); s = isNaN(s) ? 0.08 : Math.max(0, Math.min(1, s));
+    let nBins = parseInt(c && c.nBins, 10); nBins = isNaN(nBins) ? 10 : Math.max(5, Math.min(20, nBins));
+    return { m:m, s:s, nBins:nBins };
+}
 
-function createInitialState() {
+function generateShoeId(){
+    return 'shoe_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+}
+
+function createInitialState(){
     const newState = {
-        shoeId: Date.now(), deck: {}, history: [], runningCount: 0,
+        shoeId: Date.now(),
+        deck: {},
+        history: [],
+        runningCount: 0,
         shoePerf: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0},
         stats: { ev:{p:0,h:0,r:[]}, trend:{p:0,h:0,r:[]}, derived:{p:0,h:0,r:[]}, ml:{p:0,h:0,r:[]}, shoe:{p:0,h:0,r:[]}, power:{p:0,h:0,r:[]} },
         shadow: { ev:null, trend:null, derived:null, ml:null, shoe:null, power:null },
-        lastRecSide: null, lastSideBets: { tie: false, bp: false, pp: false }
+        lastRecSide: null,
+        lastSideBets: { tie:false, bp:false, pp:false },
+        isLegacyPartial: false
     };
-    for (let i = 1; i <= 13; i++) newState.deck[i] = 32;
+    for (let i=1; i<=13; i++) newState.deck[i] = 32;
     return newState;
 }
 
-function resetShoeVarsInit() {
-    S = createInitialState();
-    return S;
-}
+function resetShoeVarsInit(){ S = createInitialState(); return S; }
 
-function openNewShoe() {
+function openNewShoe(){
     if (LabStore.currentOpenShoe && LabStore.currentOpenShoe.hands.length > 0) closeCurrentShoe();
     LabStore.currentOpenShoe = {
-        shoe_id: generateShoeId(), started_at: Date.now(), ended_at: null, status: 'open',
-        meta: { deck_size_start: 416, order_mode: document.getElementById('orderSel')?.value || 'PBPB', source: 'live_input' },
+        shoe_id: generateShoeId(),
+        started_at: Date.now(),
+        ended_at: null,
+        status: 'open',
+        meta: {
+            deck_size_start: 416,
+            order_mode: document.getElementById('orderSel') ? document.getElementById('orderSel').value : 'PBPB',
+            source: 'live_input'
+        },
         hands: []
     };
 }
 
-function closeCurrentShoe() {
-    if (LabStore.currentOpenShoe && LabStore.currentOpenShoe.status === 'open') {
+function closeCurrentShoe(){
+    if (LabStore.currentOpenShoe && LabStore.currentOpenShoe.status === 'open'){
         LabStore.currentOpenShoe.status = 'closed';
         LabStore.currentOpenShoe.ended_at = Date.now();
-        if (LabStore.currentOpenShoe.hands.length > 0) {
-            LabStore.rawShoes.push(JSON.parse(JSON.stringify(LabStore.currentOpenShoe)));
+        if (LabStore.currentOpenShoe.hands.length > 0){
+            LabStore.rawShoes.push(deepCopy(LabStore.currentOpenShoe));
         }
         LabStore.currentOpenShoe = null;
     }
 }
 
-function captureObservation(state, features, livePrediction, inputs) {
+function captureObservation(state, features, livePrediction, inputs, sideBetsSnapshot){
     if (!LabStore.currentOpenShoe) openNewShoe();
     return {
         hand_index: LabStore.currentOpenShoe.hands.length + 1,
-        pre_state: { remaining_deck: JSON.parse(JSON.stringify(state.deck)), running_count: state.runningCount, history_len: state.history.length },
-        features: JSON.parse(JSON.stringify(features)),
-        live_prediction: JSON.parse(JSON.stringify(livePrediction)),
-        input: { cards: JSON.parse(JSON.stringify(inputs)) },
-        audit: { created_at: Date.now(), spec_version: 'v35' }
+        pre_state: {
+            remaining_deck: deepCopy(state.deck),
+            running_count: state.runningCount,
+            history_len: state.history.length
+        },
+        features: deepCopy(features),
+        live_prediction: deepCopy(livePrediction),
+        policy_snapshot: {
+            model_id: livePrediction.model_id,
+            tau: livePrediction.tau,
+            s: Config.s,
+            main_decision: livePrediction.decision,
+            recommend_tie: !!sideBetsSnapshot.tie,
+            recommend_bp: !!sideBetsSnapshot.bp,
+            recommend_pp: !!sideBetsSnapshot.pp,
+            is_warmup: !!livePrediction.isWarmup
+        },
+        input: { cards: deepCopy(inputs) },
+        audit: { created_at: Date.now(), spec_version: 'v56' }
     };
 }
 
-function commitObservation(observation, outcome) {
+function commitObservation(observation, outcome){
     if (!LabStore.currentOpenShoe) return;
     observation.outcome = outcome;
     LabStore.currentOpenShoe.hands.push(observation);
 }
 
-function isValidDeck(deck) {
+function isValidDeck(deck){
     if (!deck || typeof deck !== 'object') return false;
-    for (let i = 1; i <= 13; i++) {
+    for (let i=1; i<=13; i++){
         if (typeof deck[i] !== 'number' || !Number.isFinite(deck[i]) || deck[i] < 0 || deck[i] > 32) return false;
     }
     return true;
 }
 
-function validateOpenShoeConsistency(targetLabStore, currentState) {
-    if (!targetLabStore.currentOpenShoe) return;
-    if (!currentState || !Array.isArray(currentState.history)) {
-        targetLabStore.currentOpenShoe = null; return;
+function derivePhysicalRunningCount(deck){
+    let rc = 0;
+    for (let i=1; i<=13; i++){
+        rc += (32 - deck[i]) * (countWeights[i] || 0);
     }
-    const oShoe = targetLabStore.currentOpenShoe;
-    
-    if (oShoe.status !== 'open' || oShoe.hands.length !== currentState.history.length) {
-        console.warn("Audit Failure: Open Shoe length or status mismatch. Dropping.");
-        targetLabStore.currentOpenShoe = null; return;
-    }
-    
-    if (oShoe.hands.length > 0) {
-        const lastHand = oShoe.hands[oShoe.hands.length - 1];
-        const lastStateHist = currentState.history[currentState.history.length - 1];
-        
-        if (lastHand.hand_index !== oShoe.hands.length || 
-            lastHand.pre_state.history_len !== (oShoe.hands.length - 1) ||
-            lastHand.outcome.winner !== lastStateHist.w ||
-            lastHand.outcome.pPt !== lastStateHist.pPt ||
-            lastHand.outcome.bPt !== lastStateHist.bPt ||
-            lastHand.outcome.bp !== lastStateHist.bp ||
-            lastHand.outcome.pp !== lastStateHist.pp) {
-            console.warn("Audit Failure: Open Shoe content mismatch (Index/Outcome). Dropping.");
-            targetLabStore.currentOpenShoe = null; return;
-        }
-
-        let expectedRunningCount = lastHand.pre_state.running_count;
-        const validSlots = ['p1','p2','p3','b1','b2','b3'];
-        let derivedDeck = JSON.parse(JSON.stringify(lastHand.pre_state.remaining_deck));
-        
-        if(lastHand.input && lastHand.input.cards) {
-             for(const key of validSlots) {
-                 const rank = lastHand.input.cards[key];
-                 if(rank !== null && rank !== undefined && countWeights[rank] !== undefined) {
-                     expectedRunningCount += countWeights[rank];
-                     if (derivedDeck[rank] <= 0) {
-                         console.warn(`Audit Failure: Attempt to consume non-existent card ${rank}. Dropping.`);
-                         targetLabStore.currentOpenShoe = null; return;
-                     }
-                     derivedDeck[rank] -= 1;
-                 }
-             }
-        }
-        
-        if (expectedRunningCount !== currentState.runningCount) {
-             console.warn("Audit Failure: Running Count derivation mismatch. Dropping.");
-             targetLabStore.currentOpenShoe = null; return;
-        }
-
-        for (let i = 1; i <= 13; i++) {
-            if (derivedDeck[i] !== currentState.deck[i]) {
-                 console.warn(`Audit Failure: Deck Vector mismatch at rank ${i}. Dropping.`);
-                 targetLabStore.currentOpenShoe = null; return;
-            }
-        }
-    }
+    return rc;
 }
 
-function auditLabStore(targetLabStore) {
-    const validShoes = [];
-    const seenShoeIds = new Set();
-    const validSlots = ['p1','p2','p3','b1','b2','b3'];
-    
-    for (const shoe of targetLabStore.rawShoes || []) {
-        if (!shoe || typeof shoe !== 'object') continue;
-        if (shoe.status !== 'closed' || !Array.isArray(shoe.hands) || shoe.hands.length === 0) continue;
-        if (!shoe.shoe_id || seenShoeIds.has(shoe.shoe_id)) continue;
-
-        let isShoeValid = true;
-        let expectedIndex = 1;
-        let runningDeck = null;
-        let runningCount = 0;
-        let simHistory = []; 
-
-        for (let i = 0; i < shoe.hands.length; i++) {
-            const hand = shoe.hands[i];
-            
-            if (!hand || !hand.live_prediction || !hand.live_prediction.probs || !hand.outcome || !hand.input || !hand.input.cards) { isShoeValid = false; break; }
-            if (hand.hand_index !== expectedIndex) { isShoeValid = false; break; }
-            if (!['B','P','T'].includes(hand.outcome.winner)) { isShoeValid = false; break; }
-            if (!hand.features || !hand.features.F_Comp || typeof hand.features.F_Comp.running_count !== 'number' || !hand.features.F_Path) { isShoeValid = false; break; }
-            
-            const pSum = Number(hand.live_prediction.probs.B) + Number(hand.live_prediction.probs.P) + Number(hand.live_prediction.probs.T);
-            if (!Number.isFinite(pSum) || Math.abs(pSum - 1.0) > 0.001) { isShoeValid = false; break; }
-
-            if (i === 0) {
-                if (!isValidDeck(hand.pre_state.remaining_deck)) { isShoeValid = false; break; }
-                runningDeck = JSON.parse(JSON.stringify(hand.pre_state.remaining_deck));
-                runningCount = hand.pre_state.running_count;
-                simHistory = [];
-            } else {
-                if (hand.pre_state.running_count !== runningCount) { isShoeValid = false; break; }
-                for (let r = 1; r <= 13; r++) {
-                    if (hand.pre_state.remaining_deck[r] !== runningDeck[r]) { isShoeValid = false; break; }
-                }
-            }
-            
-            const expectedPathFeatures = extractPathFeaturesCore(simHistory);
-            const recordedPath = hand.features.F_Path;
-            if (recordedPath.history_len !== expectedPathFeatures.history_len || 
-                recordedPath.trend_side !== expectedPathFeatures.trend_side ||
-                recordedPath.trend_len !== expectedPathFeatures.trend_len ||
-                recordedPath.recent_shoe_bias !== expectedPathFeatures.recent_shoe_bias ||
-                recordedPath.derived_R_count !== expectedPathFeatures.derived_R_count ||
-                recordedPath.derived_B_count !== expectedPathFeatures.derived_B_count) {
-                console.warn(`Audit Failure: F_Path physical mismatch at hand ${expectedIndex}. Dropping Shoe.`);
-                isShoeValid = false; break;    
-            }
-
-            let pPts = 0, bPts = 0;
-            const baccaratValue = (r) => r >= 10 ? 0 : r;
-            
-            for (const key of validSlots) {
-                const rank = hand.input.cards[key];
-                if (rank !== null && rank !== undefined && countWeights[rank] !== undefined) {
-                    if (runningDeck[rank] <= 0) { isShoeValid = false; break; } 
-                    runningDeck[rank] -= 1;
-                    runningCount += countWeights[rank];
-                    if (key.startsWith('p')) pPts += baccaratValue(rank);
-                    if (key.startsWith('b')) bPts += baccaratValue(rank);
-                }
-            }
-            if (!isShoeValid) break;
-
-            const pFinal = pPts % 10;
-            const bFinal = bPts % 10;
-            const expectedWinner = pFinal > bFinal ? 'P' : (bFinal > pFinal ? 'B' : 'T');
-            const bp = (hand.input.cards.b1 === hand.input.cards.b2 && hand.input.cards.b1 != null);
-            const pp = (hand.input.cards.p1 === hand.input.cards.p2 && hand.input.cards.p1 != null);
-            
-            if (hand.outcome.winner !== expectedWinner || hand.outcome.pPt !== pFinal || hand.outcome.bPt !== bFinal) {
-                isShoeValid = false; break;
-            }
-            
-            simHistory.push({ w: expectedWinner, pPt: pFinal, bPt: bFinal, bp, pp });
-            expectedIndex++;
-        }
-        if (isShoeValid) {
-            validShoes.push(shoe);
-            seenShoeIds.add(shoe.shoe_id);
-        }
-    }
-    targetLabStore.rawShoes = validShoes.sort((a, b) => (a.started_at || 0) - (b.started_at || 0));
+function safeCountLive(v, d){
+    if (d === undefined) d = 0;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : d;
 }
 
-function normalizeProbs(raw, strict = true) {
-    const vals = [raw?.B, raw?.P, raw?.T].map(Number);
-    if (vals.some(v => !Number.isFinite(v) || v < 0)) {
+function canonicalPatternLive(key, raw){
+    if (!/^(B|P)(,(B|P)){2}$/.test(key)) return null;
+    if (!raw || typeof raw !== 'object') return null;
+    const B = safeCountLive(raw.B);
+    const P = safeCountLive(raw.P);
+    const T = safeCountLive(raw.T);
+    const N = B + P + T;
+    if (N <= 0 || N > PATTERN_CAP) return null;
+    const BP = Math.min(safeCountLive(raw.BP), N);
+    const PP = Math.min(safeCountLive(raw.PP), N);
+    return { B:B, P:P, T:T, BP:BP, PP:PP, N:N };
+}
+
+function normalizeBigData(db){
+    const safe = {
+        totalHands: 0,
+        patterns: {},
+        acc: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0},
+        isPolluted: false
+    };
+    if (!db || typeof db !== 'object') return safe;
+    let sumN = 0;
+    if (db.patterns && typeof db.patterns === 'object'){
+        const keys = Object.keys(db.patterns);
+        for (let i=0; i<keys.length; i++){
+            const key = keys[i];
+            const cp = canonicalPatternLive(key, db.patterns[key]);
+            if (!cp){ safe.isPolluted = true; continue; }
+            sumN += cp.N;
+            if (sumN > PATTERN_CAP){
+                return {
+                    totalHands:0,
+                    patterns:{},
+                    acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0},
+                    isPolluted:true
+                };
+            }
+            safe.patterns[key] = cp;
+        }
+    }
+    safe.totalHands = sumN;
+    return safe;
+}
+
+function updatePatternDB(dbWrapper, key, w, bp, pp, cap){
+    if (cap === undefined) cap = PATTERN_CAP;
+    if (!key || dbWrapper.totalHands >= cap) return;
+    let cp = dbWrapper.patterns[key] || { B:0, P:0, T:0, BP:0, PP:0, N:0 };
+
+    if (w === 'B') cp.B += 1;
+    else if (w === 'P') cp.P += 1;
+    else if (w === 'T') cp.T += 1;
+
+    if (bp) cp.BP += 1;
+    if (pp) cp.PP += 1;
+
+    cp.N += 1;
+    cp.BP = Math.min(cp.BP, cp.N);
+    cp.PP = Math.min(cp.PP, cp.N);
+
+    dbWrapper.patterns[key] = cp;
+    dbWrapper.totalHands += 1;
+}
+
+function recalcDBStats(db){
+    db.acc = {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0};
+    let sumN = 0;
+    const validPatterns = {};
+    let polluted = false;
+
+    const keys = Object.keys(db.patterns || {});
+    for (let i=0; i<keys.length; i++){
+        const key = keys[i];
+        const cp = canonicalPatternLive(key, db.patterns[key]);
+        if (!cp){ polluted = true; continue; }
+
+        sumN += cp.N;
+        if (sumN > PATTERN_CAP){
+            db.patterns = {};
+            db.totalHands = 0;
+            db.acc = {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0};
+            db.isPolluted = true;
+            return false;
+        }
+
+        validPatterns[key] = cp;
+        const bpBase = cp.B + cp.P;
+        const allBase = bpBase + cp.T;
+
+        if (bpBase >= 5){
+            if (cp.B / bpBase >= 0.55){
+                db.acc.recs += bpBase;
+                db.acc.hits += cp.B;
+            }else if (cp.P / bpBase >= 0.55){
+                db.acc.recs += bpBase;
+                db.acc.hits += cp.P;
+            }
+        }
+
+        if (cp.N >= SIDEBET_MIN_N){
+            if ((cp.T + 0.5) / (allBase + 5) >= Config.s){
+                db.acc.tRecs += allBase;
+                db.acc.tHits += cp.T;
+            }
+            if ((cp.BP + 0.4) / (allBase + 5) >= Config.s){
+                db.acc.bpRecs += allBase;
+                db.acc.bpHits += cp.BP;
+            }
+            if ((cp.PP + 0.4) / (allBase + 5) >= Config.s){
+                db.acc.ppRecs += allBase;
+                db.acc.ppHits += cp.PP;
+            }
+        }
+    }
+
+    db.patterns = validPatterns;
+    db.totalHands = sumN;
+    if (polluted) db.isPolluted = true;
+    return true;
+}
+
+function buildWalkForwardDB(shoes){
+    const wfDb = {
+        patterns: {},
+        totalHands: 0,
+        acc: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0}
+    };
+
+    for (let i=0; i<shoes.length; i++){
+        const shoe = shoes[i];
+        let simHist = [];
+        for (let j=0; j<shoe.hands.length; j++){
+            const h = shoe.hands[j];
+            const winner = h.outcome.winner || h.outcome.w;
+            const pure = simHist.filter(x => x.w !== 'T').map(x => x.w);
+            const key = pure.length >= 3 ? pure.slice(-3).join(',') : null;
+            if (key){
+                updatePatternDB(wfDb, key, winner, h.outcome.bp, h.outcome.pp);
+            }
+            simHist.push({
+                w: winner,
+                pPt: h.outcome.pPt,
+                bPt: h.outcome.bPt,
+                bp: h.outcome.bp,
+                pp: h.outcome.pp
+            });
+        }
+    }
+
+    recalcDBStats(wfDb);
+    return wfDb;
+}
+
+function rebuildBigDataFromAuditedShoes(rawShoes){
+    return buildWalkForwardDB(rawShoes || []);
+}
+
+function applyOpenShoeToPatternDB(db, openShoe){
+    if (!openShoe || openShoe.status !== 'open' || !Array.isArray(openShoe.hands)) return db;
+    let simHist = [];
+    for (let i=0; i<openShoe.hands.length; i++){
+        const h = openShoe.hands[i];
+        const winner = h.outcome.winner || h.outcome.w;
+        const pure = simHist.filter(x => x.w !== 'T').map(x => x.w);
+        const key = pure.length >= 3 ? pure.slice(-3).join(',') : null;
+        if (key){
+            updatePatternDB(db, key, winner, h.outcome.bp, h.outcome.pp);
+        }
+        simHist.push({
+            w:winner,
+            pPt:h.outcome.pPt,
+            bPt:h.outcome.bPt,
+            bp:h.outcome.bp,
+            pp:h.outcome.pp
+        });
+    }
+    return db;
+}
+
+function buildLiveBigDataFromStores(rawShoes, currentOpenShoe){
+    const base = rebuildBigDataFromAuditedShoes(rawShoes);
+    const live = deepCopy(base);
+    applyOpenShoeToPatternDB(live, currentOpenShoe);
+    recalcDBStats(live);
+    return live;
+}
+
+function normalizeProbs(raw, strict){
+    if (strict === undefined) strict = true;
+    const vals = [raw && raw.B, raw && raw.P, raw && raw.T].map(Number);
+    if (vals.some(v => !Number.isFinite(v) || v < 0)){
         if (strict) throw new Error('Invalid model probabilities');
-        return { B: NAIVE_PRIORS.B, P: NAIVE_PRIORS.P, T: NAIVE_PRIORS.T };
+        return { B:NAIVE_PRIORS.B, P:NAIVE_PRIORS.P, T:NAIVE_PRIORS.T };
     }
     const z = vals[0] + vals[1] + vals[2];
-    if (z <= 0) {
+    if (z <= 0){
         if (strict) throw new Error('Probability sum must be > 0');
-        return { B: NAIVE_PRIORS.B, P: NAIVE_PRIORS.P, T: NAIVE_PRIORS.T };
+        return { B:NAIVE_PRIORS.B, P:NAIVE_PRIORS.P, T:NAIVE_PRIORS.T };
     }
-    return { B: vals[0] / z, P: vals[1] / z, T: vals[2] / z };
+    return { B:vals[0]/z, P:vals[1]/z, T:vals[2]/z };
 }
 
-function calc_ev(probs, payouts) {
+function calc_ev(probs, payouts){
     return {
         B: probs.B * payouts.B + probs.P * (-1) + probs.T * 0,
         P: probs.P * payouts.P + probs.B * (-1) + probs.T * 0,
@@ -613,28 +803,46 @@ function calc_ev(probs, payouts) {
     };
 }
 
-function make_decision(ev, tau, options = { allowTieBet: false }) {
-    let candidates = [{ side: 'B', ev: ev.B }, { side: 'P', ev: ev.P }];
-    if (options.allowTieBet) candidates.push({ side: 'T', ev: ev.T });
-    candidates.sort((a, b) => b.ev - a.ev);
+function make_decision(ev, tau, options){
+    options = options || { allowTieBet:false };
+    let candidates = [{ side:'B', ev:ev.B }, { side:'P', ev:ev.P }];
+    if (options.allowTieBet) candidates.push({ side:'T', ev:ev.T });
+    candidates.sort((a,b) => b.ev - a.ev);
     const best = candidates[0];
-    if (!Number.isFinite(best.ev) || best.ev <= tau) return { side: 'PASS', expected_ev: 0 };
-    return { side: best.side, expected_ev: best.ev };
+    if (!Number.isFinite(best.ev) || best.ev <= tau) return { side:'PASS', expected_ev:0 };
+    return { side:best.side, expected_ev:best.ev };
 }
 
-function executePolicyChain(model, features, tau, externalState, options = { allowTieBet: false }, strict = true) {
-    if (features.F_Path && features.F_Path.history_len < WARMUP_HANDS) {
-        return { probs: NAIVE_PRIORS, ev: {B:0, P:0, T:0}, decision: 'PASS', tau, isWarmup: true };
+function executePolicyChain(model, features, tau, externalState, options, strict){
+    if (options === undefined) options = { allowTieBet:false };
+    if (strict === undefined) strict = true;
+
+    if (features.F_Path && features.F_Path.history_len < WARMUP_HANDS){
+        return {
+            probs: NAIVE_PRIORS,
+            ev: { B:0, P:0, T:0 },
+            decision: 'PASS',
+            tau: tau,
+            model_id: model && model.id ? model.id : null,
+            isWarmup: true
+        };
     }
-    
+
     const rawProbs = model.predict(features, externalState);
     const probs = normalizeProbs(rawProbs, strict);
     const evs = calc_ev(probs, PAYOUTS);
     const decision = make_decision(evs, tau, options);
-    return { probs, ev: evs, decision: decision.side, tau, isWarmup: false };
+    return {
+        probs: probs,
+        ev: evs,
+        decision: decision.side,
+        tau: tau,
+        model_id: model && model.id ? model.id : null,
+        isWarmup: false
+    };
 }
 
-function settleDecision(decision, winner, payouts) {
+function settleDecision(decision, winner, payouts){
     if (decision === 'PASS') return 0;
     if (decision === 'B') return winner === 'B' ? payouts.B : (winner === 'T' ? 0 : -1);
     if (decision === 'P') return winner === 'P' ? payouts.P : (winner === 'T' ? 0 : -1);
@@ -642,7 +850,7 @@ function settleDecision(decision, winner, payouts) {
     return 0;
 }
 
-function computeLogLoss(samples) {
+function computeLogLoss(samples){
     if (!samples.length) return 0;
     const eps = 1e-15;
     let sum = 0;
@@ -650,7 +858,7 @@ function computeLogLoss(samples) {
     return sum / samples.length;
 }
 
-function computeBrierScore(samples) {
+function computeBrierScore(samples){
     if (!samples.length) return 0;
     let sum = 0;
     samples.forEach(s => {
@@ -663,13 +871,15 @@ function computeBrierScore(samples) {
     return sum / samples.length;
 }
 
-function initCalibrationBins(nBins = 10) {
-    const mk = () => Array.from({ length: nBins }, () => ({ n: 0, sumP: 0, sumY: 0 }));
-    return { nBins, B: mk(), P: mk(), T: mk() };
+function initCalibrationBins(nBins){
+    const mk = () => Array.from({ length:nBins }, () => ({ n:0, sumP:0, sumY:0 }));
+    return { nBins:nBins, B:mk(), P:mk(), T:mk() };
 }
 
-function updateCalibrationBins(bins, probs, winner) {
-    for (const k of ['B', 'P', 'T']) {
+function updateCalibrationBins(bins, probs, winner){
+    const keys = ['B','P','T'];
+    for (let i=0; i<keys.length; i++){
+        const k = keys[i];
         const p = probs[k];
         const y = winner === k ? 1 : 0;
         let idx = Math.floor(p * bins.nBins);
@@ -680,9 +890,11 @@ function updateCalibrationBins(bins, probs, winner) {
     }
 }
 
-function mergeCalibrationBins(dst, src) {
-    for (const k of ['B', 'P', 'T']) {
-        for (let i = 0; i < dst.nBins; i++) {
+function mergeCalibrationBins(dst, src){
+    const keys = ['B','P','T'];
+    for (let ki=0; ki<keys.length; ki++){
+        const k = keys[ki];
+        for (let i=0; i<dst.nBins; i++){
             dst[k][i].n += src[k][i].n;
             dst[k][i].sumP += src[k][i].sumP;
             dst[k][i].sumY += src[k][i].sumY;
@@ -690,42 +902,58 @@ function mergeCalibrationBins(dst, src) {
     }
 }
 
-function computeECEFromBins(bins) {
-    const totalN = bins.B.reduce((a, b) => a + b.n, 0);
-    if (totalN === 0) return { ece_B: 0, ece_P: 0, ece_T: 0, ece_macro: 0 };
-    const calc = (arr) => {
+function computeECEFromBins(bins){
+    const totalN = bins.B.reduce((a,b)=>a+b.n,0);
+    if (totalN === 0) return { ece_B:0, ece_P:0, ece_T:0, ece_macro:0 };
+
+    const calc = arr => {
         let ece = 0;
-        for (const b of arr) {
+        for (let i=0; i<arr.length; i++){
+            const b = arr[i];
             if (b.n === 0) continue;
             ece += (b.n / totalN) * Math.abs((b.sumY / b.n) - (b.sumP / b.n));
         }
         return ece;
     };
-    const ece_B = calc(bins.B), ece_P = calc(bins.P), ece_T = calc(bins.T);
-    return { ece_B, ece_P, ece_T, ece_macro: (ece_B + ece_P + ece_T) / 3 };
+
+    const ece_B = calc(bins.B);
+    const ece_P = calc(bins.P);
+    const ece_T = calc(bins.T);
+    return { ece_B:ece_B, ece_P:ece_P, ece_T:ece_T, ece_macro:(ece_B + ece_P + ece_T) / 3 };
 }
 
-// 🚨 v35: Walk-Forward OOS Rolling Generator
-function* rollingForecastOrigin(shoes, trainN, valM, testK, stepK) {
-    let startIdx = 0;
-    while (startIdx + trainN + valM + testK <= shoes.length) {
-        yield { 
-            history: shoes.slice(0, startIdx + trainN + valM), // 用於累積 Walk-Forward DB
-            test: shoes.slice(startIdx + trainN + valM, startIdx + trainN + valM + testK) 
-        };
-        startIdx += stepK;
-    }
+function rollingForecastOrigin(shoes, trainN, valM, testK, stepK){
+    return {
+        shoes: shoes,
+        trainN: trainN,
+        valM: valM,
+        testK: testK,
+        stepK: stepK,
+        startIdx: 0,
+        next: function(){
+            if (this.startIdx + this.trainN + this.valM + this.testK <= this.shoes.length){
+                const result = {
+                    history: this.shoes.slice(0, this.startIdx + this.trainN + this.valM),
+                    test: this.shoes.slice(this.startIdx + this.trainN + this.valM, this.startIdx + this.trainN + this.valM + this.testK)
+                };
+                this.startIdx += this.stepK;
+                return { value:result, done:false };
+            }
+            return { done:true };
+        }
+    };
 }
 
-function aggregateRuns(runs, nBins = 10) {
+function aggregateRuns(runs, nBins){
     if (!Array.isArray(runs) || runs.length === 0) return null;
     const out = {
-        split_count: runs.length, n_test_hands: 0, bet_count: 0,
-        log_loss_num: 0, brier_num: 0, predicted_ev_sum: 0, realized_return_sum: 0, worst_split_max_drawdown: 0
+        split_count:runs.length, n_test_hands:0, bet_count:0,
+        log_loss_num:0, brier_num:0, predicted_ev_sum:0, realized_return_sum:0, worst_split_max_drawdown:0
     };
     const globalBins = initCalibrationBins(nBins);
 
-    for (const r of runs) {
+    for (let i=0; i<runs.length; i++){
+        const r = runs[i];
         out.n_test_hands += r.n_test_hands;
         out.bet_count += r.bet_count;
         out.log_loss_num += r.log_loss * r.n_test_hands;
@@ -735,8 +963,8 @@ function aggregateRuns(runs, nBins = 10) {
         out.worst_split_max_drawdown = Math.max(out.worst_split_max_drawdown, r.max_drawdown);
         if (r.calibration_bins) mergeCalibrationBins(globalBins, r.calibration_bins);
     }
-    const finalECE = computeECEFromBins(globalBins);
 
+    const finalECE = computeECEFromBins(globalBins);
     return {
         split_count: out.split_count,
         n_test_hands: out.n_test_hands,
@@ -752,622 +980,78 @@ function aggregateRuns(runs, nBins = 10) {
     };
 }
 
-// 🚨 v35: Walk-Forward DB 產生器
-function buildWalkForwardDB(shoes) {
-    const wf_patterns = {};
-    for (const shoe of shoes) {
-        let simHist = [];
-        for (const h of shoe.hands) {
-            const pure = simHist.filter(x => x !== 'T');
-            const ptnKey = pure.length >= 3 ? pure.slice(-3).join(',') : null;
-            if (ptnKey && h.outcome.winner !== 'T') {
-                if (!wf_patterns[ptnKey]) wf_patterns[ptnKey] = { B: 0, P: 0, T: 0, N: 0 };
-                wf_patterns[ptnKey][h.outcome.winner]++;
-                wf_patterns[ptnKey].N++;
-            }
-            simHist.push(h.outcome.winner);
+function buildBigRoadMeta(history){
+    const grid = {};
+    const cols = [];
+    let last = null, startCol = 0, c = 0, r = 0, lastCoord = null, maxCol = 0;
+
+    for (let i=0; i<history.length; i++){
+        const d = history[i];
+        if (d.w === 'T'){
+            if (lastCoord && grid[lastCoord]) grid[lastCoord].ties = (grid[lastCoord].ties || 0) + 1;
+            continue;
         }
+        if (last === null || d.w !== last){
+            if (last !== null){
+                startCol += 1;
+                while (grid[startCol + ',0'] !== undefined) startCol += 1;
+            }
+            c = startCol;
+            r = 0;
+        }else{
+            const nr = r + 1;
+            if (nr <= 5 && grid[c + ',' + nr] === undefined){
+                r = nr;
+            }else{
+                c += 1;
+                while (grid[c + ',' + r] !== undefined) c += 1;
+            }
+        }
+        const key = c + ',' + r;
+        grid[key] = { v:d.w, bp:d.bp, pp:d.pp, ties:0, c:c, r:r };
+        if (!cols[c]) cols[c] = [];
+        cols[c][r] = grid[key];
+        last = d.w;
+        lastCoord = key;
+        maxCol = Math.max(maxCol, c);
     }
-    return wf_patterns;
+    return { grid:grid, cols:cols, maxCol:maxCol };
 }
 
-function runExperiment(spec) {
-    auditLabStore(LabStore);
-    validateOpenShoeConsistency(LabStore, S);
-    const closedShoes = LabStore.rawShoes;
+function getDerivedRoads(meta){
+    const nodes = Object.values(meta.grid).sort((a,b) => a.c - b.c || a.r - b.r);
+    const seq1 = [], seq2 = [], seq3 = [];
+    const colH = c => {
+        let h = 0;
+        while (meta.grid[c + ',' + h] !== undefined) h++;
+        return h;
+    };
 
-    if (spec.split_config.stepK < spec.split_config.testK) {
-        alert('實驗設定錯誤：stepK 不可小於 testK，避免 OOS 經濟指標重複計算。');
-        return null;
-    }
-
-    const holdoutStart = Math.floor(closedShoes.length * 0.8);
-    const devShoes = closedShoes.slice(0, holdoutStart);
-    const holdoutShoes = closedShoes.slice(holdoutStart);
-    const minNeed = spec.split_config.trainN + spec.split_config.valM + spec.split_config.testK;
-
-    if (devShoes.length < minNeed) {
-        alert(`實驗鞋靴不足！\n目前已結算鞋數: ${closedShoes.length}\n開發集保留 (扣除20% Holdout): ${devShoes.length}\n單次測試最少需求: ${minNeed}\n(請多打幾靴或匯入資料庫)`);
-        return null;
-    }
-
-    const policy = getDeployedPolicy();
-    const runs = [];
-
-    // 1. 真正的 Walk-Forward OOS Rolling Test
-    for (const split of rollingForecastOrigin(devShoes, spec.split_config.trainN, spec.split_config.valM, spec.split_config.testK, spec.split_config.stepK)) {
-        
-        // 隔離建構 Walk-Forward 時光機資料庫 (只用 t-1 以前的資料)
-        const wf_patterns = buildWalkForwardDB(split.history);
-        const testSamples = [];
-        const splitBins = initCalibrationBins(spec.calibration.nBins);
-        let predicted_ev_sum = 0, realized_return_sum = 0, currentBankroll = 0, peakBankroll = 0, max_drawdown = 0, betCount = 0;
-
-        split.test.forEach(shoe => {
-            let simHistory = [];
-            shoe.hands.forEach(h => {
-                
-                const pure = simHistory.filter(x => x !== 'T');
-                const ptnKey = pure.length >= 3 ? pure.slice(-3).join(',') : null;
-                const cp = ptnKey ? wf_patterns[ptnKey] : null;
-                
-                const simulatedExternalState = cp ? { has_pattern: true, pattern_N: cp.N, pattern_B: cp.B, pattern_P: cp.P } : { has_pattern: false };
-
-                const res = executePolicyChain(policy.model, h.features, policy.tau, simulatedExternalState, policy.options, false);
-                testSamples.push({ probs: res.probs, winner: h.outcome.winner, decision: res.decision });
-                updateCalibrationBins(splitBins, res.probs, h.outcome.winner);
-                
-                if (res.decision !== 'PASS') {
-                    betCount++;
-                    predicted_ev_sum += res.ev[res.decision];
-                    const r = settleDecision(res.decision, h.outcome.winner, PAYOUTS);
-                    realized_return_sum += r;
-                    currentBankroll += r;
-                    if (currentBankroll > peakBankroll) peakBankroll = currentBankroll;
-                    const dd = peakBankroll - currentBankroll;
-                    if (dd > max_drawdown) max_drawdown = dd;
+    for (let i=0; i<nodes.length; i++){
+        const node = nodes[i];
+        const c = node.c, r = node.r;
+        const calc = function(off, seq){
+            if (r === 0){
+                if (c >= off + 1) seq.push(colH(c - 1) === colH(c - off - 1) ? 'R' : 'Blue');
+            }else{
+                if (c >= off){
+                    const a = !!meta.grid[(c-off) + ',' + r];
+                    const b = !!meta.grid[(c-off) + ',' + (r-1)];
+                    seq.push(a === b ? 'R' : 'Blue');
                 }
-                simHistory.push(h.outcome.winner);
-            });
-        });
-
-        runs.push({
-            test_shoe_ids: split.test.map(s => s.shoe_id),
-            selected_tau: policy.tau,
-            n_test_hands: testSamples.length,
-            bet_count: betCount,
-            log_loss: computeLogLoss(testSamples),
-            brier: computeBrierScore(testSamples),
-            calibration_bins: splitBins,
-            ece: computeECEFromBins(splitBins),
-            predicted_ev_sum,
-            realized_return_sum,
-            max_drawdown,
-            coverage: testSamples.length > 0 ? betCount / testSamples.length : 0
-        });
-    }
-
-    if (runs.length === 0) return null;
-    const aggregate = aggregateRuns(runs, spec.calibration.nBins);
-
-    // 2. Final Holdout Test (嚴格使用開發集結束點的 Walk-Forward DB)
-    const holdout_wf_patterns = buildWalkForwardDB(devShoes);
-    const holdoutSamples = [];
-    const holdoutBins = initCalibrationBins(spec.calibration.nBins);
-    let holdout_realized_return = 0, holdout_predicted_ev = 0, holdout_bet_count = 0;
-
-    holdoutShoes.forEach(shoe => {
-        let simHistory = [];
-        shoe.hands.forEach(h => {
-            const pure = simHistory.filter(x => x !== 'T');
-            const ptnKey = pure.length >= 3 ? pure.slice(-3).join(',') : null;
-            const cp = ptnKey ? holdout_wf_patterns[ptnKey] : null;
-            
-            const simulatedExternalState = cp ? { has_pattern: true, pattern_N: cp.N, pattern_B: cp.B, pattern_P: cp.P } : { has_pattern: false };
-
-            const res = executePolicyChain(policy.model, h.features, policy.tau, simulatedExternalState, policy.options, false);
-            holdoutSamples.push({ probs: res.probs, winner: h.outcome.winner, decision: res.decision });
-            updateCalibrationBins(holdoutBins, res.probs, h.outcome.winner);
-            
-            if (res.decision !== 'PASS') {
-                holdout_bet_count++;
-                holdout_predicted_ev += res.ev[res.decision];
-                holdout_realized_return += settleDecision(res.decision, h.outcome.winner, PAYOUTS);
             }
-            simHistory.push(h.outcome.winner);
-        });
-    });
-
-    const finalHoldoutECE = computeECEFromBins(holdoutBins);
-    const holdout_metrics = holdoutSamples.length > 0 ? {
-        n_test_hands: holdoutSamples.length,
-        bet_count: holdout_bet_count,
-        coverage: holdout_bet_count / holdoutSamples.length,
-        log_loss: computeLogLoss(holdoutSamples),
-        brier: computeBrierScore(holdoutSamples),
-        ece_macro: finalHoldoutECE.ece_macro,
-        predicted_ev_sum: holdout_predicted_ev,
-        realized_return_sum: holdout_realized_return
-    } : null;
-
-    let currentVerdict = 'FLAT_RETURN_BASELINE';
-    const isHoldoutValid = holdout_metrics !== null && holdout_metrics.n_test_hands >= 10;
-    
-    if (aggregate.n_test_hands < 50 || !isHoldoutValid) {
-        currentVerdict = 'INSUFFICIENT_DATA (LOW CONFIDENCE)';
-    } else {
-        if (aggregate.realized_return_sum > 0 && holdout_metrics.realized_return_sum > 0) {
-            currentVerdict = 'POSITIVE_RETURN_BASELINE';
-        } else if (aggregate.realized_return_sum > 0 && holdout_metrics.realized_return_sum <= 0) {
-            currentVerdict = 'INCONCLUSIVE_HOLDOUT (OVERFITTING RISK)';
-        } else {
-            currentVerdict = 'NEGATIVE_RETURN_BASELINE';
-        }
+        };
+        calc(1, seq1);
+        calc(2, seq2);
+        calc(3, seq3);
     }
 
-    const record = {
-        run_id: 'exp_' + Date.now(),
-        created_at: Date.now(),
-        spec_version: 'ExperimentSpec_v1.0',
-        lab_version: 'v35-walk-forward',
-        data_scope: { closed_shoe_count: closedShoes.length, dev_shoe_count: devShoes.length, holdout_shoe_count: holdoutShoes.length },
-        split_config: spec.split_config,
-        model_registry: { deployed: policy.model.id },
-        selected_config: { tau: policy.tau, allowTieBet: policy.options.allowTieBet, nBins: spec.calibration.nBins },
-        split_runs: runs.map((r, idx) => ({
-            split_index: idx,
-            test_shoe_ids: r.test_shoe_ids,
-            n_test_hands: r.n_test_hands,
-            log_loss: r.log_loss,
-            realized_return_sum: r.realized_return_sum
-        })),
-        aggregate_metrics: aggregate,
-        holdout_metrics,
-        verdict: currentVerdict
-    };
-    LabStore.experiments.push(record);
-    return record;
+    return { eye:seq1, small:seq2, roach:seq3 };
 }
 
-window.invokeQuantLab = function() {
-    console.log('==========================================');
-    console.log('🔬 THE QUANT LAB: Walk-Forward OOS Initiated');
-    console.log('==========================================');
-
-    const totalShoes = LabStore.rawShoes.length;
-    let tN = 50, vM = 0, tK = 10, sK = 10;
-    
-    const devShoesCount = Math.floor(totalShoes * 0.8);
-    if (devShoesCount < (tN + vM + tK)) { tN = 2; vM = 0; tK = 1; sK = 1; }
-
-    const spec = {
-        split_config: { trainN: tN, valM: vM, testK: tK, stepK: sK },
-        calibration: { nBins: Config.nBins }
-    };
-
-    try {
-        const rec = runExperiment(spec);
-        if (rec) {
-            console.log('🧬 QUANT LAB OOS REPORT:', JSON.parse(JSON.stringify(rec)));
-            alert(`✅ 實驗室運行完畢！\nVerdict: ${rec.verdict}\nRolling OOS 淨利: ${rec.aggregate_metrics.realized_return_sum.toFixed(2)} 單位\nFinal Holdout 淨利: ${rec.holdout_metrics ? rec.holdout_metrics.realized_return_sum.toFixed(2) : 'N/A'}\n\n詳細報告已輸出至 F12 Console。`);
-        }
-    } catch (e) {
-        console.error('實驗室發生錯誤:', e);
-        alert('實驗室運行失敗，請查看 F12 Console。');
-    }
-};
-
-function normalizeState(obj) {
-    if (!obj || typeof obj !== 'object') return null; 
-    const toCount = (v, d = 0, max = Infinity) => {
-        const n = Number(v);
-        return Number.isFinite(n) && n >= 0 ? Math.min(max, Math.floor(n)) : d;
-    };
-    const toBool = (v) => (v === true || v === 'true' || v === 1 || v === '1');
-    const normW = (v) => (v === 'B' || v === 'P' || v === 'T') ? v : 'T';
-    const normRec = (v) => (v === 'B' || v === 'P' || v === 'PASS') ? v : null;
-    const normShadow = (v) => (v === 'B' || v === 'P') ? v : null;
-
-    const safe = {
-        shoeId: obj.shoeId || Date.now(), deck: {}, history: [], runningCount: 0,
-        shoePerf: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0},
-        stats: { ev:{p:0,h:0,r:[]}, trend:{p:0,h:0,r:[]}, derived:{p:0,h:0,r:[]}, ml:{p:0,h:0,r:[]}, shoe:{p:0,h:0,r:[]}, power:{p:0,h:0,r:[]} },
-        shadow: { ev:null, trend:null, derived:null, ml:null, shoe:null, power:null },
-        lastRecSide: normRec(obj.lastRecSide), lastSideBets: { tie: false, bp: false, pp: false }
-    };
-
-    let deckSum = 0;
-    let expectedRC = 0;
-    
-    if (!isValidDeck(obj.deck)) return null; 
-    
-    for (let i = 1; i <= 13; i++) {
-        safe.deck[i] = toCount(obj.deck[i], 32, 32);
-        deckSum += safe.deck[i];
-        expectedRC += (32 - safe.deck[i]) * (countWeights[i] || 0);
-    }
-
-    if (Array.isArray(obj.history)) {
-        safe.history = obj.history.map(item => {
-            if (typeof item === 'string') return { w: normW(item), bp: false, pp: false, pPt: 0, bPt: 0 };
-            return {
-                w: normW(item.w),
-                bp: toBool(item.bp),
-                pp: toBool(item.pp),
-                pPt: toCount(item.pPt, 0, 9),
-                bPt: toCount(item.bPt, 0, 9)
-            };
-        });
-    }
-
-    const usedCards = 416 - deckSum;
-    if (usedCards < safe.history.length * 4 || usedCards > safe.history.length * 6 || deckSum < 0 || deckSum > 416) return null; 
-    safe.runningCount = expectedRC;
-
-    if (obj.shoePerf) {
-        safe.shoePerf.recs = toCount(obj.shoePerf.recs); safe.shoePerf.hits = Math.min(toCount(obj.shoePerf.hits), safe.shoePerf.recs);
-        safe.shoePerf.tRecs = toCount(obj.shoePerf.tRecs); safe.shoePerf.tHits = Math.min(toCount(obj.shoePerf.tHits), safe.shoePerf.tRecs);
-        safe.shoePerf.bpRecs = toCount(obj.shoePerf.bpRecs); safe.shoePerf.bpHits = Math.min(toCount(obj.shoePerf.bpHits), safe.shoePerf.bpRecs);
-        safe.shoePerf.ppRecs = toCount(obj.shoePerf.ppRecs); safe.shoePerf.ppHits = Math.min(toCount(obj.shoePerf.ppHits), safe.shoePerf.ppRecs);
-    }
-    if (obj.stats) {
-        for (const k of ['ev','trend','derived','ml','shoe','power']) {
-            if (obj.stats[k]) {
-                safe.stats[k].p = toCount(obj.stats[k].p);
-                safe.stats[k].h = Math.min(toCount(obj.stats[k].h), safe.stats[k].p);
-                safe.stats[k].r = Array.isArray(obj.stats[k].r) ? obj.stats[k].r.slice(-5).map(v => Number(v) === 1 ? 1 : 0) : [];
-            }
-        }
-    }
-    if (obj.lastSideBets) safe.lastSideBets = { tie: toBool(obj.lastSideBets.tie), bp: toBool(obj.lastSideBets.bp), pp: toBool(obj.lastSideBets.pp) };
-    if (obj.shadow) for (const k of Object.keys(safe.shadow)) safe.shadow[k] = normShadow(obj.shadow[k]);
-    return safe;
-}
-
-const safeCountLive = (v, d = 0) => {
-    const n = Number(v);
-    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : d;
-};
-
-function canonicalPatternLive(key, raw) {
-    if (!/^(B|P)(,(B|P)){2}$/.test(key)) return null;
-    if (!raw || typeof raw !== 'object') return null;
-    const B = safeCountLive(raw.B), P = safeCountLive(raw.P), T = safeCountLive(raw.T);
-    const N = B + P + T;
-    if (N > 50000 || N === 0) return null;
-    const BP = Math.min(safeCountLive(raw.BP), N);
-    const PP = Math.min(safeCountLive(raw.PP), N);
-    return { B, P, T, BP, PP, N };
-}
-
-function normalizeBigData(db) {
-    const safe = { totalHands: 0, patterns: {}, acc: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0}, isPolluted: false };
-    if (!db || typeof db !== 'object') return safe;
-    let sumN = 0;
-    if (db.patterns && typeof db.patterns === 'object') {
-        for (const key of Object.keys(db.patterns)) {
-            const cp = canonicalPatternLive(key, db.patterns[key]);
-            if (!cp) { safe.isPolluted = true; continue; }
-            sumN += cp.N;
-            if (sumN > 50000) return { totalHands: 0, patterns: {}, acc: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0}, isPolluted: true };
-            safe.patterns[key] = cp;
-        }
-    }
-    safe.totalHands = sumN;
-    return safe;
-}
-
-function recalcDBStats(db) {
-    db.acc = {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0};
-    let sumN = 0;
-    const validPatterns = {};
-    let polluted = false;
-
-    for (const key of Object.keys(db.patterns)) {
-        const cp = canonicalPatternLive(key, db.patterns[key]);
-        if (!cp) { polluted = true; continue; }
-        sumN += cp.N;
-        if (sumN > 50000) {
-            db.patterns = {};
-            db.totalHands = 0;
-            db.acc = {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0};
-            db.isPolluted = true;
-            return false;
-        }
-        validPatterns[key] = cp;
-        const bpBase = cp.B + cp.P;
-        const allBase = bpBase + cp.T;
-        if (bpBase >= 5) {
-            if (cp.B / bpBase >= 0.55) { db.acc.recs += bpBase; db.acc.hits += cp.B; }
-            else if (cp.P / bpBase >= 0.55) { db.acc.recs += bpBase; db.acc.hits += cp.P; }
-        }
-        if (cp.N >= SIDEBET_MIN_N) {
-            if ((cp.T + 0.5) / (allBase + 5) >= Config.s) { db.acc.tRecs += allBase; db.acc.tHits += cp.T; }
-            if ((cp.BP + 0.4) / (allBase + 5) >= Config.s) { db.acc.bpRecs += allBase; db.acc.bpHits += cp.BP; }
-            if ((cp.PP + 0.4) / (allBase + 5) >= Config.s) { db.acc.ppRecs += allBase; db.acc.ppHits += cp.PP; }
-        }
-    }
-
-    db.patterns = validPatterns;
-    db.totalHands = sumN;
-    if (polluted) db.isPolluted = true;
-    return true;
-}
-
-function init() {
-    const cfgRaw = readStorageWithFallback('bac_cfg_');
-    if (cfgRaw.value) {
-        try { Object.assign(Config, normalizeConfig(JSON.parse(cfgRaw.value))); } catch (e) {}
-        migrateToCurrentKey(cfgRaw.key, CF_K, cfgRaw.value);
-    }
-    Config = normalizeConfig(Config);
-
-    const elCfgM = document.getElementById('cfgM');
-    const elCfgS = document.getElementById('cfgS');
-    const elCfgBins = document.getElementById('cfgBins');
-    if (elCfgM) elCfgM.value = Config.m;
-    if (elCfgS) elCfgS.value = Config.s;
-    if (elCfgBins) elCfgBins.value = Config.nBins;
-
-    const dbRaw = readStorageWithFallback('bac_db_');
-    if (dbRaw.value) {
-        try { BigData = normalizeBigData(JSON.parse(dbRaw.value)); } catch (e) { BigData = normalizeBigData({}); }
-        migrateToCurrentKey(dbRaw.key, DB_K, dbRaw.value);
-    } else {
-        BigData = normalizeBigData({});
-    }
-
-    const labRaw = readStorageWithFallback('bac_lab_');
-    if (labRaw.value) {
-        try { LabStore = JSON.parse(labRaw.value); auditLabStore(LabStore); } catch (e) { LabStore = { schema_version: 'v35', rawShoes: [], currentOpenShoe: null, experiments: [] }; }
-        migrateToCurrentKey(labRaw.key, LAB_K, labRaw.value);
-    }
-
-    const stRaw = readStorageWithFallback('bac_st_');
-    if (stRaw.value) {
-        try {
-            const migrated = normalizeState(JSON.parse(stRaw.value));
-            if (migrated) S = migrated; else resetShoeVarsInit();
-        } catch (e) { resetShoeVarsInit(); }
-        migrateToCurrentKey(stRaw.key, ST_K, stRaw.value);
-    } else {
-        resetShoeVarsInit();
-    }
-
-    recalcDBStats(BigData);
-    validateOpenShoeConsistency(LabStore, S);
-
-    drawKeypad();
-    clearCurrentInput();
-    render(); 
-    
-    saveDatabase();
-    saveState();
-}
-
-function getPendingCounts() {
-    const pending = {};
-    for (let i = 1; i <= 13; i++) pending[i] = 0;
-    for (const id of ['p1','p2','p3','b1','b2','b3']) {
-        const v = getVal(id);
-        if (v) pending[v]++;
-    }
-    return pending;
-}
-
-function drawKeypad() {
-    const k = document.getElementById('keypad');
-    k.innerHTML = '';
-    const pending = getPendingCounts();
-    for (let i = 1; i <= 13; i++) {
-        const remain = Math.max(0, (S.deck[i] || 0) - pending[i]);
-        const b = document.createElement('div');
-        b.className = 'key';
-        b.innerHTML = `<div class="key-val">${i===1?'A':i===11?'J':i===12?'Q':i===13?'K':i}</div><div class="key-count">${remain}</div>`;
-        b.onclick = () => inputRank(i);
-        k.appendChild(b);
-    }
-    const clr = document.createElement('div');
-    clr.className = 'key action-clear';
-    clr.innerText = '⌫ 清空重填';
-    clr.onclick = clearCurrentInput;
-    k.appendChild(clr);
-}
-
-function getVal(id) {
-    const v = document.getElementById('slot-' + id)?.dataset.val;
-    return v ? parseInt(v, 10) : null;
-}
-
-function baccaratValue(rank) { return rank >= 10 ? 0 : rank; }
-
-function setActiveSlot(id) {
-    const el = document.getElementById('slot-' + id);
-    if (!el || el.classList.contains('disabled')) return;
-    document.querySelectorAll('.playing-card').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    cIdx = cOrder.indexOf(id);
-}
-
-function inputRank(rank) {
-    const pending = getPendingCounts();
-    if (((S.deck[rank] || 0) - pending[rank]) <= 0) return;
-    while (cIdx < cOrder.length && document.getElementById('slot-' + cOrder[cIdx]).classList.contains('disabled')) cIdx++;
-    if (cIdx >= cOrder.length) return;
-    const target = document.getElementById('slot-' + cOrder[cIdx]);
-    target.innerText = rank===1?'A':rank===11?'J':rank===12?'Q':rank===13?'K':String(rank);
-    target.dataset.val = String(rank);
-    target.classList.add('filled');
-    cIdx++;
-    evaluateDrawRules();
-    drawKeypad();
-    while (cIdx < cOrder.length && document.getElementById('slot-' + cOrder[cIdx]).classList.contains('disabled')) cIdx++;
-    if (cIdx < cOrder.length) setActiveSlot(cOrder[cIdx]);
-}
-
-function clearCurrentInput() {
-    cIdx = 0;
-    for (const id of ['p1','p2','p3','b1','b2','b3']) {
-        const e = document.getElementById('slot-' + id);
-        e.innerText = '';
-        e.dataset.val = '';
-        e.classList.remove('filled', 'active');
-        if (id === 'p3' || id === 'b3') e.classList.add('disabled');
-        else e.classList.remove('disabled');
-    }
-    setActiveSlot(cOrder[0]);
-    evaluateDrawRules();
-    drawKeypad();
-}
-
-function changeOrder() {
-    cOrder = document.getElementById('orderSel').value === 'PBPB'
-        ? ['p1','b1','p2','b2','p3','b3']
-        : ['p1','p2','b1','b2','p3','b3'];
-    clearCurrentInput();
-}
-
-function evaluateDrawRules() {
-    const isAuto = document.getElementById('autoGuide').checked;
-    const btn = document.getElementById('submitBtn');
-    const p3 = document.getElementById('slot-p3');
-    const b3 = document.getElementById('slot-b3');
-    const p1 = getVal('p1');
-    const p2 = getVal('p2');
-    const b1 = getVal('b1');
-    const b2 = getVal('b2');
-
-    if (!p1 || !p2 || !b1 || !b2) {
-        p3.classList.add('disabled');
-        b3.classList.add('disabled');
-        btn.disabled = true;
-        btn.className = 'submit-btn';
-        btn.innerText = '請依照發牌順序輸入';
-        return;
-    }
-    if (!isAuto) {
-        p3.classList.remove('disabled');
-        b3.classList.remove('disabled');
-        btn.disabled = false;
-        btn.className = 'submit-btn ready';
-        btn.innerText = '手動覆寫模式：可結算';
-        return;
-    }
-
-    const pT = (baccaratValue(p1) + baccaratValue(p2)) % 10;
-    const bT = (baccaratValue(b1) + baccaratValue(b2)) % 10;
-    const isNat = pT >= 8 || bT >= 8;
-    const p3v = getVal('p3');
-    const b3v = getVal('b3');
-    let needP3 = false;
-    let needB3 = false;
-
-    if (!isNat) {
-        if (pT <= 5) needP3 = true;
-        if (!needP3) {
-            if (bT <= 5) needB3 = true;
-        } else if (p3v !== null) {
-            const p3b = baccaratValue(p3v);
-            if (bT <= 2) needB3 = true;
-            else if (bT === 3 && p3b !== 8) needB3 = true;
-            else if (bT === 4 && p3b >= 2 && p3b <= 7) needB3 = true;
-            else if (bT === 5 && p3b >= 4 && p3b <= 7) needB3 = true;
-            else if (bT === 6 && (p3b === 6 || p3b === 7)) needB3 = true;
-        }
-    }
-
-    p3.classList.toggle('disabled', !needP3);
-    if (needP3 && p3v === null) b3.classList.add('disabled');
-    else b3.classList.toggle('disabled', !needB3);
-
-    let valid = true;
-    let msg = '✓ 牌局合法，點擊結算';
-    if (isNat && (p3v !== null || b3v !== null)) { valid = false; msg = '❌ 錯誤：天牌不可補牌'; }
-    if (valid && needP3 && p3v === null) { valid = false; msg = '❌ 錯誤：閒家必須補牌'; }
-    if (valid && !needP3 && p3v !== null) { valid = false; msg = '❌ 錯誤：閒家不可補牌'; }
-    if (valid && needP3 && p3v !== null) {
-        if (needB3 && b3v === null) { valid = false; msg = '❌ 錯誤：莊家必須補牌'; }
-        if (!needB3 && b3v !== null) { valid = false; msg = '❌ 錯誤：莊家不可補牌'; }
-    } else if (valid && !needP3) {
-        if (needB3 && b3v === null) { valid = false; msg = '❌ 錯誤：莊家必須補牌'; }
-        if (!needB3 && b3v !== null) { valid = false; msg = '❌ 錯誤：莊家不可補牌'; }
-    }
-
-    btn.disabled = !valid;
-    btn.className = valid ? 'submit-btn ready' : 'submit-btn';
-    btn.innerText = msg;
-}
-
-function getPatternKeyBeforePush() {
-    const pure = S.history.filter(x => x.w !== 'T').map(x => x.w);
-    return pure.length >= 3 ? pure.slice(-3).join(',') : null;
-}
-
-function patternStatsForCurrent() {
-    const key = getPatternKeyBeforePush();
-    if (!key) return null;
-    const cp = canonicalPatternLive(key, BigData.patterns[key]);
-    if (!cp) return null;
-    const bpBase = cp.B + cp.P;
-    const allBase = bpBase + cp.T;
-    if (cp.N < SIDEBET_MIN_N) {
-        return { key, b:cp.B, pl:cp.P, t:cp.T, bp:cp.BP, pp:cp.PP, n:cp.N, mainB:0, mainP:0, tieP:0, bpP:0, ppP:0, weak:true };
-    }
-    return {
-        key, b:cp.B, pl:cp.P, t:cp.T, bp:cp.BP, pp:cp.PP, n:cp.N,
-        mainB: bpBase > 0 ? cp.B / bpBase : 0,
-        mainP: bpBase > 0 ? cp.P / bpBase : 0,
-        tieP: (cp.T + 0.5) / (allBase + 5),
-        bpP: (cp.BP + 0.4) / (allBase + 5),
-        ppP: (cp.PP + 0.4) / (allBase + 5),
-        weak: false
-    };
-}
-
-function extractPathFeaturesCore(historyArray) {
-    const pure = historyArray.filter(x => x.w !== 'T').map(x => x.w);
-    const meta = buildBigRoadMeta(historyArray);
-    const derived = getDerivedRoads(meta);
-    
-    let cSide = null, cLen = 0;
-    if (pure.length > 0) { 
-        cSide = pure[pure.length - 1]; 
-        cLen = 1; 
-        for (let i = pure.length - 2; i >= 0; i--) { 
-            if (pure[i] === cSide) cLen++; else break; 
-        } 
-    }
-
-    let recentB = 0, recentP = 0, recentBias = null;
-    const recentHist = pure.slice(-15);
-    for (const w of recentHist) {
-        if (w === 'B') recentB++;
-        else if (w === 'P') recentP++;
-    }
-    if (recentHist.length >= 10) {
-        if (recentB / recentHist.length > 0.6) recentBias = 'B';
-        else if (recentP / recentHist.length > 0.6) recentBias = 'P';
-    }
-
-    const askB = simulatePathDerivation(historyArray, 'B');
-    const askP = simulatePathDerivation(historyArray, 'P');
-    const redB = [askB.eye, askB.small, askB.roach].filter(x => x === 'R').length;
-    const blueB = [askB.eye, askB.small, askB.roach].filter(x => x === 'Blue').length;
-    const redP = [askP.eye, askP.small, askP.roach].filter(x => x === 'R').length;
-    const blueP = [askP.eye, askP.small, askP.roach].filter(x => x === 'Blue').length;
-
-    return {
-        history_len: historyArray.length,
-        trend_side: cSide,
-        trend_len: cLen,
-        recent_shoe_bias: recentBias,
-        derived_R_count: redB > redP ? redB : redP,
-        derived_B_count: blueB > blueP ? blueB : blueP
-    };
-}
-
-function simulatePathDerivation(histArr, hyp) {
-    const sim = [...histArr, {w: hyp}];
+function simulatePathDerivation(histArr, hyp){
+    const sim = histArr.slice();
+    sim.push({ w:hyp });
     const m = buildBigRoadMeta(sim);
     const d = getDerivedRoads(m);
     return {
@@ -1377,314 +1061,544 @@ function simulatePathDerivation(histArr, hyp) {
     };
 }
 
-function extractPathFeatures() {
-    return extractPathFeaturesCore(S.history);
-}
+function extractPathFeaturesCore(historyArray){
+    const pure = historyArray.filter(x => x.w !== 'T').map(x => x.w);
 
-function submitHand() {
-    const btn = document.getElementById('submitBtn');
-    if (btn.disabled) return;
-
-    bSt = JSON.parse(JSON.stringify(S));
-    bDB = JSON.parse(JSON.stringify(BigData));
-    bLab = JSON.parse(JSON.stringify(LabStore));
-
-    const vals = { p1:getVal('p1'), p2:getVal('p2'), p3:getVal('p3'), b1:getVal('b1'), b2:getVal('b2'), b3:getVal('b3') };
-    const cons = [];
-    let pPts = 0, bPts = 0;
-    for (const id of ['p1','p2','p3','b1','b2','b3']) {
-        const v = vals[id];
-        if (v) {
-            cons.push(v);
-            if (id.startsWith('p')) pPts += baccaratValue(v);
-            else bPts += baccaratValue(v);
+    let cSide = null, cLen = 0;
+    if (pure.length > 0){
+        cSide = pure[pure.length - 1];
+        cLen = 1;
+        for (let i=pure.length - 2; i>=0; i--){
+            if (pure[i] === cSide) cLen++;
+            else break;
         }
     }
 
-    const pFinal = pPts % 10;
-    const bFinal = bPts % 10;
-    const w = pFinal > bFinal ? 'P' : (bFinal > pFinal ? 'B' : 'T');
-    const bp = cons.length >= 4 && vals.b1 === vals.b2;
-    const pp = cons.length >= 4 && vals.p1 === vals.p2;
-    const keyToUpdate = getPatternKeyBeforePush();
+    let recentB = 0, recentP = 0, recentBias = null;
+    const recentHist = pure.slice(-15);
+    for (let i=0; i<recentHist.length; i++){
+        if (recentHist[i] === 'B') recentB++;
+        else if (recentHist[i] === 'P') recentP++;
+    }
+    if (recentHist.length >= 10){
+        if (recentB / recentHist.length >= 0.6) recentBias = 'B';
+        else if (recentP / recentHist.length >= 0.6) recentBias = 'P';
+    }
 
-    const oldFeatures = { 
-        F_Base: {}, 
-        F_Comp: { running_count: S.runningCount, remain_cards: Object.values(S.deck).reduce((a, b) => a + b, 0) }, 
-        F_Path: extractPathFeatures() 
+    const askB = simulatePathDerivation(historyArray, 'B');
+    const askP = simulatePathDerivation(historyArray, 'P');
+
+    const redB = [askB.eye, askB.small, askB.roach].filter(x => x === 'R').length;
+    const redP = [askP.eye, askP.small, askP.roach].filter(x => x === 'R').length;
+
+    return {
+        history_len: historyArray.length,
+        trend_side: cSide,
+        trend_len: cLen,
+        recent_shoe_bias: recentBias,
+        ask_B_red: redB,
+        ask_P_red: redP
     };
-    
-    let oldPrediction;
-    try {
-        const policy = getDeployedPolicy();
-        const cp = keyToUpdate ? canonicalPatternLive(keyToUpdate, BigData.patterns[keyToUpdate]) : null;
-        const currentExternalState = cp ? { has_pattern: true, pattern_N: cp.N, pattern_B: cp.B, pattern_P: cp.P } : { has_pattern: false };
-        oldPrediction = executePolicyChain(policy.model, oldFeatures, policy.tau, currentExternalState, policy.options, false);
-    } catch (e) {
-        oldPrediction = { probs: NAIVE_PRIORS, ev: { B: 0, P: 0, T: 0 }, decision: 'PASS', tau: Config.m, isWarmup: false };
-    }
-
-    const observation = captureObservation(S, oldFeatures, oldPrediction, vals);
-    commitObservation(observation, { winner: w, pPt: pFinal, bPt: bFinal, bp: bp, pp: pp });
-
-    if (w !== 'T') {
-        if (S.lastRecSide && S.lastRecSide !== 'PASS') {
-            S.shoePerf.recs += 1;
-            if (S.lastRecSide === w) S.shoePerf.hits += 1;
-        }
-    }
-    if (S.lastSideBets.tie) { S.shoePerf.tRecs += 1; if (w === 'T') S.shoePerf.tHits += 1; }
-    if (S.lastSideBets.bp) { S.shoePerf.bpRecs += 1; if (bp) S.shoePerf.bpHits += 1; }
-    if (S.lastSideBets.pp) { S.shoePerf.ppRecs += 1; if (pp) S.shoePerf.ppHits += 1; }
-
-    S.history.push({ w, pPt: pFinal, bPt: bFinal, bp, pp });
-    for (const v of cons) {
-        S.deck[v] = Math.max(0, (S.deck[v] || 0) - 1);
-        S.runningCount += (countWeights[v] || 0);
-    }
-
-    if (BigData.totalHands < 50000 && keyToUpdate) {
-        let cp = canonicalPatternLive(keyToUpdate, BigData.patterns[keyToUpdate]) || { B:0, P:0, T:0, BP:0, PP:0, N:0 };
-        if (w === 'B') cp.B += 1;
-        else if (w === 'P') cp.P += 1;
-        else cp.T += 1;
-        if (bp) cp.BP += 1;
-        if (pp) cp.PP += 1;
-        cp.N = cp.B + cp.P + cp.T;
-        cp.BP = Math.min(cp.BP, cp.N);
-        cp.PP = Math.min(cp.PP, cp.N);
-        BigData.patterns[keyToUpdate] = cp;
-    }
-
-    recalcDBStats(BigData);
-    saveDatabase();
-    clearCurrentInput();
-    render(); 
 }
 
-function saveState() { localStorage.setItem(ST_K, JSON.stringify(S)); }
-function saveDatabase() {
-    localStorage.setItem(DB_K, JSON.stringify(BigData));
-    localStorage.setItem(LAB_K, JSON.stringify(LabStore));
+function getPatternKeyBeforePushFromHistory(history){
+    const pure = history.filter(x => x.w !== 'T').map(x => x.w);
+    return pure.length >= 3 ? pure.slice(-3).join(',') : null;
 }
 
-function saveConfig() {
-    Config = normalizeConfig({
-        m: document.getElementById('cfgM').value,
-        s: document.getElementById('cfgS').value,
-        nBins: document.getElementById('cfgBins').value
-    });
-    
-    document.getElementById('cfgM').value = Config.m;
-    document.getElementById('cfgS').value = Config.s;
-    document.getElementById('cfgBins').value = Config.nBins;
-    
-    localStorage.setItem(CF_K, JSON.stringify(Config));
-    recalcDBStats(BigData);
-    render(); 
+function getPatternKeyBeforePush(){
+    return getPatternKeyBeforePushFromHistory(S.history);
 }
 
-function undo() {
-    if (!bSt || !bDB || !bLab) { alert('無可撤銷資料'); return; }
-    S = JSON.parse(JSON.stringify(bSt));
-    BigData = JSON.parse(JSON.stringify(bDB));
-    LabStore = JSON.parse(JSON.stringify(bLab));
-    recalcDBStats(BigData);
-    saveState();
-    saveDatabase();
-    drawKeypad();
-    clearCurrentInput();
-    render();
-}
-
-function resetShoe() {
-    if (!confirm('換靴？本靴路單將清空。\n系統會自動將當前已打過的牌局結算並存入實驗室資料庫。')) return;
-    closeCurrentShoe();
-    resetShoeVarsInit();
-    saveState();
-    saveDatabase();
-    drawKeypad();
-    clearCurrentInput();
-    render();
-}
-
-function resetAll() {
-    if (!confirm('⚠️ 警告：這將徹底清除本機所有的歷史實驗與牌局資料庫！確定嗎？')) return;
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && (k.startsWith('bac_db_') || k.startsWith('bac_lab_') || k.startsWith('bac_st_') || k.startsWith('bac_cfg_'))) {
-            keysToRemove.push(k);
-        }
-    }
-    keysToRemove.forEach(k => localStorage.removeItem(k));
-    location.reload();
-}
-
-function exportDB() {
-    recalcDBStats(BigData);
-    auditLabStore(LabStore);
-    const payload = { version: 'v35', bigData: BigData, labStore: LabStore, state: S, config: Config };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'bac_v35_export.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
-}
-
-function importDB(e) {
-    const r = new FileReader();
-    r.onload = (ev) => {
-        try {
-            const t = String(ev.target.result || '').replace(/^\uFEFF/, '');
-            const o = JSON.parse(t);
-            
-            let tempBigData = normalizeBigData({});
-            let tempLabStore = { schema_version: 'v35', rawShoes: [], currentOpenShoe: null, experiments: [] };
-            let tempS = createInitialState();
-            let tempConfig = Object.assign({}, Config);
-            
-            const isFullSnapshot = o.bigData && typeof o.bigData === 'object' && 
-                                   o.labStore && typeof o.labStore === 'object' && typeof o.labStore.schema_version === 'string' && Array.isArray(o.labStore.rawShoes) &&
-                                   o.state && typeof o.state === 'object' && typeof o.state.runningCount === 'number' && 
-                                   Array.isArray(o.state.history) && 
-                                   o.state.deck && typeof o.state.deck === 'object' && isValidDeck(o.state.deck) &&
-                                   o.config && typeof o.config === 'object' && typeof o.config.m === 'number' && typeof o.config.s === 'number' && typeof o.config.nBins === 'number';
-                                   
-            const isLegacyDBOnly = ((o.bigData && typeof o.bigData === 'object') || (o.patterns && typeof o.patterns === 'object')) && 
-                                   !o.labStore && !o.state && !o.config;
-
-            if (!isFullSnapshot && !isLegacyDBOnly) {
-                throw new Error('partial-import-rejected');
-            }
-
-            if (o.bigData) { tempBigData = normalizeBigData(o.bigData); } 
-            else if (o.patterns) { tempBigData = normalizeBigData(o); }
-
-            if (isFullSnapshot) {
-                if (o.labStore) { 
-                    tempLabStore = o.labStore; 
-                    auditLabStore(tempLabStore); 
-                }
-                if (o.config) { tempConfig = normalizeConfig(o.config); }
-                if (o.state) {
-                    const migrated = normalizeState(o.state);
-                    if (migrated) { tempS = migrated; } else { throw new Error('invalid-state'); }
-                }
-                validateOpenShoeConsistency(tempLabStore, tempS);
-            } else {
-                tempLabStore = LabStore;
-                tempS = S;
-                tempConfig = Config;
-            }
-            
-            BigData = tempBigData;
-            LabStore = tempLabStore;
-            Config = tempConfig;
-            S = tempS;
-
-            recalcDBStats(BigData);
-            document.getElementById('cfgM').value = Config.m;
-            document.getElementById('cfgS').value = Config.s;
-            document.getElementById('cfgBins').value = Config.nBins;
-            
-            saveDatabase();
-            saveState();
-            saveConfig();
-            drawKeypad();
-            clearCurrentInput();
-            render();
-
-            if (isFullSnapshot) {
-                alert(`✅ 匯入成功！目前已載入 ${LabStore.rawShoes.length} 雙已結算的鞋靴資料供實驗室使用。`);
-            } else if (isLegacyDBOnly) {
-                alert('⚠️ 匯入成功！已載入舊版大數據供「舊版實時戰況」參考。\n\n(註：因舊資料缺乏單局溯源，無法參與量化實驗室 OOS 嚴格驗證，您的既有 LabStore 與牌局狀態已自動保留。)');
-            }
-        } catch (err) {
-            console.error('Import Error:', err);
-            alert('匯入失敗：檔案不完整、格式不正確或為偽造快照。系統已阻擋本次匯入，您的現有資料未受影響。');
-        } finally {
-            e.target.value = '';
-        }
-    };
-    r.readAsText(e.target.files[0]);
-}
-
-function buildBigRoadMeta(history) {
-    const grid = {};
-    const cols = [];
-    let last = null, startCol = 0, c = 0, r = 0, lastCoord = null, maxCol = 0;
-    for (const d of history) {
-        if (d.w === 'T') {
-            if (lastCoord && grid[lastCoord]) grid[lastCoord].ties = (grid[lastCoord].ties || 0) + 1;
-            continue;
-        }
-        if (last === null || d.w !== last) {
-            if (last !== null) {
-                startCol += 1;
-                while (grid[`${startCol},0`]) startCol += 1;
-            }
-            c = startCol;
-            r = 0;
-        } else {
-            const nr = r + 1;
-            if (nr <= 5 && !grid[`${c},${nr}`]) r = nr;
-            else {
-                c += 1;
-                while (grid[`${c},${r}`]) c += 1;
-            }
-        }
-        const key = `${c},${r}`;
-        grid[key] = { v: d.w, bp: d.bp, pp: d.pp, ties: 0, c, r };
-        if (!cols[c]) cols[c] = [];
-        cols[c][r] = grid[key];
-        last = d.w;
-        lastCoord = key;
-        maxCol = Math.max(maxCol, c);
-    }
-    return { grid, cols, maxCol };
-}
-
-function getDerivedRoads(meta) {
-    const nodes = Object.values(meta.grid).sort((a, b) => a.c - b.c || a.r - b.r);
-    const seq1 = [], seq2 = [], seq3 = [];
-    const colH = (c) => { let h = 0; while (meta.grid[`${c},${h}`]) h++; return h; };
-    for (const node of nodes) {
-        const c = node.c, r = node.r;
-        const calc = (off, seq) => {
-            if (r === 0) {
-                if (c >= off + 1) seq.push(colH(c - 1) === colH(c - off - 1) ? 'R' : 'Blue');
-            } else {
-                if (c >= off) {
-                    const a = !!meta.grid[`${c-off},${r}`];
-                    const b = !!meta.grid[`${c-off},${r-1}`];
-                    seq.push(a === b ? 'R' : 'Blue');
-                }
-            }
+function patternStatsForKey(db, key){
+    if (!key) return null;
+    const cp = canonicalPatternLive(key, db.patterns[key]);
+    if (!cp) return null;
+    const bpBase = cp.B + cp.P;
+    const allBase = bpBase + cp.T;
+    if (cp.N < SIDEBET_MIN_N){
+        return {
+            key:key, b:cp.B, pl:cp.P, t:cp.T, bp:cp.BP, pp:cp.PP, n:cp.N,
+            mainB:0, mainP:0, tieP:0, bpP:0, ppP:0, weak:true
         };
-        calc(1, seq1); calc(2, seq2); calc(3, seq3);
     }
-    return { eye: seq1, small: seq2, roach: seq3 };
+    return {
+        key:key, b:cp.B, pl:cp.P, t:cp.T, bp:cp.BP, pp:cp.PP, n:cp.N,
+        mainB: bpBase > 0 ? cp.B / bpBase : 0,
+        mainP: bpBase > 0 ? cp.P / bpBase : 0,
+        tieP: (cp.T + 0.5) / (allBase + 5),
+        bpP: (cp.BP + 0.4) / (allBase + 5),
+        ppP: (cp.PP + 0.4) / (allBase + 5),
+        weak:false
+    };
 }
 
-function renderRoads() {
+function patternStatsForCurrent(){
+    return patternStatsForKey(BigData, getPatternKeyBeforePush());
+}
+
+function getCurrentSidebetRecommendations(){
+    if (S.isLegacyPartial){
+        return {
+            tie:false, bp:false, pp:false,
+            probs:{ tie:0, bp:0, pp:0 },
+            hasData:false
+        };
+    }
+    const ptn = patternStatsForCurrent();
+    let fT = 0, fBP = 0, fPP = 0;
+    const hasData = !!(ptn && !ptn.weak);
+    if (hasData){
+        fT = ptn.tieP;
+        fBP = ptn.bpP;
+        fPP = ptn.ppP;
+    }
+    return {
+        tie: hasData && fT >= Config.s,
+        bp: hasData && fBP >= Config.s,
+        pp: hasData && fPP >= Config.s,
+        probs: { tie:fT, bp:fBP, pp:fPP },
+        hasData: hasData
+    };
+}
+
+function getCurrentLivePrediction(){
+    const remainCards = Object.values(S.deck).reduce((a,b)=>a+b,0);
+    const policy = getDeployedPolicy();
+    const features = {
+        F_Base: {},
+        F_Comp: { running_count:S.runningCount, remain_cards:remainCards },
+        F_Path: extractPathFeaturesCore(S.history)
+    };
+    const ptnKey = getPatternKeyBeforePush();
+    const cp = ptnKey ? canonicalPatternLive(ptnKey, BigData.patterns[ptnKey]) : null;
+    const externalState = cp ? {
+        has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P
+    } : { has_pattern:false };
+
+    try{
+        return executePolicyChain(policy.model, features, policy.tau, externalState, policy.options, false);
+    }catch(e){
+        return {
+            probs: NAIVE_PRIORS,
+            ev: { B:0, P:0, T:0 },
+            decision: 'PASS',
+            tau: Config.m,
+            model_id: policy.model ? policy.model.id : null,
+            isWarmup: false
+        };
+    }
+}
+
+function performDeterministicAudit(hand, simHistory, runningCount, remainCards, currentWfDb){
+    if (!hand.policy_snapshot || !hand.live_prediction) return false;
+    const snap = hand.policy_snapshot;
+    const pred = hand.live_prediction;
+
+    if (snap.main_decision !== 'B' && snap.main_decision !== 'P' && snap.main_decision !== 'PASS') return false;
+    if (typeof snap.recommend_tie !== 'boolean') return false;
+    if (typeof snap.recommend_bp !== 'boolean') return false;
+    if (typeof snap.recommend_pp !== 'boolean') return false;
+    if (typeof snap.is_warmup !== 'boolean') return false;
+    if (typeof snap.tau !== 'number' || !Number.isFinite(snap.tau)) return false;
+    if (typeof snap.s !== 'number' || !Number.isFinite(snap.s)) return false;
+    if (typeof snap.model_id !== 'string') return false;
+
+    const model = getModelById(snap.model_id);
+    if (!model) return false;
+
+    const reconstructedFeatures = {
+        F_Base: {},
+        F_Comp: { running_count:runningCount, remain_cards:remainCards },
+        F_Path: extractPathFeaturesCore(simHistory)
+    };
+
+    const pure = simHistory.filter(x => x.w !== 'T').map(x => x.w);
+    const ptnKey = pure.length >= 3 ? pure.slice(-3).join(',') : null;
+    const cp = ptnKey && currentWfDb ? currentWfDb.patterns[ptnKey] : null;
+    const externalState = cp ? {
+        has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P
+    } : { has_pattern:false };
+
+    let expectedPrediction;
+    try{
+        expectedPrediction = executePolicyChain(model, reconstructedFeatures, snap.tau, externalState, { allowTieBet:false }, false);
+    }catch(e){
+        return false;
+    }
+
+    if (snap.main_decision !== pred.decision) return false;
+    if (snap.main_decision !== expectedPrediction.decision) return false;
+    if (snap.tau !== pred.tau) return false;
+    if (snap.tau !== expectedPrediction.tau) return false;
+    if (snap.is_warmup !== pred.isWarmup) return false;
+    if (snap.is_warmup !== expectedPrediction.isWarmup) return false;
+
+    let expected_fT = 0, expected_fBP = 0, expected_fPP = 0;
+    if (cp && cp.N >= SIDEBET_MIN_N){
+        const allBase = cp.B + cp.P + cp.T;
+        expected_fT = (cp.T + 0.5) / (allBase + 5);
+        expected_fBP = (cp.BP + 0.4) / (allBase + 5);
+        expected_fPP = (cp.PP + 0.4) / (allBase + 5);
+    }
+
+    if (snap.recommend_tie !== (expected_fT >= snap.s)) return false;
+    if (snap.recommend_bp !== (expected_fBP >= snap.s)) return false;
+    if (snap.recommend_pp !== (expected_fPP >= snap.s)) return false;
+
+    return true;
+}
+
+function validateOpenShoeConsistency(targetLabStore, currentState, basePatternDB){
+    if (!targetLabStore.currentOpenShoe){
+        return currentState.history.length === 0 && currentState.runningCount === 0;
+    }
+    if (!currentState || !Array.isArray(currentState.history)) return false;
+
+    const oShoe = targetLabStore.currentOpenShoe;
+    if (oShoe.status !== 'open' || oShoe.hands.length !== currentState.history.length) return false;
+
+    let isShoeValid = true;
+    let runningDeck = null;
+    let runningCount = 0;
+    let replayHistory = [];
+    const validSlots = ['p1','p2','p3','b1','b2','b3'];
+    let auditWfDb = deepCopy(basePatternDB || { patterns:{}, totalHands:0 });
+
+    for (let i=0; i<oShoe.hands.length; i++){
+        const hand = oShoe.hands[i];
+        migrateOutcomeContract(hand);
+
+        if (!hand || !hand.outcome || !hand.input || !hand.input.cards || !hand.pre_state || !isValidDeck(hand.pre_state.remaining_deck)){
+            isShoeValid = false; break;
+        }
+        if (hand.outcome.winner !== 'B' && hand.outcome.winner !== 'P' && hand.outcome.winner !== 'T'){
+            isShoeValid = false; break;
+        }
+
+        if (i === 0){
+            if (hand.pre_state.history_len !== 0 || hand.pre_state.running_count !== 0){
+                isShoeValid = false; break;
+            }
+            for (let r=1; r<=13; r++){
+                if (hand.pre_state.remaining_deck[r] !== 32){ isShoeValid = false; break; }
+            }
+            if (!isShoeValid) break;
+            runningDeck = deepCopy(hand.pre_state.remaining_deck);
+            runningCount = hand.pre_state.running_count;
+        }else{
+            if (hand.pre_state.history_len !== i || hand.pre_state.running_count !== runningCount){
+                isShoeValid = false; break;
+            }
+            for (let r=1; r<=13; r++){
+                if (hand.pre_state.remaining_deck[r] !== runningDeck[r]){ isShoeValid = false; break; }
+            }
+        }
+
+        let remainCards = 0;
+        for (const k in runningDeck){ if (runningDeck.hasOwnProperty(k)) remainCards += runningDeck[k]; }
+
+        if (hand.policy_snapshot){
+            if (!performDeterministicAudit(hand, replayHistory, runningCount, remainCards, auditWfDb)){
+                console.warn('Open shoe deterministic audit failed at hand', i + 1);
+                isShoeValid = false; break;
+            }
+        }
+
+        let pPts = 0, bPts = 0;
+        for (let idx=0; idx<validSlots.length; idx++){
+            const key = validSlots[idx];
+            const rank = hand.input.cards[key];
+            if (rank !== null && rank !== undefined && countWeights[rank] !== undefined){
+                if (runningDeck[rank] <= 0){ isShoeValid = false; break; }
+                runningDeck[rank] -= 1;
+                runningCount += countWeights[rank];
+                if (key.startsWith('p')) pPts += baccaratValue(rank);
+                if (key.startsWith('b')) bPts += baccaratValue(rank);
+            }
+        }
+        if (!isShoeValid) break;
+
+        const pFinal = pPts % 10;
+        const bFinal = bPts % 10;
+        const expectedWinner = pFinal > bFinal ? 'P' : (bFinal > pFinal ? 'B' : 'T');
+        const expectedBP = (hand.input.cards.b1 === hand.input.cards.b2 && hand.input.cards.b1 !== null && hand.input.cards.b1 !== undefined);
+        const expectedPP = (hand.input.cards.p1 === hand.input.cards.p2 && hand.input.cards.p1 !== null && hand.input.cards.p1 !== undefined);
+
+        if (hand.outcome.winner !== expectedWinner || hand.outcome.pPt !== pFinal || hand.outcome.bPt !== bFinal || hand.outcome.bp !== expectedBP || hand.outcome.pp !== expectedPP){
+            isShoeValid = false; break;
+        }
+
+        const ptnKeyToUpdate = getPatternKeyBeforePushFromHistory(replayHistory);
+        if (ptnKeyToUpdate){
+            updatePatternDB(auditWfDb, ptnKeyToUpdate, expectedWinner, expectedBP, expectedPP);
+        }
+
+        replayHistory.push({ w:expectedWinner, pPt:pFinal, bPt:bFinal, bp:expectedBP, pp:expectedPP });
+    }
+
+    if (isShoeValid){
+        if (runningCount !== currentState.runningCount) isShoeValid = false;
+        if (isShoeValid){
+            for (let r=1; r<=13; r++){
+                if (runningDeck[r] !== currentState.deck[r]){ isShoeValid = false; break; }
+            }
+        }
+        if (isShoeValid && replayHistory.length !== currentState.history.length) isShoeValid = false;
+        if (isShoeValid){
+            for (let i=0; i<replayHistory.length; i++){
+                const a = replayHistory[i], b = currentState.history[i];
+                if (!b || a.w !== b.w || a.pPt !== b.pPt || a.bPt !== b.bPt || a.bp !== b.bp || a.pp !== b.pp){
+                    isShoeValid = false; break;
+                }
+            }
+        }
+    }
+    return isShoeValid;
+}
+
+function auditLabStore(targetLabStore){
+    const validShoes = [];
+    const seenShoeIds = new Set();
+    const validSlots = ['p1','p2','p3','b1','b2','b3'];
+
+    const rawShoesArray = targetLabStore.rawShoes || [];
+    for (let shoeIdx=0; shoeIdx<rawShoesArray.length; shoeIdx++){
+        const shoe = rawShoesArray[shoeIdx];
+        try{
+            if (!shoe || typeof shoe !== 'object') continue;
+            if (shoe.status !== 'closed' || !Array.isArray(shoe.hands) || shoe.hands.length === 0) continue;
+            if (!shoe.shoe_id || seenShoeIds.has(shoe.shoe_id)) continue;
+
+            let isShoeValid = true;
+            let expectedIndex = 1;
+            let runningDeck = null;
+            let runningCount = 0;
+            let simHistory = [];
+            let auditWfDb = rebuildBigDataFromAuditedShoes(validShoes);
+
+            for (let i=0; i<shoe.hands.length; i++){
+                const hand = shoe.hands[i];
+                migrateOutcomeContract(hand);
+
+                if (!hand || !hand.outcome || !hand.input || !hand.input.cards || !hand.pre_state || !isValidDeck(hand.pre_state.remaining_deck)){
+                    isShoeValid = false; break;
+                }
+                if (!hand.features || !hand.features.F_Comp || typeof hand.features.F_Comp.running_count !== 'number' || typeof hand.features.F_Comp.remain_cards !== 'number' || !hand.features.F_Path){
+                    isShoeValid = false; break;
+                }
+                if (!hand.live_prediction || !hand.live_prediction.probs){
+                    isShoeValid = false; break;
+                }
+                if (hand.hand_index !== expectedIndex){
+                    isShoeValid = false; break;
+                }
+                if (hand.outcome.winner !== 'B' && hand.outcome.winner !== 'P' && hand.outcome.winner !== 'T'){
+                    isShoeValid = false; break;
+                }
+
+                const physicalRC = derivePhysicalRunningCount(hand.pre_state.remaining_deck);
+                if (hand.pre_state.running_count !== physicalRC || hand.features.F_Comp.running_count !== physicalRC){
+                    isShoeValid = false; break;
+                }
+
+                let expectedRemainCards = 0;
+                for (let r=1; r<=13; r++) expectedRemainCards += hand.pre_state.remaining_deck[r];
+                if (hand.features.F_Comp.remain_cards !== expectedRemainCards){
+                    isShoeValid = false; break;
+                }
+
+                if (i === 0){
+                    if (hand.pre_state.history_len !== 0 || hand.pre_state.running_count !== 0 || expectedRemainCards !== 416){
+                        isShoeValid = false; break;
+                    }
+                    for (let r=1; r<=13; r++){
+                        if (hand.pre_state.remaining_deck[r] !== 32){ isShoeValid = false; break; }
+                    }
+                    if (!isShoeValid) break;
+                    runningDeck = deepCopy(hand.pre_state.remaining_deck);
+                    runningCount = hand.pre_state.running_count;
+                    simHistory = [];
+                }else{
+                    if (hand.pre_state.history_len !== i || hand.pre_state.running_count !== runningCount){
+                        isShoeValid = false; break;
+                    }
+                    for (let r=1; r<=13; r++){
+                        if (hand.pre_state.remaining_deck[r] !== runningDeck[r]){ isShoeValid = false; break; }
+                    }
+                }
+
+                const expectedPathFeatures = extractPathFeaturesCore(simHistory);
+                const recordedPath = hand.features.F_Path;
+                if (
+                    recordedPath.history_len !== expectedPathFeatures.history_len ||
+                    recordedPath.trend_side !== expectedPathFeatures.trend_side ||
+                    recordedPath.trend_len !== expectedPathFeatures.trend_len ||
+                    recordedPath.recent_shoe_bias !== expectedPathFeatures.recent_shoe_bias ||
+                    recordedPath.ask_B_red !== expectedPathFeatures.ask_B_red ||
+                    recordedPath.ask_P_red !== expectedPathFeatures.ask_P_red
+                ){
+                    isShoeValid = false; break;
+                }
+
+                if (hand.policy_snapshot){
+                    if (!performDeterministicAudit(hand, simHistory, runningCount, expectedRemainCards, auditWfDb)){
+                        isShoeValid = false; break;
+                    }
+                }
+
+                let pPts = 0, bPts = 0;
+                for (let kIdx=0; kIdx<validSlots.length; kIdx++){
+                    const key = validSlots[kIdx];
+                    const rank = hand.input.cards[key];
+                    if (rank !== null && rank !== undefined && countWeights[rank] !== undefined){
+                        if (runningDeck[rank] <= 0){ isShoeValid = false; break; }
+                        runningDeck[rank] -= 1;
+                        runningCount += countWeights[rank];
+                        if (key.startsWith('p')) pPts += baccaratValue(rank);
+                        if (key.startsWith('b')) bPts += baccaratValue(rank);
+                    }
+                }
+                if (!isShoeValid) break;
+
+                const pFinal = pPts % 10;
+                const bFinal = bPts % 10;
+                const expectedWinner = pFinal > bFinal ? 'P' : (bFinal > pFinal ? 'B' : 'T');
+                const expectedBP = (hand.input.cards.b1 === hand.input.cards.b2 && hand.input.cards.b1 !== null && hand.input.cards.b1 !== undefined);
+                const expectedPP = (hand.input.cards.p1 === hand.input.cards.p2 && hand.input.cards.p1 !== null && hand.input.cards.p1 !== undefined);
+
+                if (hand.outcome.winner !== expectedWinner || hand.outcome.pPt !== pFinal || hand.outcome.bPt !== bFinal || hand.outcome.bp !== expectedBP || hand.outcome.pp !== expectedPP){
+                    isShoeValid = false; break;
+                }
+
+                const ptnKeyToUpdate = getPatternKeyBeforePushFromHistory(simHistory);
+                if (ptnKeyToUpdate){
+                    updatePatternDB(auditWfDb, ptnKeyToUpdate, expectedWinner, expectedBP, expectedPP);
+                }
+
+                simHistory.push({ w:expectedWinner, pPt:pFinal, bPt:bFinal, bp:expectedBP, pp:expectedPP });
+                expectedIndex++;
+            }
+
+            if (isShoeValid){
+                validShoes.push(shoe);
+                seenShoeIds.add(shoe.shoe_id);
+            }
+        }catch(e){
+            console.warn('Audit Warning: drop shoe', shoe ? shoe.shoe_id : 'unknown', e);
+        }
+    }
+
+    targetLabStore.rawShoes = validShoes.sort((a,b) => (a.started_at || 0) - (b.started_at || 0));
+}
+
+function rebuildLiveStateMetrics(stateToRebuild, openShoe){
+    stateToRebuild.shoePerf = {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0};
+    stateToRebuild.lastRecSide = null;
+    stateToRebuild.lastSideBets = { tie:false, bp:false, pp:false };
+    stateToRebuild.isLegacyPartial = false;
+
+    if (!stateToRebuild.history || stateToRebuild.history.length === 0) return;
+    const hasValidOpenShoe = openShoe && openShoe.status === 'open' && openShoe.hands.length === stateToRebuild.history.length;
+
+    for (let i=0; i<stateToRebuild.history.length; i++){
+        const hOutcome = stateToRebuild.history[i];
+
+        if (hasValidOpenShoe && openShoe.hands[i].policy_snapshot){
+            const snap = openShoe.hands[i].policy_snapshot;
+
+            if (hOutcome.w !== 'T' && snap.main_decision !== 'PASS'){
+                stateToRebuild.shoePerf.recs += 1;
+                if (snap.main_decision === hOutcome.w) stateToRebuild.shoePerf.hits += 1;
+            }
+            if (snap.recommend_tie){
+                stateToRebuild.shoePerf.tRecs += 1;
+                if (hOutcome.w === 'T') stateToRebuild.shoePerf.tHits += 1;
+            }
+            if (snap.recommend_bp){
+                stateToRebuild.shoePerf.bpRecs += 1;
+                if (hOutcome.bp) stateToRebuild.shoePerf.bpHits += 1;
+            }
+            if (snap.recommend_pp){
+                stateToRebuild.shoePerf.ppRecs += 1;
+                if (hOutcome.pp) stateToRebuild.shoePerf.ppHits += 1;
+            }
+
+            if (i === stateToRebuild.history.length - 1){
+                stateToRebuild.lastRecSide = snap.main_decision;
+                stateToRebuild.lastSideBets = {
+                    tie: snap.recommend_tie,
+                    bp: snap.recommend_bp,
+                    pp: snap.recommend_pp
+                };
+            }
+        }else{
+            stateToRebuild.isLegacyPartial = true;
+        }
+    }
+}
+
+function annihilateLiveState(options){
+    const rebuildBigData = options && options.rebuildBigData;
+    LabStore.currentOpenShoe = null;
+    resetShoeVarsInit();
+
+    if (rebuildBigData){
+        auditLabStore(LabStore);
+        BigData = rebuildBigDataFromAuditedShoes(LabStore.rawShoes);
+        recalcDBStats(BigData);
+    }
+
+    bSt = null; bDB = null; bLab = null;
+    saveDatabase();
+    saveState();
+    drawKeypad();
+    clearCurrentInput();
+    render();
+}
+
+function fmtStat(h, r){
+    return !r ? '0/0 (0%)' : h + '/' + r + ' (' + (h / r * 100).toFixed(1) + '%)';
+}
+
+function updateDBUI(){
+    const sS = document.getElementById('shoeStats');
+    const gS = document.getElementById('globalStats');
+
+    if (sS){
+        sS.innerHTML =
+            '<div class="db-stat-item"><span>主預測</span><span>' + fmtStat(S.shoePerf.hits, S.shoePerf.recs) + '</span></div>' +
+            '<div class="db-stat-item"><span>和局</span><span style="color:var(--t-color)">' + fmtStat(S.shoePerf.tHits, S.shoePerf.tRecs) + '</span></div>' +
+            '<div class="db-stat-item"><span>莊對</span><span style="color:var(--b-color)">' + fmtStat(S.shoePerf.bpHits, S.shoePerf.bpRecs) + '</span></div>' +
+            '<div class="db-stat-item"><span>閒對</span><span style="color:var(--p-color)">' + fmtStat(S.shoePerf.ppHits, S.shoePerf.ppRecs) + '</span></div>';
+    }
+
+    if (gS){
+        gS.innerHTML =
+            '<div class="db-stat-item"><span>總局數</span><span style="color:var(--highlight)">' + BigData.totalHands + '</span></div>' +
+            '<div class="db-stat-item"><span>Pattern 回測</span><span>' + fmtStat(BigData.acc.hits, BigData.acc.recs) + '</span></div>' +
+            '<div class="db-stat-item"><span>和局</span><span style="color:var(--t-color)">' + fmtStat(BigData.acc.tHits, BigData.acc.tRecs) + '</span></div>' +
+            '<div class="db-stat-item"><span>對子</span><span style="color:var(--highlight)">' + fmtStat(BigData.acc.bpHits + BigData.acc.ppHits, BigData.acc.bpRecs + BigData.acc.ppRecs) + '</span></div>';
+    }
+}
+
+function renderRoads(){
     const bead = document.getElementById('grid-bead');
     const big = document.getElementById('grid-big');
     bead.innerHTML = '';
     big.innerHTML = '';
 
-    for (let c = 0; c < Math.max(12, Math.ceil(S.history.length / 6)); c++) {
+    for (let c=0; c<Math.max(12, Math.ceil(S.history.length / 6)); c++){
         const col = document.createElement('div');
         col.className = 'road-col';
-        for (let r = 0; r < 6; r++) {
+        for (let r=0; r<6; r++){
             const cell = document.createElement('div');
             cell.className = 'cell-lg';
             const idx = c * 6 + r;
             const d = S.history[idx];
-            if (d) {
+            if (d){
                 const dot = document.createElement('div');
-                dot.className = `bead-dot ${d.w}`;
+                dot.className = 'bead-dot ' + d.w;
                 cell.appendChild(dot);
                 if (d.bp) cell.classList.add('has-bp');
                 if (d.pp) cell.classList.add('has-pp');
@@ -1695,22 +1609,22 @@ function renderRoads() {
     }
 
     const meta = buildBigRoadMeta(S.history);
-    for (let c = 0; c < Math.max(24, meta.maxCol + 1); c++) {
+    for (let c=0; c<Math.max(24, meta.maxCol + 1); c++){
         const col = document.createElement('div');
         col.className = 'road-col';
-        for (let r = 0; r < 6; r++) {
+        for (let r=0; r<6; r++){
             const cell = document.createElement('div');
             cell.className = 'cell-lg';
-            const d = meta.grid[`${c},${r}`];
-            if (d) {
+            const d = meta.grid[c + ',' + r];
+            if (d){
                 const cir = document.createElement('div');
-                cir.className = `circle-hollow ${d.v}`;
+                cir.className = 'circle-hollow ' + d.v;
                 cell.appendChild(cir);
-                if (d.ties) {
+                if (d.ties){
                     const tLine = document.createElement('div');
                     tLine.className = 'tie-line';
                     cell.appendChild(tLine);
-                    if (d.ties > 1) {
+                    if (d.ties > 1){
                         const tText = document.createElement('span');
                         tText.className = 'tie-text';
                         tText.innerText = d.ties;
@@ -1731,44 +1645,47 @@ function renderRoads() {
     drawDerivedGrid('grid-roach', derived.roach, 'roach');
 }
 
-function drawDerivedGrid(domId, arr, type) {
+function drawDerivedGrid(domId, arr, type){
     const el = document.getElementById(domId);
     el.innerHTML = '';
     const grid = {};
     let last = null, startCol = 0, c = 0, r = 0, maxCol = 0;
-    for (const res of arr) {
-        if (last === null || res !== last) {
-            if (last !== null) {
+
+    for (let i=0; i<arr.length; i++){
+        const res = arr[i];
+        if (last === null || res !== last){
+            if (last !== null){
                 startCol += 1;
-                while (grid[`${startCol},0`]) startCol += 1;
+                while (grid[startCol + ',0'] !== undefined) startCol += 1;
             }
             c = startCol;
             r = 0;
-        } else {
+        }else{
             const nr = r + 1;
-            if (nr <= 5 && !grid[`${c},${nr}`]) r = nr;
-            else {
+            if (nr <= 5 && grid[c + ',' + nr] === undefined){
+                r = nr;
+            }else{
                 c += 1;
-                while (grid[`${c},${r}`]) c += 1;
+                while (grid[c + ',' + r] !== undefined) c += 1;
             }
         }
-        grid[`${c},${r}`] = res;
+        grid[c + ',' + r] = res;
         last = res;
         maxCol = Math.max(maxCol, c);
     }
 
-    for (let i = 0; i < Math.max(24, maxCol + 1); i++) {
+    for (let i=0; i<Math.max(24, maxCol + 1); i++){
         const col = document.createElement('div');
         col.className = 'road-col';
-        for (let j = 0; j < 6; j++) {
+        for (let j=0; j<6; j++){
             const cell = document.createElement('div');
             cell.className = 'cell-sm';
-            const val = grid[`${i},${j}`];
-            if (val) {
+            const val = grid[i + ',' + j];
+            if (val){
                 const item = document.createElement('div');
-                if (type === 'eye') item.className = `circle-hollow ${val}`;
-                else if (type === 'small') item.className = `circle-solid ${val}`;
-                else item.className = `slash ${val}`;
+                if (type === 'eye') item.className = 'circle-hollow ' + val;
+                else if (type === 'small') item.className = 'circle-solid ' + val;
+                else item.className = 'slash ' + val;
                 cell.appendChild(item);
             }
             col.appendChild(cell);
@@ -1777,8 +1694,8 @@ function drawDerivedGrid(domId, arr, type) {
     }
 }
 
-function render(livePrediction = null) {
-    const remain = Object.values(S.deck).reduce((a, b) => a + b, 0);
+function render(livePrediction){
+    const remain = Object.values(S.deck).reduce((a,b)=>a+b,0);
     document.getElementById('hdrRemain').innerText = remain;
     document.getElementById('hdrRound').innerText = S.history.length;
     renderRoads();
@@ -1786,109 +1703,875 @@ function render(livePrediction = null) {
     const ob = document.getElementById('oracleBox');
     const om = document.getElementById('oracleMain');
     const rb = document.getElementById('reasonBadge');
-    const alert = document.getElementById('trendAlert');
+    const alertBox = document.getElementById('trendAlert');
 
-    if (!livePrediction) {
-        try {
-            const policy = getDeployedPolicy();
-            const features = { 
-                F_Base: {}, 
-                F_Comp: { running_count: S.runningCount, remain_cards: remain }, 
-                F_Path: extractPathFeatures() 
-            };
-            
-            const ptnKey = getPatternKeyBeforePush();
-            const cp = ptnKey ? canonicalPatternLive(ptnKey, BigData.patterns[ptnKey]) : null;
-            const currentExternalState = cp ? { has_pattern: true, pattern_N: cp.N, pattern_B: cp.B, pattern_P: cp.P } : { has_pattern: false };
-            
-            livePrediction = executePolicyChain(policy.model, features, policy.tau, currentExternalState, policy.options, false);
-        } catch (e) {
-            livePrediction = { decision: 'PASS', ev: { B: 0, P: 0, T: 0 }, isWarmup: false };
-        }
+    if (livePrediction === null || livePrediction === undefined){
+        livePrediction = getCurrentLivePrediction();
     }
 
-    if (S.history.length < 1) {
+    if (S.history.length < 1){
         om.innerText = '等待輸入';
         rb.innerHTML = '實驗室預測模型待命中';
         ob.className = 'oracle-box pass';
-        alert.innerText = '📊 單一大腦策略運行中';
-        alert.className = 'trend-alert alert-safe';
+        alertBox.innerText = '📊 專家策略引擎運行中';
+        alertBox.className = 'trend-alert alert-safe';
         S.lastRecSide = 'PASS';
-    } else if (livePrediction.isWarmup) {
+    }else if (S.isLegacyPartial){
+        om.innerText = '⚠️ 降級模式';
+        rb.innerHTML = '舊版資料缺少決策快照，指標未完整還原';
+        ob.className = 'oracle-box degraded';
+        alertBox.innerText = '⚠️ 舊版相容模式：請換靴或重置';
+        alertBox.className = 'trend-alert alert-warn';
+        S.lastRecSide = 'PASS';
+    }else if (livePrediction.isWarmup){
         om.innerText = '🔒 規律收集中';
-        rb.innerHTML = `暖機保護中 (已收集 ${S.history.length}/${WARMUP_HANDS})`;
+        rb.innerHTML = '暖機保護中 (已收集 ' + S.history.length + '/' + WARMUP_HANDS + ')';
         ob.className = 'oracle-box locked';
-        alert.innerText = '⚠️ 樣本不足，強制觀望';
-        alert.className = 'trend-alert alert-safe';
+        alertBox.innerText = '⚠️ 樣本不足，強制觀望';
+        alertBox.className = 'trend-alert alert-safe';
         S.lastRecSide = 'PASS';
-    } else {
-        if (livePrediction.decision === 'B') {
+    }else{
+        if (livePrediction.decision === 'B'){
             ob.className = 'oracle-box banker';
             om.innerText = '🔥 推薦莊家';
-            alert.innerText = '⚡ 複合優勢突破閥值';
-            alert.className = 'trend-alert alert-high';
-        } else if (livePrediction.decision === 'P') {
+            alertBox.innerText = '⚡ 專家優勢突破閥值';
+            alertBox.className = 'trend-alert alert-high';
+        }else if (livePrediction.decision === 'P'){
             ob.className = 'oracle-box player';
             om.innerText = '🔥 推薦閒家';
-            alert.innerText = '⚡ 複合優勢突破閥值';
-            alert.className = 'trend-alert alert-high';
-        } else {
+            alertBox.innerText = '⚡ 專家優勢突破閥值';
+            alertBox.className = 'trend-alert alert-high';
+        }else{
             ob.className = 'oracle-box pass';
             om.innerText = '🛡️ 觀望 (PASS)';
-            alert.innerText = '📊 優勢不足，建議等待';
-            alert.className = 'trend-alert alert-safe';
+            alertBox.innerText = '📊 趨勢不明，建議等待';
+            alertBox.className = 'trend-alert alert-safe';
         }
+
         const tc = remain > 0 ? (S.runningCount / Math.max(0.5, remain / 52)).toFixed(2) : '0.00';
         const ev = (livePrediction.ev[livePrediction.decision] || 0).toFixed(4);
-        rb.innerHTML = `真數 (TC): ${tc} | 預期淨利 (EV): ${ev}`;
-        
+        rb.innerHTML = '真數 (TC): ' + tc + ' | 預期淨利 (EV): ' + ev;
         S.lastRecSide = livePrediction.decision;
     }
 
-    const ptn = patternStatsForCurrent();
-    let fT = 0, fBP = 0, fPP = 0;
-    
-    const hasPatternData = ptn && !ptn.weak;
-    if (hasPatternData) { fT = ptn.tieP; fBP = ptn.bpP; fPP = ptn.ppP; }
-    
-    S.lastSideBets = { tie: fT >= Config.s, bp: fBP >= Config.s, pp: fPP >= Config.s };
+    if (S.isLegacyPartial){
+        S.lastSideBets = { tie:false, bp:false, pp:false };
+        document.getElementById('sbTie').innerText = '和局 --%';
+        document.getElementById('sbTie').className = 'sidebet-pill';
+        document.getElementById('sbBP').innerText = '莊對 --%';
+        document.getElementById('sbBP').className = 'sidebet-pill';
+        document.getElementById('sbPP').innerText = '閒對 --%';
+        document.getElementById('sbPP').className = 'sidebet-pill';
+    }else{
+        const sbr = getCurrentSidebetRecommendations();
+        S.lastSideBets = { tie:sbr.tie, bp:sbr.bp, pp:sbr.pp };
 
-    const setSB = (id, label, p, isPair, hasData) => {
-        const e = document.getElementById(id);
-        if (!hasData) {
-            e.innerText = `${label} --%`;
-            e.className = 'sidebet-pill';
-        } else {
-            e.innerText = `${label} ${(p * 100).toFixed(1)}%`;
-            e.className = p >= Config.s ? (isPair ? 'sidebet-pill active-pair' : 'sidebet-pill active') : 'sidebet-pill';
-        }
-    };
-    
-    setSB('sbTie', '和局', fT, false, hasPatternData);
-    setSB('sbBP', '莊對', fBP, true, hasPatternData);
-    setSB('sbPP', '閒對', fPP, true, hasPatternData);
+        const setSB = function(id, label, p, isPair, hasData){
+            const e = document.getElementById(id);
+            if (!hasData){
+                e.innerText = label + ' --%';
+                e.className = 'sidebet-pill';
+            }else{
+                e.innerText = label + ' ' + (p * 100).toFixed(1) + '%';
+                e.className = p >= Config.s
+                    ? (isPair ? 'sidebet-pill active-pair' : 'sidebet-pill active')
+                    : 'sidebet-pill';
+            }
+        };
+
+        setSB('sbTie', '和局', sbr.probs.tie, false, sbr.hasData);
+        setSB('sbBP', '莊對', sbr.probs.bp, true, sbr.hasData);
+        setSB('sbPP', '閒對', sbr.probs.pp, true, sbr.hasData);
+    }
 
     updateDBUI();
     saveState();
 }
 
-function fmtStat(h, r) { return !r ? '0/0 (0%)' : `${h}/${r} (${(h / r * 100).toFixed(1)}%)`; }
-
-function updateDBUI() {
-    const sS = document.getElementById('shoeStats');
-    const gS = document.getElementById('globalStats');
-    if (sS) {
-        sS.innerHTML = `<div class="db-stat-item"><span>主預測</span><span>${fmtStat(S.shoePerf.hits, S.shoePerf.recs)}</span></div><div class="db-stat-item"><span>和局</span><span style="color:var(--t-color)">${fmtStat(S.shoePerf.tHits, S.shoePerf.tRecs)}</span></div><div class="db-stat-item"><span>莊對</span><span style="color:var(--b-color)">${fmtStat(S.shoePerf.bpHits, S.shoePerf.bpRecs)}</span></div><div class="db-stat-item"><span>閒對</span><span style="color:var(--p-color)">${fmtStat(S.shoePerf.ppHits, S.shoePerf.ppRecs)}</span></div>`;
+function getPendingCounts(){
+    const pending = {};
+    for (let i=1; i<=13; i++) pending[i] = 0;
+    const ids = ['p1','p2','p3','b1','b2','b3'];
+    for (let i=0; i<ids.length; i++){
+        const v = getVal(ids[i]);
+        if (v) pending[v]++;
     }
-    if (gS) {
-        gS.innerHTML = `<div class="db-stat-item"><span>總局數</span><span style="color:var(--highlight)">${BigData.totalHands}</span></div><div class="db-stat-item"><span>Pattern 回測</span><span>${fmtStat(BigData.acc.hits, BigData.acc.recs)}</span></div><div class="db-stat-item"><span>和局</span><span style="color:var(--t-color)">${fmtStat(BigData.acc.tHits, BigData.acc.tRecs)}</span></div><div class="db-stat-item"><span>對子</span><span style="color:var(--highlight)">${fmtStat(BigData.acc.bpHits + BigData.acc.ppHits, BigData.acc.bpRecs + BigData.acc.ppRecs)}</span></div>`;
+    return pending;
+}
+
+function drawKeypad(){
+    const k = document.getElementById('keypad');
+    k.innerHTML = '';
+    const pending = getPendingCounts();
+
+    for (let i=1; i<=13; i++){
+        const remain = Math.max(0, (S.deck[i] || 0) - pending[i]);
+        const b = document.createElement('div');
+        b.className = 'key';
+        b.innerHTML = '<div class="key-val">' + (i===1?'A':i===11?'J':i===12?'Q':i===13?'K':i) + '</div><div class="key-count">' + remain + '</div>';
+        b.onclick = function(){ inputRank(i); };
+        k.appendChild(b);
+    }
+
+    const clr = document.createElement('div');
+    clr.className = 'key action-clear';
+    clr.innerText = '⌫ 清空重填';
+    clr.onclick = clearCurrentInput;
+    k.appendChild(clr);
+}
+
+function getVal(id){
+    const el = document.getElementById('slot-' + id);
+    const v = el ? el.dataset.val : null;
+    return v ? parseInt(v, 10) : null;
+}
+
+function baccaratValue(rank){ return rank >= 10 ? 0 : rank; }
+
+function setActiveSlot(id){
+    const el = document.getElementById('slot-' + id);
+    if (!el || el.classList.contains('disabled')) return;
+    const cards = document.querySelectorAll('.playing-card');
+    for (let i=0; i<cards.length; i++) cards[i].classList.remove('active');
+    el.classList.add('active');
+    cIdx = cOrder.indexOf(id);
+}
+
+function inputRank(rank){
+    const pending = getPendingCounts();
+    if (((S.deck[rank] || 0) - pending[rank]) <= 0) return;
+    while (cIdx < cOrder.length && document.getElementById('slot-' + cOrder[cIdx]).classList.contains('disabled')) cIdx++;
+    if (cIdx >= cOrder.length) return;
+
+    const target = document.getElementById('slot-' + cOrder[cIdx]);
+    target.innerText = rank===1?'A':rank===11?'J':rank===12?'Q':rank===13?'K':String(rank);
+    target.dataset.val = String(rank);
+    target.classList.add('filled');
+
+    cIdx++;
+    evaluateDrawRules();
+    drawKeypad();
+
+    while (cIdx < cOrder.length && document.getElementById('slot-' + cOrder[cIdx]).classList.contains('disabled')) cIdx++;
+    if (cIdx < cOrder.length) setActiveSlot(cOrder[cIdx]);
+}
+
+function clearCurrentInput(){
+    cIdx = 0;
+    const ids = ['p1','p2','p3','b1','b2','b3'];
+    for (let i=0; i<ids.length; i++){
+        const id = ids[i];
+        const e = document.getElementById('slot-' + id);
+        e.innerText = '';
+        e.dataset.val = '';
+        e.classList.remove('filled', 'active');
+        if (id === 'p3' || id === 'b3') e.classList.add('disabled');
+        else e.classList.remove('disabled');
+    }
+    setActiveSlot(cOrder[0]);
+    evaluateDrawRules();
+    drawKeypad();
+}
+
+function changeOrder(){
+    cOrder = document.getElementById('orderSel').value === 'PBPB'
+        ? ['p1','b1','p2','b2','p3','b3']
+        : ['p1','p2','b1','b2','p3','b3'];
+    clearCurrentInput();
+}
+
+function evaluateDrawRules(){
+    const isAuto = document.getElementById('autoGuide').checked;
+    const btn = document.getElementById('submitBtn');
+    const p3 = document.getElementById('slot-p3');
+    const b3 = document.getElementById('slot-b3');
+    const p1 = getVal('p1'), p2 = getVal('p2'), b1 = getVal('b1'), b2 = getVal('b2');
+
+    if (!p1 || !p2 || !b1 || !b2){
+        p3.classList.add('disabled');
+        b3.classList.add('disabled');
+        btn.disabled = true;
+        btn.className = 'submit-btn';
+        btn.innerText = '請依照發牌順序輸入';
+        return;
+    }
+
+    if (!isAuto){
+        p3.classList.remove('disabled');
+        b3.classList.remove('disabled');
+        btn.disabled = false;
+        btn.className = 'submit-btn ready';
+        btn.innerText = '手動覆寫模式：可結算';
+        return;
+    }
+
+    const pT = (baccaratValue(p1) + baccaratValue(p2)) % 10;
+    const bT = (baccaratValue(b1) + baccaratValue(b2)) % 10;
+    const isNat = pT >= 8 || bT >= 8;
+    const p3v = getVal('p3');
+    const b3v = getVal('b3');
+    let needP3 = false, needB3 = false;
+
+    if (!isNat){
+        if (pT <= 5) needP3 = true;
+        if (!needP3){
+            if (bT <= 5) needB3 = true;
+        }else if (p3v !== null){
+            const p3b = baccaratValue(p3v);
+            if (bT <= 2) needB3 = true;
+            else if (bT === 3 && p3b !== 8) needB3 = true;
+            else if (bT === 4 && p3b >= 2 && p3b <= 7) needB3 = true;
+            else if (bT === 5 && p3b >= 4 && p3b <= 7) needB3 = true;
+            else if (bT === 6 && (p3b === 6 || p3b === 7)) needB3 = true;
+        }
+    }
+
+    if (!needP3) p3.classList.add('disabled'); else p3.classList.remove('disabled');
+    if (needP3 && p3v === null) b3.classList.add('disabled');
+    else { if (!needB3) b3.classList.add('disabled'); else b3.classList.remove('disabled'); }
+
+    let valid = true;
+    let msg = '✓ 牌局合法，點擊結算';
+
+    if (isNat && (p3v !== null || b3v !== null)){ valid = false; msg = '❌ 錯誤：天牌不可補牌'; }
+    if (valid && needP3 && p3v === null){ valid = false; msg = '❌ 錯誤：閒家必須補牌'; }
+    if (valid && !needP3 && p3v !== null){ valid = false; msg = '❌ 錯誤：閒家不可補牌'; }
+    if (valid && needP3 && p3v !== null){
+        if (needB3 && b3v === null){ valid = false; msg = '❌ 錯誤：莊家必須補牌'; }
+        if (!needB3 && b3v !== null){ valid = false; msg = '❌ 錯誤：莊家不可補牌'; }
+    }else if (valid && !needP3){
+        if (needB3 && b3v === null){ valid = false; msg = '❌ 錯誤：莊家必須補牌'; }
+        if (!needB3 && b3v !== null){ valid = false; msg = '❌ 錯誤：莊家不可補牌'; }
+    }
+
+    btn.disabled = !valid;
+    btn.className = valid ? 'submit-btn ready' : 'submit-btn';
+    btn.innerText = msg;
+}
+
+function saveState(){ localStorage.setItem(ST_K, JSON.stringify(S)); }
+
+function saveDatabase(){
+    localStorage.setItem(DB_K, JSON.stringify(BigData));
+    localStorage.setItem(LAB_K, JSON.stringify(LabStore));
+}
+
+function saveConfig(){
+    Config = normalizeConfig({
+        m: document.getElementById('cfgM').value,
+        s: document.getElementById('cfgS').value,
+        nBins: document.getElementById('cfgBins').value
+    });
+
+    document.getElementById('cfgM').value = Config.m;
+    document.getElementById('cfgS').value = Config.s;
+    document.getElementById('cfgBins').value = Config.nBins;
+
+    localStorage.setItem(CF_K, JSON.stringify(Config));
+    recalcDBStats(BigData);
+    render();
+}
+
+function submitHand(){
+    if (S.isLegacyPartial){
+        alert('⚠️ 系統處於舊版相容降級模式，無法進行新局結算。請先點擊「換靴」以重建完整追溯鏈。');
+        return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    if (btn.disabled) return;
+
+    bSt = deepCopy(S);
+    bDB = deepCopy(BigData);
+    bLab = deepCopy(LabStore);
+
+    const vals = {
+        p1:getVal('p1'), p2:getVal('p2'), p3:getVal('p3'),
+        b1:getVal('b1'), b2:getVal('b2'), b3:getVal('b3')
+    };
+
+    const cons = [];
+    let pPts = 0, bPts = 0;
+    const ids = ['p1','p2','p3','b1','b2','b3'];
+
+    for (let i=0; i<ids.length; i++){
+        const id = ids[i];
+        const v = vals[id];
+        if (v){
+            cons.push(v);
+            if (id.startsWith('p')) pPts += baccaratValue(v);
+            else bPts += baccaratValue(v);
+        }
+    }
+
+    const pFinal = pPts % 10;
+    const bFinal = bPts % 10;
+    const w = pFinal > bFinal ? 'P' : (bFinal > pFinal ? 'B' : 'T');
+    const bp = cons.length >= 4 && vals.b1 === vals.b2 && vals.b1 !== null && vals.b1 !== undefined;
+    const pp = cons.length >= 4 && vals.p1 === vals.p2 && vals.p1 !== null && vals.p1 !== undefined;
+    const keyToUpdate = getPatternKeyBeforePush();
+
+    const remainCards = Object.values(S.deck).reduce((a,b)=>a+b,0);
+    const oldFeatures = {
+        F_Base: {},
+        F_Comp: { running_count:S.runningCount, remain_cards:remainCards },
+        F_Path: extractPathFeaturesCore(S.history)
+    };
+
+    const oldPrediction = getCurrentLivePrediction();
+    const sideBetsSnapshot = getCurrentSidebetRecommendations();
+
+    const observation = captureObservation(S, oldFeatures, oldPrediction, vals, {
+        tie: sideBetsSnapshot.tie,
+        bp: sideBetsSnapshot.bp,
+        pp: sideBetsSnapshot.pp
+    });
+    commitObservation(observation, { winner:w, pPt:pFinal, bPt:bFinal, bp:bp, pp:pp });
+
+    if (w !== 'T' && oldPrediction.decision !== 'PASS'){
+        S.shoePerf.recs += 1;
+        if (oldPrediction.decision === w) S.shoePerf.hits += 1;
+    }
+    if (sideBetsSnapshot.tie){
+        S.shoePerf.tRecs += 1;
+        if (w === 'T') S.shoePerf.tHits += 1;
+    }
+    if (sideBetsSnapshot.bp){
+        S.shoePerf.bpRecs += 1;
+        if (bp) S.shoePerf.bpHits += 1;
+    }
+    if (sideBetsSnapshot.pp){
+        S.shoePerf.ppRecs += 1;
+        if (pp) S.shoePerf.ppHits += 1;
+    }
+
+    S.history.push({ w:w, pPt:pFinal, bPt:bFinal, bp:bp, pp:pp });
+    for (let i=0; i<cons.length; i++){
+        const v = cons[i];
+        S.deck[v] = Math.max(0, (S.deck[v] || 0) - 1);
+        S.runningCount += (countWeights[v] || 0);
+    }
+
+    if (keyToUpdate){
+        updatePatternDB(BigData, keyToUpdate, w, bp, pp);
+    }
+
+    recalcDBStats(BigData);
+    saveDatabase();
+    clearCurrentInput();
+    render();
+}
+
+function undo(){
+    if (!bSt || !bDB || !bLab){ alert('無可撤銷資料'); return; }
+    S = deepCopy(bSt);
+    BigData = deepCopy(bDB);
+    LabStore = deepCopy(bLab);
+    recalcDBStats(BigData);
+    saveState();
+    saveDatabase();
+    drawKeypad();
+    clearCurrentInput();
+    render();
+}
+
+function resetShoe(){
+    if (!confirm('換靴？本靴路單將清空。\n系統會自動將當前已打過的牌局結算並存入資料庫。')) return;
+    closeCurrentShoe();
+    resetShoeVarsInit();
+
+    bSt = null; bDB = null; bLab = null;
+
+    saveState();
+    BigData = buildLiveBigDataFromStores(LabStore.rawShoes, LabStore.currentOpenShoe);
+    saveDatabase();
+    drawKeypad();
+    clearCurrentInput();
+    render();
+}
+
+function resetAll(){
+    if (!confirm('⚠️ 警告：這將徹底清除本機所有資料！確定嗎？')) return;
+    const keysToRemove = [];
+    for (let i=0; i<localStorage.length; i++){
+        const k = localStorage.key(i);
+        if (k && (k.indexOf('bac_db_') === 0 || k.indexOf('bac_lab_') === 0 || k.indexOf('bac_st_') === 0 || k.indexOf('bac_cfg_') === 0)){
+            keysToRemove.push(k);
+        }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    location.reload();
+}
+
+function exportDB(){
+    try{
+        recalcDBStats(BigData);
+        auditLabStore(LabStore);
+        const payload = { version:'v56', bigData:BigData, labStore:LabStore, state:S, config:Config };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'bac_v56_export.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+    }catch(e){
+        alert('匯出失敗：' + e.message);
     }
 }
 
-function toggleDB() {
+function importDB(e){
+    const r = new FileReader();
+    r.onload = function(ev){
+        try{
+            const t = String(ev.target.result || '').replace(/^\uFEFF/, '');
+            const o = JSON.parse(t);
+
+            let tempLabStore = { schema_version:'v56', rawShoes:[], currentOpenShoe:null, experiments:[] };
+            let tempS = createInitialState();
+            let tempConfig = Object.assign({}, Config);
+
+            const isFullSnapshot =
+                o.labStore && typeof o.labStore === 'object' && typeof o.labStore.schema_version === 'string' && Array.isArray(o.labStore.rawShoes) &&
+                o.state && typeof o.state === 'object' && typeof o.state.runningCount === 'number' &&
+                Array.isArray(o.state.history) &&
+                o.state.deck && typeof o.state.deck === 'object' && isValidDeck(o.state.deck) &&
+                o.config && typeof o.config === 'object' && typeof o.config.m === 'number' && typeof o.config.s === 'number' && typeof o.config.nBins === 'number';
+
+            if (!isFullSnapshot) throw new Error('partial-or-legacy-import-rejected');
+
+            tempLabStore = o.labStore;
+            tempLabStore.experiments = [];
+            auditLabStore(tempLabStore);
+
+            tempConfig = normalizeConfig(o.config);
+
+            const migrated = normalizeState(o.state);
+            if (!migrated) throw new Error('invalid-state');
+            tempS = migrated;
+
+            const basePatternDB = rebuildBigDataFromAuditedShoes(tempLabStore.rawShoes);
+
+            if (!validateOpenShoeConsistency(tempLabStore, tempS, basePatternDB)){
+                console.warn('Import Audit Failure: open shoe corrupted. Purge currentOpenShoe.');
+                tempLabStore.currentOpenShoe = null;
+                tempS = createInitialState();
+            }
+
+            const liveDb = buildLiveBigDataFromStores(tempLabStore.rawShoes, tempLabStore.currentOpenShoe);
+            rebuildLiveStateMetrics(tempS, tempLabStore.currentOpenShoe);
+
+            LabStore = tempLabStore;
+            Config = tempConfig;
+            S = tempS;
+            BigData = liveDb;
+
+            recalcDBStats(BigData);
+
+            document.getElementById('cfgM').value = Config.m;
+            document.getElementById('cfgS').value = Config.s;
+            document.getElementById('cfgBins').value = Config.nBins;
+
+            bSt = null; bDB = null; bLab = null;
+
+            saveDatabase();
+            saveState();
+            localStorage.setItem(CF_K, JSON.stringify(Config));
+            drawKeypad();
+            clearCurrentInput();
+            render();
+
+            alert('✅ 匯入成功！目前已載入 ' + LabStore.rawShoes.length + ' 雙已結算鞋靴資料。');
+        }catch(err){
+            console.error('Import Error:', err);
+            alert('匯入失敗：檔案不完整、格式不正確或為不受支援的快照。現有資料未受影響。');
+        }finally{
+            e.target.value = '';
+        }
+    };
+    r.readAsText(e.target.files[0]);
+}
+
+function runExperiment(spec){
+    auditLabStore(LabStore);
+
+    const basePatternDB = rebuildBigDataFromAuditedShoes(LabStore.rawShoes);
+    if (!validateOpenShoeConsistency(LabStore, S, basePatternDB)){
+        annihilateLiveState({ rebuildBigData:true });
+        alert('檢測到目前牌局狀態受污染，系統已自動清洗並重啟。');
+        return null;
+    }
+
+    const closedShoes = LabStore.rawShoes;
+
+    if (spec.split_config.stepK < spec.split_config.testK){
+        alert('實驗設定錯誤：stepK 不可小於 testK。');
+        return null;
+    }
+
+    const holdoutStart = Math.floor(closedShoes.length * 0.8);
+    const devShoes = closedShoes.slice(0, holdoutStart);
+    const holdoutShoes = closedShoes.slice(holdoutStart);
+    const minNeed = spec.split_config.trainN + spec.split_config.valM + spec.split_config.testK;
+
+    if (devShoes.length < minNeed){
+        alert('實驗鞋靴不足！\n目前已結算鞋數: ' + closedShoes.length + '\n開發集保留: ' + devShoes.length + '\n單次測試最少需求: ' + minNeed);
+        return null;
+    }
+
+    const policy = getDeployedPolicy();
+    const runs = [];
+    const validSlots = ['p1','p2','p3','b1','b2','b3'];
+    const generator = rollingForecastOrigin(devShoes, spec.split_config.trainN, spec.split_config.valM, spec.split_config.testK, spec.split_config.stepK);
+    let splitStep = generator.next();
+
+    while (!splitStep.done){
+        const split = splitStep.value;
+        const wfDb = buildWalkForwardDB(split.history);
+        const testSamples = [];
+        const splitBins = initCalibrationBins(spec.calibration.nBins);
+        let predicted_ev_sum = 0, realized_return_sum = 0, currentBankroll = 0, peakBankroll = 0, max_drawdown = 0, betCount = 0;
+
+        for (let i=0; i<split.test.length; i++){
+            const shoe = split.test[i];
+            let simHistory = [];
+            let simDeck = {};
+            for (let j=1; j<=13; j++) simDeck[j] = 32;
+            let simRC = 0;
+
+            for (let j=0; j<shoe.hands.length; j++){
+                const h = shoe.hands[j];
+                const winner = h.outcome.winner || h.outcome.w;
+                const pure = simHistory.filter(x => x.w !== 'T').map(x => x.w);
+                const ptnKey = pure.length >= 3 ? pure.slice(-3).join(',') : null;
+                const cp = ptnKey ? wfDb.patterns[ptnKey] : null;
+                const externalState = cp ? { has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P } : { has_pattern:false };
+
+                let reconstructedRemainCards = 0;
+                for (const key in simDeck){ if (simDeck.hasOwnProperty(key)) reconstructedRemainCards += simDeck[key]; }
+
+                const reconstructedFeatures = {
+                    F_Base: {},
+                    F_Comp: { running_count:simRC, remain_cards:reconstructedRemainCards },
+                    F_Path: extractPathFeaturesCore(simHistory)
+                };
+
+                const res = executePolicyChain(policy.model, reconstructedFeatures, policy.tau, externalState, policy.options, false);
+                testSamples.push({ probs:res.probs, winner:winner, decision:res.decision });
+                updateCalibrationBins(splitBins, res.probs, winner);
+
+                if (res.decision !== 'PASS'){
+                    betCount++;
+                    predicted_ev_sum += res.ev[res.decision];
+                    const r = settleDecision(res.decision, winner, PAYOUTS);
+                    realized_return_sum += r;
+                    currentBankroll += r;
+                    if (currentBankroll > peakBankroll) peakBankroll = currentBankroll;
+                    const dd = peakBankroll - currentBankroll;
+                    if (dd > max_drawdown) max_drawdown = dd;
+                }
+
+                const bp = (h.input.cards.b1 === h.input.cards.b2 && h.input.cards.b1 !== null && h.input.cards.b1 !== undefined);
+                const pp = (h.input.cards.p1 === h.input.cards.p2 && h.input.cards.p1 !== null && h.input.cards.p1 !== undefined);
+
+                if (ptnKey) updatePatternDB(wfDb, ptnKey, winner, bp, pp);
+
+                for (let kIdx=0; kIdx<validSlots.length; kIdx++){
+                    const key = validSlots[kIdx];
+                    const rank = h.input.cards[key];
+                    if (rank !== null && rank !== undefined && countWeights[rank] !== undefined){
+                        simDeck[rank] -= 1;
+                        simRC += countWeights[rank];
+                    }
+                }
+
+                simHistory.push({ w:winner, pPt:h.outcome.pPt, bPt:h.outcome.bPt, bp:bp, pp:pp });
+            }
+        }
+
+        runs.push({
+            test_shoe_ids: split.test.map(s => s.shoe_id),
+            selected_tau: policy.tau,
+            n_test_hands: testSamples.length,
+            bet_count: betCount,
+            log_loss: computeLogLoss(testSamples),
+            brier: computeBrierScore(testSamples),
+            calibration_bins: splitBins,
+            ece: computeECEFromBins(splitBins),
+            predicted_ev_sum: predicted_ev_sum,
+            realized_return_sum: realized_return_sum,
+            max_drawdown: max_drawdown,
+            coverage: testSamples.length > 0 ? betCount / testSamples.length : 0
+        });
+
+        splitStep = generator.next();
+    }
+
+    if (runs.length === 0) return null;
+
+    const aggregate = aggregateRuns(runs, spec.calibration.nBins);
+    const holdoutWfDb = buildWalkForwardDB(devShoes);
+    const holdoutSamples = [];
+    const holdoutBins = initCalibrationBins(spec.calibration.nBins);
+    let holdout_realized_return = 0, holdout_predicted_ev = 0, holdout_bet_count = 0;
+    const validSlots2 = ['p1','p2','p3','b1','b2','b3'];
+
+    for (let i=0; i<holdoutShoes.length; i++){
+        const shoe = holdoutShoes[i];
+        let simHistory = [];
+        let simDeck = {};
+        for (let j=1; j<=13; j++) simDeck[j] = 32;
+        let simRC = 0;
+
+        for (let j=0; j<shoe.hands.length; j++){
+            const h = shoe.hands[j];
+            const winner = h.outcome.winner || h.outcome.w;
+            const pure = simHistory.filter(x => x.w !== 'T').map(x => x.w);
+            const ptnKey = pure.length >= 3 ? pure.slice(-3).join(',') : null;
+            const cp = ptnKey ? holdoutWfDb.patterns[ptnKey] : null;
+            const externalState = cp ? { has_pattern:true, pattern_N:cp.N, pattern_B:cp.B, pattern_P:cp.P } : { has_pattern:false };
+
+            let reconstructedRemainCards = 0;
+            for (const key in simDeck){ if (simDeck.hasOwnProperty(key)) reconstructedRemainCards += simDeck[key]; }
+
+            const reconstructedFeatures = {
+                F_Base: {},
+                F_Comp: { running_count:simRC, remain_cards:reconstructedRemainCards },
+                F_Path: extractPathFeaturesCore(simHistory)
+            };
+
+            const res = executePolicyChain(policy.model, reconstructedFeatures, policy.tau, externalState, policy.options, false);
+            holdoutSamples.push({ probs:res.probs, winner:winner, decision:res.decision });
+            updateCalibrationBins(holdoutBins, res.probs, winner);
+
+            if (res.decision !== 'PASS'){
+                holdout_bet_count++;
+                holdout_predicted_ev += res.ev[res.decision];
+                holdout_realized_return += settleDecision(res.decision, winner, PAYOUTS);
+            }
+
+            const bp = (h.input.cards.b1 === h.input.cards.b2 && h.input.cards.b1 !== null && h.input.cards.b1 !== undefined);
+            const pp = (h.input.cards.p1 === h.input.cards.p2 && h.input.cards.p1 !== null && h.input.cards.p1 !== undefined);
+
+            if (ptnKey) updatePatternDB(holdoutWfDb, ptnKey, winner, bp, pp);
+
+            for (let kIdx=0; kIdx<validSlots2.length; kIdx++){
+                const key = validSlots2[kIdx];
+                const rank = h.input.cards[key];
+                if (rank !== null && rank !== undefined && countWeights[rank] !== undefined){
+                    simDeck[rank] -= 1;
+                    simRC += countWeights[rank];
+                }
+            }
+
+            simHistory.push({ w:winner, pPt:h.outcome.pPt, bPt:h.outcome.bPt, bp:bp, pp:pp });
+        }
+    }
+
+    const finalHoldoutECE = computeECEFromBins(holdoutBins);
+    const holdout_metrics = holdoutSamples.length > 0 ? {
+        n_test_hands: holdoutSamples.length,
+        bet_count: holdout_bet_count,
+        coverage: holdout_bet_count / holdoutSamples.length,
+        log_loss: computeLogLoss(holdoutSamples),
+        brier: computeBrierScore(holdoutSamples),
+        ece_macro: finalHoldoutECE.ece_macro,
+        predicted_ev_sum: holdout_predicted_ev,
+        realized_return_sum: holdout_realized_return
+    } : null;
+
+    let currentVerdict = 'FLAT_RETURN_BASELINE';
+    const isHoldoutValid = holdout_metrics !== null && holdout_metrics.n_test_hands >= 10;
+
+    if (aggregate.n_test_hands < 50 || !isHoldoutValid){
+        currentVerdict = 'INSUFFICIENT_DATA (LOW CONFIDENCE)';
+    }else{
+        if (aggregate.realized_return_sum > 0 && holdout_metrics.realized_return_sum > 0){
+            currentVerdict = 'POSITIVE_RETURN_BASELINE';
+        }else if (aggregate.realized_return_sum > 0 && holdout_metrics.realized_return_sum <= 0){
+            currentVerdict = 'INCONCLUSIVE_HOLDOUT (OVERFITTING RISK)';
+        }else{
+            currentVerdict = 'NEGATIVE_RETURN_BASELINE';
+        }
+    }
+
+    const record = {
+        run_id: 'exp_' + Date.now(),
+        created_at: Date.now(),
+        spec_version: 'ExperimentSpec_v1.0',
+        lab_version: 'v56-deterministic-seal',
+        data_scope: {
+            closed_shoe_count: closedShoes.length,
+            dev_shoe_count: devShoes.length,
+            holdout_shoe_count: holdoutShoes.length
+        },
+        split_config: spec.split_config,
+        model_registry: { deployed: policy.model.id },
+        selected_config: { tau:policy.tau, allowTieBet:policy.options.allowTieBet, nBins:spec.calibration.nBins },
+        split_runs: runs.map((r, idx) => ({
+            split_index: idx,
+            test_shoe_ids: r.test_shoe_ids,
+            n_test_hands: r.n_test_hands,
+            log_loss: r.log_loss,
+            realized_return_sum: r.realized_return_sum
+        })),
+        aggregate_metrics: aggregate,
+        holdout_metrics: holdout_metrics,
+        verdict: currentVerdict
+    };
+
+    LabStore.experiments = [record];
+    return record;
+}
+
+window.invokeQuantLab = function(){
+    const totalShoes = LabStore.rawShoes.length;
+    let tN = 50, vM = 0, tK = 10, sK = 10;
+    const devShoesCount = Math.floor(totalShoes * 0.8);
+    if (devShoesCount < (tN + vM + tK)){ tN = 2; vM = 0; tK = 1; sK = 1; }
+
+    const spec = {
+        split_config: { trainN:tN, valM:vM, testK:tK, stepK:sK },
+        calibration: { nBins:Config.nBins }
+    };
+
+    try{
+        const rec = runExperiment(spec);
+        if (rec){
+            saveDatabase();
+            console.log('Quant Lab OOS Report:', deepCopy(rec));
+            alert(
+                '✅ 實驗室運行完畢！\n' +
+                'Verdict: ' + rec.verdict + '\n' +
+                'Rolling OOS 淨利: ' + rec.aggregate_metrics.realized_return_sum.toFixed(2) + ' 單位\n' +
+                'Final Holdout 淨利: ' + (rec.holdout_metrics ? rec.holdout_metrics.realized_return_sum.toFixed(2) : 'N/A')
+            );
+        }
+    }catch(e){
+        console.error('實驗室發生錯誤:', e);
+        alert('實驗室運行失敗，請查看 F12 Console。');
+    }
+};
+
+function normalizeState(obj){
+    if (!obj || typeof obj !== 'object') return null;
+
+    const toCount = function(v, d, max){
+        if (d === undefined) d = 0;
+        if (max === undefined) max = Infinity;
+        const n = Number(v);
+        return Number.isFinite(n) && n >= 0 ? Math.min(max, Math.floor(n)) : d;
+    };
+    const toBool = v => (v === true || v === 'true' || v === 1 || v === '1');
+    const normW = v => (v === 'B' || v === 'P' || v === 'T') ? v : 'T';
+
+    const safe = {
+        shoeId: obj.shoeId || Date.now(),
+        deck: {},
+        history: [],
+        runningCount: 0,
+        shoePerf: {recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0},
+        stats: { ev:{p:0,h:0,r:[]}, trend:{p:0,h:0,r:[]}, derived:{p:0,h:0,r:[]}, ml:{p:0,h:0,r:[]}, shoe:{p:0,h:0,r:[]}, power:{p:0,h:0,r:[]} },
+        shadow: { ev:null, trend:null, derived:null, ml:null, shoe:null, power:null },
+        lastRecSide: null,
+        lastSideBets: { tie:false, bp:false, pp:false },
+        isLegacyPartial: false
+    };
+
+    if (!isValidDeck(obj.deck)) return null;
+
+    let deckSum = 0;
+    for (let i=1; i<=13; i++){
+        safe.deck[i] = toCount(obj.deck[i], 32, 32);
+        deckSum += safe.deck[i];
+    }
+
+    if (Array.isArray(obj.history)){
+        safe.history = obj.history.map(item => {
+            if (typeof item === 'string'){
+                return { w:normW(item), bp:false, pp:false, pPt:0, bPt:0 };
+            }
+            return {
+                w: normW(item.w),
+                bp: toBool(item.bp),
+                pp: toBool(item.pp),
+                pPt: toCount(item.pPt, 0, 9),
+                bPt: toCount(item.bPt, 0, 9)
+            };
+        });
+    }
+
+    const usedCards = 416 - deckSum;
+    if (usedCards < safe.history.length * 4 || usedCards > safe.history.length * 6 || deckSum < 0 || deckSum > 416){
+        return null;
+    }
+
+    safe.runningCount = derivePhysicalRunningCount(safe.deck);
+    return safe;
+}
+
+function toggleDB(){
     recalcDBStats(BigData);
     document.getElementById('dbPanel').classList.toggle('open');
     updateDBUI();
+}
+
+function init(){
+    const cfgRaw = readStorageWithFallback('bac_cfg_');
+    if (cfgRaw.value){
+        try{ Object.assign(Config, normalizeConfig(JSON.parse(cfgRaw.value))); }catch(e){}
+        migrateToCurrentKey(cfgRaw.key, CF_K, cfgRaw.value);
+    }
+    Config = normalizeConfig(Config);
+
+    document.getElementById('cfgM').value = Config.m;
+    document.getElementById('cfgS').value = Config.s;
+    document.getElementById('cfgBins').value = Config.nBins;
+
+    const labRaw = readStorageWithFallback('bac_lab_');
+    if (labRaw.value){
+        try{
+            LabStore = JSON.parse(labRaw.value);
+            LabStore.experiments = [];
+            auditLabStore(LabStore);
+        }catch(e){
+            LabStore = { schema_version:'v56', rawShoes:[], currentOpenShoe:null, experiments:[] };
+        }
+        migrateToCurrentKey(labRaw.key, LAB_K, labRaw.value);
+    }
+
+    const stRaw = readStorageWithFallback('bac_st_');
+    if (stRaw.value){
+        try{
+            const migrated = normalizeState(JSON.parse(stRaw.value));
+            if (migrated) S = migrated;
+            else resetShoeVarsInit();
+        }catch(e){
+            resetShoeVarsInit();
+        }
+        migrateToCurrentKey(stRaw.key, ST_K, stRaw.value);
+    }else{
+        resetShoeVarsInit();
+    }
+
+    const basePatternDB = rebuildBigDataFromAuditedShoes(LabStore.rawShoes);
+
+    if (!validateOpenShoeConsistency(LabStore, S, basePatternDB)){
+        annihilateLiveState({ rebuildBigData:true });
+        return;
+    }
+
+    BigData = buildLiveBigDataFromStores(LabStore.rawShoes, LabStore.currentOpenShoe);
+    rebuildLiveStateMetrics(S, LabStore.currentOpenShoe);
+
+    recalcDBStats(BigData);
+    drawKeypad();
+    clearCurrentInput();
+    render();
+
+    saveDatabase();
+    saveState();
 }
 
 init();
