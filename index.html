@@ -362,7 +362,15 @@
     @media (max-width:1100px){
       .scroll-container{
         grid-template-columns:1fr;
-        grid-template-rows:minmax(0, 1.08fr) minmax(0, 0.92fr);
+        grid-template-rows:auto auto;
+        overflow-y:auto;
+        align-content:start;
+        -webkit-overflow-scrolling:touch;
+        padding-bottom:calc(96px + env(safe-area-inset-bottom));
+      }
+      .roads-card,.input-card{
+        height:auto;
+        overflow:visible;
       }
       .db-stat-grid{grid-template-columns:1fr}
     }
@@ -385,7 +393,15 @@
       .scroll-container{
         padding:7px;
         gap:7px;
-        grid-template-rows:minmax(0, 1.08fr) minmax(0, 0.92fr);
+        padding-bottom:calc(104px + env(safe-area-inset-bottom));
+      }
+
+      .fab-btn{
+        width:44px;
+        height:44px;
+        font-size:18px;
+        right:10px;
+        bottom:max(10px, env(safe-area-inset-bottom));
       }
 
       .db-float-close-fixed{
@@ -396,9 +412,6 @@
     }
 
     @media (max-height:760px){
-      .scroll-container{
-        grid-template-rows:minmax(0, 1.04fr) minmax(0, 0.96fr);
-      }
       .key{min-height:32px}
       .submit-btn{padding:8px}
     }
