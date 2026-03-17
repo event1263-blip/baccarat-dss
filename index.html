@@ -296,18 +296,18 @@
       pointer-events:auto;
     }
 
-    .db-float-close{
-      position:absolute;
-      right:14px;
+    .db-float-close-fixed{
+      position:fixed;
       top:calc(env(safe-area-inset-top) + 10px);
-      z-index:20;
-      width:44px;
-      height:44px;
+      right:12px;
+      z-index:9002;
+      width:48px;
+      height:48px;
       border:none;
       border-radius:999px;
       background:var(--hl);
       color:#000;
-      font-size:24px;
+      font-size:28px;
       font-weight:950;
       display:flex;
       align-items:center;
@@ -315,6 +315,15 @@
       box-shadow:0 8px 18px rgba(0,0,0,.45);
       touch-action:manipulation;
       cursor:pointer;
+      opacity:0;
+      pointer-events:none;
+      transform:scale(.92);
+      transition:opacity .18s ease, transform .18s ease;
+    }
+    .db-float-close-fixed.show{
+      opacity:1;
+      pointer-events:auto;
+      transform:scale(1);
     }
 
     .db-header{
@@ -322,7 +331,6 @@
       margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #333;
       position:sticky; top:0; background:#111; z-index:4;
       padding-top:calc(env(safe-area-inset-top) + 4px);
-      padding-right:58px;
       min-height:48px;
     }
     .db-title{
@@ -360,17 +368,30 @@
     }
 
     @media (max-width:720px){
+      .road-title{font-size:9px; margin:2px 2px 3px}
+      .road-container{padding:1px; margin-bottom:3px}
+      .cell-lg{width:10px;height:10px}
+      .cell-sm{width:4px;height:4px}
+      .bead-dot{width:6px;height:6px}
+      .circle-hollow{width:6px;height:6px}
+      .circle-solid{width:3px;height:3px}
+      .slash{width:3px;height:3px}
+      .tie-text{font-size:5px}
+      .road-explain-grid{gap:2px; margin-top:3px}
+      .road-pill-card{min-height:30px; padding:3px 2px}
+      .road-pill{font-size:7px; padding:2px 3px}
+      .road-text{font-size:6px}
+
       .scroll-container{
         padding:7px;
         gap:7px;
         grid-template-rows:minmax(0, 1.08fr) minmax(0, 0.92fr);
       }
 
-      .db-float-close{
-        width:46px;
-        height:46px;
-        font-size:25px;
-        right:12px;
+      .db-float-close-fixed{
+        width:50px;
+        height:50px;
+        font-size:29px;
       }
     }
 
@@ -463,12 +484,11 @@
   </div>
 
   <button type="button" class="fab-btn" id="fabBtn" onclick="toggleDB(true)">⚙️</button>
+  <button type="button" class="db-float-close-fixed" id="dbFloatClose" onclick="toggleDB(false)" aria-label="關閉設定">×</button>
 
   <div class="db-backdrop" id="dbBackdrop" onclick="toggleDB(false)"></div>
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
-    <button type="button" class="db-float-close" onclick="toggleDB(false)" aria-label="關閉設定">×</button>
-
     <div class="db-header">
       <div class="db-title">實驗室控制台 <span class="version-badge">v64.3</span></div>
     </div>
@@ -2164,6 +2184,7 @@ function toggleDB(forceState){
   const panel = document.getElementById('dbPanel');
   const backdrop = document.getElementById('dbBackdrop');
   const fab = document.getElementById('fabBtn');
+  const floatClose = document.getElementById('dbFloatClose');
 
   const shouldOpen = typeof forceState === 'boolean'
     ? forceState
@@ -2172,6 +2193,7 @@ function toggleDB(forceState){
   panel.classList.toggle('open', shouldOpen);
   backdrop.classList.toggle('open', shouldOpen);
   fab.classList.toggle('hidden', shouldOpen);
+  floatClose.classList.toggle('show', shouldOpen);
   panel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
   document.body.classList.toggle('panel-open', shouldOpen);
 
@@ -2202,9 +2224,11 @@ function init(){
   const panel = document.getElementById('dbPanel');
   const backdrop = document.getElementById('dbBackdrop');
   const fab = document.getElementById('fabBtn');
+  const floatClose = document.getElementById('dbFloatClose');
   panel.classList.remove('open');
   backdrop.classList.remove('open');
   fab.classList.remove('hidden');
+  floatClose.classList.remove('show');
   panel.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('panel-open');
 
