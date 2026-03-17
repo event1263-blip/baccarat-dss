@@ -30,7 +30,7 @@
       background:rgba(12,12,16,.94);
       backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
       border-bottom:1px solid rgba(255,255,255,.08);
-      padding:calc(env(safe-area-inset-top) + 8px) 10px 10px;
+      padding:calc(env(safe-area-inset-top) + 6px) 10px 8px;
       box-shadow:0 10px 24px rgba(0,0,0,.35);
     }
     body.panel-open .sticky-hud{
@@ -39,7 +39,7 @@
     }
 
     .hud-header{
-      display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;
+      display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;
     }
     .hud-stats{
       display:flex; flex-wrap:wrap; gap:8px; align-items:center;
@@ -61,7 +61,7 @@
     .btn-reset{color:var(--b)}
 
     .oracle-box{
-      text-align:center; padding:10px 8px; border-radius:14px;
+      text-align:center; padding:8px 8px; border-radius:14px;
       border:2px solid var(--border); background:#000; transition:.25s;
     }
     .oracle-box.banker{border-color:var(--b); background:linear-gradient(180deg, rgba(239,68,68,.16) 0%, #000 100%)}
@@ -76,7 +76,7 @@
       background:repeating-linear-gradient(45deg, rgba(249,115,22,.05), rgba(249,115,22,.05) 10px, #000 10px, #000 20px)
     }
     .trend-alert{
-      font-size:12px; font-weight:900; margin-bottom:5px; padding:4px 8px; border-radius:7px;
+      font-size:11px; font-weight:900; margin-bottom:4px; padding:4px 8px; border-radius:7px;
       text-align:center; letter-spacing:.2px;
     }
     .alert-high{color:#fff; background:rgba(249,115,22,.28); border:1px solid rgba(249,115,22,.7)}
@@ -84,7 +84,7 @@
     .alert-safe{color:var(--muted); background:rgba(255,255,255,.05)}
     .alert-warn{color:var(--warn); background:rgba(249,115,22,.12); border:1px dashed rgba(249,115,22,.65)}
     .oracle-main{
-      font-size:26px; font-weight:950; letter-spacing:.5px; margin-bottom:5px;
+      font-size:24px; font-weight:950; letter-spacing:.5px; margin-bottom:4px;
     }
     .oracle-box.banker .oracle-main{color:var(--b); text-shadow:0 0 12px rgba(239,68,68,.45)}
     .oracle-box.player .oracle-main{color:var(--p); text-shadow:0 0 12px rgba(59,130,246,.45)}
@@ -97,8 +97,8 @@
     }
 
     .sidebet-container{
-      display:flex; justify-content:center; gap:6px; flex-wrap:wrap;
-      border-top:1px dashed #333; padding-top:8px; margin-top:8px;
+      display:flex; justify-content:center; gap:5px; flex-wrap:wrap;
+      border-top:1px dashed #333; padding-top:7px; margin-top:7px;
     }
     .sidebet-pill{
       font-size:10px; font-weight:850; padding:4px 8px; border-radius:7px;
@@ -110,10 +110,10 @@
 
     .scroll-container{
       height:calc(var(--app-vh) - var(--hud-h));
-      padding:10px;
+      padding:9px;
       display:grid;
       grid-template-columns:minmax(0, 1.12fr) minmax(330px, .88fr);
-      gap:10px;
+      gap:9px;
       overflow:hidden;
       align-items:stretch;
     }
@@ -121,7 +121,7 @@
 
     .roads-card,.input-card{
       background:linear-gradient(180deg, #15151a 0%, #101015 100%);
-      border:1px solid var(--border); border-radius:16px; padding:10px;
+      border:1px solid var(--border); border-radius:16px; padding:8px;
       box-shadow:0 10px 24px rgba(0,0,0,.18);
       margin-bottom:0;
       min-height:0;
@@ -130,14 +130,15 @@
       flex-direction:column;
       overflow:hidden;
     }
+
     .road-title{
-      font-size:11px; font-weight:900; color:var(--muted); margin:4px 2px 6px; text-transform:uppercase;
+      font-size:10px; font-weight:900; color:var(--muted); margin:3px 2px 4px; text-transform:uppercase;
       line-height:1.2;
     }
     .road-container{
       width:100%; overflow-x:auto; overflow-y:hidden;
-      background:#fff; padding:3px; border-radius:8px;
-      border:1px solid #e5e5ea; margin-bottom:6px;
+      background:#fff; padding:2px; border-radius:8px;
+      border:1px solid #e5e5ea; margin-bottom:4px;
       flex:0 0 auto;
     }
     .road-grid{display:flex; width:max-content}
@@ -146,12 +147,12 @@
       position:relative; flex-shrink:0; display:flex; align-items:center; justify-content:center;
       background:#fff; border:.5px solid #eee;
     }
-    .cell-lg{width:14px;height:14px}
-    .cell-sm{width:7px;height:7px}
-    .bead-dot{width:10px;height:10px;border-radius:50%}
-    .circle-hollow{width:10px;height:10px;border-radius:50%;border:2px solid transparent;background:transparent}
+    .cell-lg{width:12px;height:12px}
+    .cell-sm{width:6px;height:6px}
+    .bead-dot{width:8px;height:8px;border-radius:50%}
+    .circle-hollow{width:8px;height:8px;border-radius:50%;border:2px solid transparent;background:transparent}
     .circle-solid{width:4px;height:4px;border-radius:50%}
-    .slash{width:5px;height:5px}
+    .slash{width:4px;height:4px}
     .B,.R{background-color:var(--b);border-color:var(--b)}
     .P,.Blue{background-color:var(--p);border-color:var(--p)}
     .T{background-color:var(--t);border-color:var(--t)}
@@ -167,7 +168,7 @@
       position:absolute; width:100%; height:2px; background:var(--t); transform:rotate(-45deg); z-index:1;
     }
     .tie-text{
-      position:absolute; font-size:8px; font-weight:900; color:var(--t); z-index:3;
+      position:absolute; font-size:7px; font-weight:900; color:var(--t); z-index:3;
       text-shadow:0 0 2px #fff, 0 0 2px #fff;
     }
     .slash.R{background:linear-gradient(to bottom left, transparent 40%, var(--b) 40%, var(--b) 60%, transparent 60%)}
@@ -176,52 +177,54 @@
     .derived-col{flex:1; min-width:0}
 
     .road-explain-grid{
-      display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:6px; margin-top:6px;
+      display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:3px; margin-top:4px;
       flex:0 0 auto;
     }
     .road-pill-card{
-      background:#0d0d11; border:1px solid #2b2b33; border-radius:11px; padding:7px 5px; min-height:56px;
-      display:flex; flex-direction:column; gap:4px; justify-content:center;
+      background:#0d0d11; border:1px solid #2b2b33; border-radius:10px; padding:5px 4px; min-height:42px;
+      display:flex; flex-direction:column; gap:3px; justify-content:center;
     }
     .road-pill{
-      display:inline-flex; align-self:center; padding:3px 6px; border-radius:999px;
-      font-size:10px; font-weight:950; letter-spacing:.2px; border:1px solid transparent;
+      display:inline-flex; align-self:center; padding:2px 5px; border-radius:999px;
+      font-size:9px; font-weight:950; letter-spacing:.2px; border:1px solid transparent;
       white-space:nowrap;
     }
     .road-pill.b{background:rgba(239,68,68,.12); color:var(--b); border-color:rgba(239,68,68,.35)}
     .road-pill.p{background:rgba(59,130,246,.12); color:var(--p); border-color:rgba(59,130,246,.35)}
     .road-pill.n{background:rgba(255,255,255,.06); color:var(--muted); border-color:rgba(255,255,255,.08)}
     .road-text{
-      text-align:center; font-size:10px; line-height:1.25; color:#e4e4e7; font-weight:800;
+      text-align:center; font-size:8px; line-height:1.2; color:#e4e4e7; font-weight:800;
       word-break:break-word;
     }
 
     .bar-row{
-      display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;
+      display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px;
       flex:0 0 auto;
     }
     .order-select{
       background:#27272a; color:#fff; border:1px solid #3f3f46; border-radius:8px;
-      font-size:11px; padding:5px 7px; font-weight:800; outline:none;
+      font-size:10px; padding:4px 6px; font-weight:800; outline:none;
+      max-width:70%;
     }
+
     .table-layout{
-      display:flex; gap:6px; margin-top:4px;
+      display:flex; gap:5px; margin-top:2px;
       flex:0 0 auto;
     }
     .table-side{
-      flex:1; background:#000; border-radius:14px; padding:7px; border:1px solid var(--border);
+      flex:1; background:#000; border-radius:12px; padding:5px; border:1px solid var(--border);
       min-width:0;
     }
     .side-label{
-      text-align:center; font-size:11px; font-weight:950; padding:5px 0; border-radius:8px; margin-bottom:6px;
+      text-align:center; font-size:10px; font-weight:950; padding:4px 0; border-radius:8px; margin-bottom:4px;
     }
     .side-label.p{background:rgba(59,130,246,.15); color:var(--p)}
     .side-label.b{background:rgba(239,68,68,.15); color:var(--b)}
 
     .cards-row{display:flex; gap:4px}
     .playing-card{
-      flex:1; aspect-ratio:2/3; background:#27272a; border:1px solid #3f3f46; border-radius:10px;
-      display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:950; color:#fff;
+      flex:1; aspect-ratio:2/3; background:#27272a; border:1px solid #3f3f46; border-radius:8px;
+      display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:950; color:#fff;
       cursor:pointer; transition:.15s;
       touch-action:manipulation;
     }
@@ -233,25 +236,25 @@
     .playing-card.disabled{opacity:.22; pointer-events:none}
 
     .keypad{
-      display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-top:8px;
+      display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin-top:6px;
       flex:1 1 auto;
       align-content:start;
     }
     .key{
-      background:#27272a; border:1px solid #3f3f46; border-radius:9px; padding:8px 0;
+      background:#27272a; border:1px solid #3f3f46; border-radius:8px; padding:6px 0;
       text-align:center; cursor:pointer; user-select:none;
       touch-action:manipulation;
     }
     .key:active{transform:scale(.97); background:#3a3a44}
-    .key-val{font-size:16px; font-weight:950}
-    .key-count{font-size:9px; color:var(--muted); margin-top:2px}
+    .key-val{font-size:13px; font-weight:950}
+    .key-count{font-size:8px; color:var(--muted); margin-top:1px}
     .key.action-clear{
-      grid-column:span 2; color:var(--warn); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900;
+      grid-column:span 2; color:var(--warn); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900;
     }
 
     .submit-btn{
-      width:100%; border:none; border-radius:10px; margin-top:8px; padding:12px;
-      background:#27272a; color:#777; font-size:14px; font-weight:950;
+      width:100%; border:none; border-radius:10px; margin-top:6px; padding:10px;
+      background:#27272a; color:#777; font-size:12px; font-weight:950;
       touch-action:manipulation;
       flex:0 0 auto;
     }
@@ -279,7 +282,7 @@
     .database-panel{
       position:fixed; left:0; right:0; bottom:0; height:84vh; z-index:9001;
       background:#111; border-radius:20px 20px 0 0; border-top:1px solid #2d2d36;
-      padding:18px; overflow-y:auto;
+      padding:16px 14px 18px; overflow-y:auto;
       transform:translateY(104%);
       transition:transform .28s ease;
       pointer-events:none;
@@ -292,15 +295,24 @@
       pointer-events:auto;
     }
     .db-header{
-      display:flex; justify-content:space-between; align-items:center; gap:8px;
+      display:flex; justify-content:flex-start; align-items:center; gap:8px;
       margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #333;
-      position:sticky; top:0; background:#111; z-index:2;
-      padding-top:calc(env(safe-area-inset-top) + 2px);
+      position:sticky; top:0; background:#111; z-index:4;
+      padding-top:calc(env(safe-area-inset-top) + 4px);
+      padding-right:56px;
+      min-height:48px;
     }
-    .db-title{font-size:18px; font-weight:950; color:#fff; display:flex; align-items:center; gap:8px}
+    .db-title{
+      font-size:17px; font-weight:950; color:#fff; display:flex; align-items:center; gap:8px;
+      line-height:1.2;
+    }
     .db-close{
-      background:none; border:none; color:var(--muted); font-size:30px; line-height:1; cursor:pointer;
-      position:relative; z-index:5; padding:4px 8px; touch-action:manipulation;
+      background:#1f1f24; border:1px solid #3f3f46; color:#fff; font-size:24px; line-height:1; cursor:pointer;
+      position:absolute; right:0; top:calc(env(safe-area-inset-top) + 2px); z-index:6;
+      width:40px; height:40px; border-radius:999px;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 6px 16px rgba(0,0,0,.35);
+      touch-action:manipulation;
     }
     .db-section{
       background:#1a1a1f; border:1px solid #333; border-radius:14px; padding:14px; margin-bottom:14px;
@@ -326,92 +338,85 @@
     @media (max-width:1100px){
       .scroll-container{
         grid-template-columns:1fr;
-        grid-template-rows:minmax(0, .95fr) minmax(0, 1.05fr);
+        grid-template-rows:minmax(0, 1.18fr) minmax(0, 0.82fr);
       }
       .db-stat-grid{grid-template-columns:1fr}
     }
 
     @media (max-width:720px){
       .sticky-hud{
-        padding:calc(env(safe-area-inset-top) + 6px) 8px 8px;
+        padding:calc(env(safe-area-inset-top) + 6px) 8px 7px;
       }
-      .hud-header{margin-bottom:6px}
+      .hud-header{margin-bottom:5px}
       .hud-stats{gap:6px; font-size:11px}
       .hud-btn{padding:5px 8px; font-size:11px}
-      .oracle-box{padding:8px 6px; border-radius:12px}
-      .trend-alert{font-size:11px; margin-bottom:4px; padding:4px 6px}
-      .oracle-main{font-size:23px; margin-bottom:4px}
+      .oracle-box{padding:7px 6px; border-radius:12px}
+      .trend-alert{font-size:10px; margin-bottom:4px; padding:4px 6px}
+      .oracle-main{font-size:22px; margin-bottom:3px}
       .reason-badge{font-size:9px; padding:4px 7px; gap:4px}
-      .sidebet-container{gap:4px; padding-top:7px; margin-top:7px}
+      .sidebet-container{gap:4px; padding-top:6px; margin-top:6px}
       .sidebet-pill{font-size:9px; padding:3px 6px}
 
       .scroll-container{
-        padding:8px;
-        gap:8px;
-        grid-template-rows:minmax(0, .9fr) minmax(0, 1.1fr);
+        padding:7px;
+        gap:7px;
+        grid-template-rows:minmax(0, 1.24fr) minmax(0, 0.76fr);
       }
 
       .roads-card,.input-card{
-        padding:8px;
+        padding:7px;
         border-radius:14px;
       }
-      .road-title{font-size:10px; margin:3px 2px 5px}
-      .road-container{padding:3px; margin-bottom:5px}
-      .cell-lg{width:13px;height:13px}
-      .cell-sm{width:6px;height:6px}
-      .bead-dot{width:9px;height:9px}
-      .circle-hollow{width:9px;height:9px;border-width:2px}
-      .circle-solid{width:4px;height:4px}
-      .slash{width:4px;height:4px}
-      .tie-text{font-size:7px}
-      .road-explain-grid{gap:4px; margin-top:5px}
-      .road-pill-card{padding:6px 4px; min-height:50px; border-radius:10px}
-      .road-pill{font-size:9px; padding:3px 5px}
-      .road-text{font-size:9px}
+      .road-title{font-size:10px; margin:3px 2px 4px}
+      .road-container{padding:2px; margin-bottom:4px}
+      .cell-lg{width:11px;height:11px}
+      .cell-sm{width:5px;height:5px}
+      .bead-dot{width:7px;height:7px}
+      .circle-hollow{width:7px;height:7px;border-width:2px}
+      .circle-solid{width:3px;height:3px}
+      .slash{width:3px;height:3px}
+      .tie-text{font-size:6px}
+      .road-explain-grid{gap:3px; margin-top:4px}
+      .road-pill-card{padding:4px 3px; min-height:38px; border-radius:9px}
+      .road-pill{font-size:8px; padding:2px 4px}
+      .road-text{font-size:7px}
 
-      .bar-row{gap:6px; margin-bottom:7px}
-      .order-select{font-size:10px; padding:4px 6px}
-      .table-layout{gap:5px; margin-top:3px}
-      .table-side{padding:6px; border-radius:12px}
-      .side-label{font-size:10px; padding:4px 0; margin-bottom:5px}
-      .playing-card{border-radius:8px; font-size:15px}
+      .bar-row{gap:6px; margin-bottom:5px}
+      .order-select{font-size:10px; padding:4px 6px; max-width:68%}
+      .table-layout{gap:4px; margin-top:2px}
+      .table-side{padding:4px; border-radius:11px}
+      .side-label{font-size:9px; padding:4px 0; margin-bottom:4px}
+      .playing-card{border-radius:8px; font-size:13px}
 
-      .keypad{gap:4px; margin-top:7px}
-      .key{padding:7px 0; border-radius:8px}
-      .key-val{font-size:14px}
+      .keypad{gap:4px; margin-top:5px}
+      .key{padding:5px 0; border-radius:8px}
+      .key-val{font-size:12px}
       .key-count{font-size:8px}
-      .key.action-clear{font-size:12px}
-      .submit-btn{margin-top:7px; padding:11px; font-size:13px}
-      .fab-btn{width:46px;height:46px;font-size:19px}
+      .key.action-clear{font-size:11px}
+      .submit-btn{margin-top:5px; padding:9px; font-size:11px}
+
+      .db-title{font-size:16px}
+      .db-close{
+        width:42px;height:42px;font-size:25px;
+      }
     }
 
     @media (max-height:760px){
-      .sticky-hud{padding-bottom:7px}
-      .hud-header{margin-bottom:5px}
-      .oracle-box{padding:7px 6px}
-      .trend-alert{margin-bottom:3px}
-      .oracle-main{font-size:21px}
-      .reason-badge{font-size:9px; padding:4px 6px}
-      .sidebet-container{padding-top:6px; margin-top:6px}
-
-      .scroll-container{padding:7px; gap:7px}
-      .roads-card,.input-card{padding:7px}
-      .road-title{margin:3px 2px 4px}
-      .road-container{margin-bottom:4px}
-      .cell-lg{width:12px;height:12px}
-      .cell-sm{width:6px;height:6px}
-      .bead-dot{width:8px;height:8px}
-      .circle-hollow{width:8px;height:8px;border-width:2px}
-      .slash{width:4px;height:4px}
-      .road-pill-card{min-height:46px; padding:5px 4px}
-      .road-pill{font-size:9px}
-      .road-text{font-size:8px}
-      .table-side{padding:5px}
-      .side-label{font-size:10px; margin-bottom:4px}
-      .playing-card{font-size:14px}
-      .key{padding:6px 0}
-      .key-val{font-size:13px}
-      .submit-btn{padding:10px; font-size:12px}
+      .scroll-container{
+        grid-template-rows:minmax(0, 1.3fr) minmax(0, 0.7fr);
+      }
+      .oracle-main{font-size:20px}
+      .reason-badge{font-size:8px}
+      .cell-lg{width:10px;height:10px}
+      .cell-sm{width:5px;height:5px}
+      .bead-dot{width:7px;height:7px}
+      .circle-hollow{width:7px;height:7px}
+      .road-pill-card{min-height:34px}
+      .road-text{font-size:7px}
+      .playing-card{font-size:12px}
+      .key{padding:4px 0}
+      .key-val{font-size:11px}
+      .submit-btn{padding:8px;font-size:11px}
     }
   </style>
 </head>
@@ -448,14 +453,14 @@
       <div class="road-container"><div class="road-grid" id="grid-bead"></div></div>
       <div class="road-container"><div class="road-grid" id="grid-big"></div></div>
 
-      <div class="road-title" style="margin-top:6px;">下三路</div>
+      <div class="road-title" style="margin-top:4px;">下三路</div>
       <div class="derived-roads">
         <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-eye"></div></div></div>
         <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-small"></div></div></div>
         <div class="derived-col"><div class="road-container"><div class="road-grid" id="grid-roach"></div></div></div>
       </div>
 
-      <div class="road-title" style="margin-top:6px;">五種路判讀</div>
+      <div class="road-title" style="margin-top:4px;">五種路判讀</div>
       <div class="road-explain-grid" id="roadExplain"></div>
     </div>
 
@@ -465,7 +470,7 @@
           <option value="PBPB">閒莊閒莊 (國際標準)</option>
           <option value="PPBB">閒閒莊莊 (區塊派發)</option>
         </select>
-        <label style="font-size:11px;color:var(--muted);font-weight:900;white-space:nowrap;">
+        <label style="font-size:10px;color:var(--muted);font-weight:900;white-space:nowrap;">
           <input type="checkbox" id="autoGuide" checked onchange="evaluateDrawRules()"> 🛡️ 智慧防呆
         </label>
       </div>
@@ -501,7 +506,7 @@
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
       <div class="db-title">實驗室控制台 <span class="version-badge">v64.3</span></div>
-      <button type="button" class="db-close" onclick="toggleDB(false)">×</button>
+      <button type="button" class="db-close" onclick="toggleDB(false)" aria-label="關閉設定">×</button>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -2205,6 +2210,10 @@ function toggleDB(forceState){
   fab.classList.toggle('hidden', shouldOpen);
   panel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
   document.body.classList.toggle('panel-open', shouldOpen);
+
+  if(shouldOpen){
+    panel.scrollTop = 0;
+  }
 
   updateDBUI();
   syncViewportLayout();
