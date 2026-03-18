@@ -523,7 +523,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版只修正：<b>設定面板被 HUD 蓋住、叉叉按不到</b>。
+        本版維持目前介面，只修正：<b>暖機過硬 / EV 過度保守 / open shoe 依賴 / 薄樣本體感</b>。
       </div>
     </div>
 
@@ -568,8 +568,10 @@ const ST_K = 'bac_v64_3_state';
 const CF_K = 'bac_v64_3_cfg';
 
 const WARMUP_HANDS = 15;
+const WARMUP_SOFT_START = 8;
 const SIDEBET_MIN_N = 12;
 const PATTERN_CAP = 50000;
+const DATA_THIN_TOTALHANDS = 120;
 
 const countWeights = {1:1,2:1,3:2,4:2,5:1,6:-1,7:-2,8:-2,9:-2,10:0,11:0,12:0,13:0};
 const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
@@ -596,6 +598,26 @@ function syncViewportLayout(){
       document.documentElement.style.setProperty('--hud-h', hud.offsetHeight + 'px');
     });
   }
+}
+
+function materializeAllShoes(){
+  const shoes = Array.isArray(LabStore.rawShoes) ? JSON.parse(JSON.stringify(LabStore.rawShoes)) : [];
+  if(LabStore.currentOpenShoe && Array.isArray(LabStore.currentOpenShoe.hands) && LabStore.currentOpenShoe.hands.length > 0){
+    const snap = JSON.parse(JSON.stringify(LabStore.currentOpenShoe));
+    snap.status = 'closed_snapshot';
+    snap.ended_at = snap.ended_at || Date.now();
+    shoes.push(snap);
+  }
+  return shoes;
+}
+
+function calcEffectiveTau(baseTau, aligned, gap, dataThin, warmupSoft){
+  let eff = Number.isFinite(Number(baseTau)) ? Number(baseTau) : Config.tau;
+  if(dataThin) eff = Math.min(eff, 0.0035);
+  if(aligned >= 4 && gap >= 3) eff = Math.min(eff, 0.0025);
+  if(aligned >= 5 && gap >= 4.5) eff = Math.min(eff, 0.0010);
+  if(warmupSoft) eff = Math.min(eff, 0.0015);
+  return Math.max(-1, Math.min(1, eff));
 }
 
 function createInitialState(){
@@ -906,9 +928,7 @@ function rebuildBigDataFromAllShoes(rawShoes){
 }
 
 function applyOpenShoePatternsToBigData(){
-  if(!LabStore.currentOpenShoe || !Array.isArray(LabStore.currentOpenShoe.hands)) return;
-  replayShoeIntoDB(LabStore.currentOpenShoe, BigData);
-  recalcDBStats(BigData);
+  BigData = rebuildBigDataFromAllShoes(materializeAllShoes());
 }
 
 function captureObservation(state, features, livePrediction, inputs, sideBetsSnapshot){
@@ -925,12 +945,15 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     policy_snapshot: {
       model_id:'five_road_v64_3',
       tau: livePrediction.tau,
+      effectiveTau: livePrediction.effectiveTau,
       s: Config.side,
       main_decision: livePrediction.decision,
       recommend_tie: !!sideBetsSnapshot.tie,
       recommend_bp: !!sideBetsSnapshot.bp,
       recommend_pp: !!sideBetsSnapshot.pp,
-      is_warmup: !!livePrediction.isWarmup
+      is_warmup: !!livePrediction.isWarmup,
+      is_warmup_soft: !!livePrediction.warmupSoft,
+      data_thin: !!livePrediction.dataThin
     },
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{ created_at: Date.now(), spec_version:'v64.3' }
@@ -1379,6 +1402,7 @@ function executePolicyChain(features, patternDb, tau){
   const suite = getRoadSuite(hist);
   const path = suite.path;
   const roads = suite.roads;
+  const dataThin = (patternDb.totalHands || 0) < DATA_THIN_TOTALHANDS;
 
   let scoreB = 0, scoreP = 0, alignedB = 0, alignedP = 0;
   roads.forEach(function(r){
@@ -1392,12 +1416,12 @@ function executePolicyChain(features, patternDb, tau){
 
   let probs = { B:NAIVE_PRIORS.B, P:NAIVE_PRIORS.P, T:NAIVE_PRIORS.T };
 
-  if(cp && cp.N >= 10){
+  if(cp && cp.N >= (dataThin ? 14 : 10)){
     const bpBase = cp.B + cp.P;
     if(bpBase > 0){
       const dataB = cp.B / bpBase;
       const dataP = cp.P / bpBase;
-      const w = Math.min(0.18, cp.N * 0.006);
+      const w = Math.min(dataThin ? 0.10 : 0.18, cp.N * 0.006);
       probs.B = probs.B * (1 - w) + dataB * w;
       probs.P = probs.P * (1 - w) + dataP * w;
     }
@@ -1411,14 +1435,25 @@ function executePolicyChain(features, patternDb, tau){
   probs = { B: probs.B / z, P: probs.P / z, T: probs.T / z };
   const ev = calcEVFromProbs(probs);
 
-  if(features.F_Path.history_len < WARMUP_HANDS){
+  const warmupSoft =
+    features.F_Path.history_len < WARMUP_HANDS &&
+    features.F_Path.history_len >= WARMUP_SOFT_START &&
+    (
+      (alignedB >= 4 && (scoreB - scoreP) >= 3) ||
+      (alignedP >= 4 && (scoreP - scoreB) >= 3)
+    );
+
+  if(features.F_Path.history_len < WARMUP_HANDS && !warmupSoft){
     return {
       probs,
       ev:{B:0,P:0,T:0},
       decision:'PASS',
       tau,
+      effectiveTau:tau,
       tier:'WARMUP',
       isWarmup:true,
+      warmupSoft:false,
+      dataThin,
       scoreB:Number(scoreB.toFixed(2)),
       scoreP:Number(scoreP.toFixed(2)),
       alignedB, alignedP,
@@ -1444,6 +1479,7 @@ function executePolicyChain(features, patternDb, tau){
   const reversalCandidate = candidate !== 'PASS' && trendSide && candidate !== trendSide;
   const overheat = trendLen >= 4 ? (trendLen >= 5 ? 2 : 1) : 0;
   const chopRisk = path.chop_count >= 6 ? 2 : path.chop_count >= 4 ? 1 : 0;
+  const effectiveTau = calcEffectiveTau(tau, aligned, gap, dataThin, warmupSoft);
 
   if(gap < 1.5){
     reasons.push('五路分差不足');
@@ -1469,13 +1505,26 @@ function executePolicyChain(features, patternDb, tau){
 
   if(reasons.length === 0){
     const evCandidate = candidate === 'B' ? ev.B : candidate === 'P' ? ev.P : 0;
-    if(!Number.isFinite(evCandidate) || evCandidate <= tau){
-      reasons.push('結構成立但 EV 未過閥值');
+    const structuralOverride = aligned >= 5 && gap >= 4.5 && !reversalCandidate && evCandidate > -0.01;
+
+    if(!Number.isFinite(evCandidate) || (evCandidate <= effectiveTau && !structuralOverride)){
+      reasons.push('結構成立但 EV 未過動態閥值');
     }else{
       decision = candidate;
-      if(aligned >= 4 && gap >= 3) tier = 'STRONG';
-      else if(aligned >= 3 && gap >= 2) tier = 'MID';
-      else tier = 'WEAK';
+
+      if(structuralOverride && evCandidate <= effectiveTau){
+        tier = warmupSoft ? 'WARMUP_SOFT' : 'STRUCT';
+        reasons.push('五路極強，啟用結構放行');
+      }else if(aligned >= 4 && gap >= 3){
+        tier = 'STRONG';
+      }else if(aligned >= 3 && gap >= 2){
+        tier = 'MID';
+      }else{
+        tier = 'WEAK';
+      }
+
+      if(warmupSoft) reasons.push('暖機結構放行');
+      if(dataThin) reasons.push('Pattern 樣本薄，偏向路結構');
     }
   }
 
@@ -1486,8 +1535,11 @@ function executePolicyChain(features, patternDb, tau){
     ev,
     decision,
     tau,
+    effectiveTau,
     tier,
     isWarmup:false,
+    warmupSoft,
+    dataThin,
     scoreB:Number(scoreB.toFixed(2)),
     scoreP:Number(scoreP.toFixed(2)),
     alignedB, alignedP,
@@ -1595,7 +1647,7 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v64.3：面板遮擋修正';
+    rb.textContent = 'v64.3：動態暖機 / 動態 EV / open shoe 穩定化';
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '📊 五路結構門檻策略待命中';
     updateRoadExplain(displayRoads);
@@ -1636,9 +1688,11 @@ function render(livePrediction){
 
     const tc = remain > 0 ? (S.runningCount / Math.max(0.5, remain / 52)).toFixed(2) : '0.00';
     const ev = livePrediction.decision === 'B' ? livePrediction.ev.B : livePrediction.decision === 'P' ? livePrediction.ev.P : 0;
+    const tauShow = Number.isFinite(livePrediction.effectiveTau) ? livePrediction.effectiveTau : livePrediction.tau;
 
     rb.innerHTML =
       'Tier: <b>' + livePrediction.tier + '</b>｜TC: ' + tc +
+      '｜Tau*: ' + tauShow.toFixed(4) +
       '｜EV: ' + ev.toFixed(4) +
       '｜理由：' + livePrediction.reasons.join(' / ');
 
@@ -1934,7 +1988,7 @@ function resetShoe(){
   closeCurrentShoe();
   S = createInitialState();
   bSt = null; bDB = null; bLab = null;
-  recalcDBStats(BigData);
+  BigData = rebuildBigDataFromAllShoes(materializeAllShoes());
   clearCurrentInput();
   render();
 }
@@ -1974,6 +2028,7 @@ async function exportDB(){
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
+      materializedShoes:materializeAllShoes(),
       state:S,
       config:Config
     };
@@ -2044,6 +2099,9 @@ function importDB(event){
       if(!obj || typeof obj !== 'object') throw new Error('invalid-json');
       if(!obj.labStore || !obj.state) throw new Error('missing-fields');
 
+      const importedMaterialized = Array.isArray(obj.materializedShoes) ? obj.materializedShoes : null;
+      let recoveredByMaterialized = false;
+
       const tempLab = {
         schema_version:'v64.3',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
@@ -2059,13 +2117,35 @@ function importDB(event){
       S = tempState;
       Config = tempCfg;
 
-      BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
-      applyOpenShoePatternsToBigData();
+      BigData = rebuildBigDataFromAllShoes(materializeAllShoes());
 
       if(!validateOpenShoeConsistency(LabStore, S)){
-        LabStore.currentOpenShoe = null;
-        S = createInitialState();
-        BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
+        if(importedMaterialized && importedMaterialized.length){
+          LabStore = {
+            schema_version:'v64.3',
+            rawShoes:importedMaterialized,
+            currentOpenShoe:null,
+            experiments:[]
+          };
+          BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
+          S = createInitialState();
+          recoveredByMaterialized = true;
+        }else{
+          const fallbackShoes = materializeAllShoes();
+          if(fallbackShoes.length){
+            LabStore = {
+              schema_version:'v64.3',
+              rawShoes:fallbackShoes,
+              currentOpenShoe:null,
+              experiments:[]
+            };
+            BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
+          }else{
+            LabStore.currentOpenShoe = null;
+            BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
+          }
+          S = createInitialState();
+        }
       }else{
         rebuildLiveStateMetrics();
       }
@@ -2077,7 +2157,12 @@ function importDB(event){
       bSt = null; bDB = null; bLab = null;
       clearCurrentInput();
       render();
-      alert('✅ 匯入成功：已載入 ' + LabStore.rawShoes.length + ' 雙已結算鞋靴資料。');
+
+      alert(
+        recoveredByMaterialized
+          ? '✅ 匯入成功：已用 materializedShoes 回復資料；目前開放鞋已轉為封存快照。'
+          : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料（含開放鞋快照）。'
+      );
     }catch(err){
       console.error(err);
       alert('匯入失敗：檔案格式不正確或內容不完整。');
@@ -2096,9 +2181,9 @@ function settleDecision(decision, winner){
 }
 
 function invokeQuantLab(){
-  const shoes = Array.isArray(LabStore.rawShoes) ? LabStore.rawShoes.slice() : [];
+  const shoes = materializeAllShoes();
   if(shoes.length < 3){
-    alert('實驗鞋靴不足，至少需要 3 雙已結算鞋靴。');
+    alert('實驗鞋靴不足，至少需要 3 雙鞋資料（含目前開放鞋快照）。');
     return;
   }
 
@@ -2260,13 +2345,23 @@ function init(){
   syncViewportLayout();
   loadAll();
 
-  BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
-  applyOpenShoePatternsToBigData();
+  BigData = rebuildBigDataFromAllShoes(materializeAllShoes());
 
   if(!validateOpenShoeConsistency(LabStore, S)){
-    LabStore.currentOpenShoe = null;
+    const fallbackShoes = materializeAllShoes();
+    if(fallbackShoes.length){
+      LabStore = {
+        schema_version:'v64.3',
+        rawShoes:fallbackShoes,
+        currentOpenShoe:null,
+        experiments:[]
+      };
+      BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
+    }else{
+      LabStore.currentOpenShoe = null;
+      BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
+    }
     S = createInitialState();
-    BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
   }else{
     rebuildLiveStateMetrics();
   }
