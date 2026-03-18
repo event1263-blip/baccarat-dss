@@ -523,7 +523,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版維持目前介面，只修正：<b>暖機過硬 / EV 過度保守 / open shoe 依賴 / 薄樣本體感</b>。
+        本版維持目前介面，只修正：<b>主預測次數 / 側注推薦精度 / 結構進入決策</b>。
       </div>
     </div>
 
@@ -568,10 +568,14 @@ const ST_K = 'bac_v64_3_state';
 const CF_K = 'bac_v64_3_cfg';
 
 const WARMUP_HANDS = 15;
-const WARMUP_SOFT_START = 8;
+const WARMUP_SOFT_START = 6;
+const WARMUP_PARTIAL_START = 10;
 const SIDEBET_MIN_N = 12;
 const PATTERN_CAP = 50000;
-const DATA_THIN_TOTALHANDS = 120;
+const DATA_THIN_TOTALHANDS = 180;
+
+const SIDE_PRIORS = { tie:0.0952, bp:0.0747, pp:0.0747 };
+const SIDE_MIN_N = { tie:26, bp:22, pp:22 };
 
 const countWeights = {1:1,2:1,3:2,4:2,5:1,6:-1,7:-2,8:-2,9:-2,10:0,11:0,12:0,13:0};
 const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
@@ -613,11 +617,48 @@ function materializeAllShoes(){
 
 function calcEffectiveTau(baseTau, aligned, gap, dataThin, warmupSoft){
   let eff = Number.isFinite(Number(baseTau)) ? Number(baseTau) : Config.tau;
-  if(dataThin) eff = Math.min(eff, 0.0035);
-  if(aligned >= 4 && gap >= 3) eff = Math.min(eff, 0.0025);
-  if(aligned >= 5 && gap >= 4.5) eff = Math.min(eff, 0.0010);
-  if(warmupSoft) eff = Math.min(eff, 0.0015);
+  if(dataThin) eff = Math.min(eff, 0.0028);
+  if(aligned >= 3 && gap >= 2.2) eff = Math.min(eff, 0.0020);
+  if(aligned >= 4 && gap >= 2.8) eff = Math.min(eff, 0.0012);
+  if(aligned >= 5 && gap >= 4.0) eff = Math.min(eff, 0.0002);
+  if(warmupSoft) eff = Math.min(eff, 0.0008);
   return Math.max(-1, Math.min(1, eff));
+}
+
+function shouldRecommendSidebet(kind, p, n){
+  if(!Number.isFinite(p) || !Number.isFinite(n)) return false;
+  if(n < SIDE_MIN_N[kind]) return false;
+
+  const base = SIDE_PRIORS[kind];
+  const absFloor = kind === 'tie' ? 0.135 : 0.112;
+  const edgeFloor = kind === 'tie' ? 0.022 : 0.017;
+  const hotAbs = kind === 'tie' ? 0.155 : 0.128;
+  const hotEdge = kind === 'tie' ? 0.030 : 0.023;
+  const dynFloor = Math.max(absFloor, Config.side + (kind === 'tie' ? 0.035 : 0.025));
+  const edge = p - base;
+
+  if(p >= hotAbs && edge >= hotEdge) return true;
+  return p >= dynFloor && edge >= edgeFloor;
+}
+
+function getSidebetSignals(ptn){
+  const hasPatternData = !!(ptn && !ptn.weak);
+  if(!hasPatternData){
+    return {
+      hasPatternData:false,
+      tieP:0, bpP:0, ppP:0,
+      tie:false, bp:false, pp:false
+    };
+  }
+  return {
+    hasPatternData:true,
+    tieP:ptn.tieP,
+    bpP:ptn.bpP,
+    ppP:ptn.ppP,
+    tie:shouldRecommendSidebet('tie', ptn.tieP, ptn.n),
+    bp:shouldRecommendSidebet('bp', ptn.bpP, ptn.n),
+    pp:shouldRecommendSidebet('pp', ptn.ppP, ptn.n)
+  };
 }
 
 function createInitialState(){
@@ -758,10 +799,15 @@ function recalcDBStats(db){
       if(bRatio >= 0.55){ db.acc.recs += bpBase; db.acc.hits += cp.B; }
       else if(pRatio >= 0.55){ db.acc.recs += bpBase; db.acc.hits += cp.P; }
     }
+
     if(cp.N >= SIDEBET_MIN_N){
-      if((cp.T + 0.5) / (allBase + 5) >= Config.side){ db.acc.tRecs += allBase; db.acc.tHits += cp.T; }
-      if((cp.BP + 0.4) / (allBase + 5) >= Config.side){ db.acc.bpRecs += allBase; db.acc.bpHits += cp.BP; }
-      if((cp.PP + 0.4) / (allBase + 5) >= Config.side){ db.acc.ppRecs += allBase; db.acc.ppHits += cp.PP; }
+      const tieP = (cp.T + 0.5) / (allBase + 5);
+      const bpP = (cp.BP + 0.4) / (allBase + 5);
+      const ppP = (cp.PP + 0.4) / (allBase + 5);
+
+      if(shouldRecommendSidebet('tie', tieP, cp.N)){ db.acc.tRecs += allBase; db.acc.tHits += cp.T; }
+      if(shouldRecommendSidebet('bp', bpP, cp.N)){ db.acc.bpRecs += allBase; db.acc.bpHits += cp.BP; }
+      if(shouldRecommendSidebet('pp', ppP, cp.N)){ db.acc.ppRecs += allBase; db.acc.ppHits += cp.PP; }
     }
   }
   db.patterns = cleaned;
@@ -1416,16 +1462,21 @@ function executePolicyChain(features, patternDb, tau){
 
   let probs = { B:NAIVE_PRIORS.B, P:NAIVE_PRIORS.P, T:NAIVE_PRIORS.T };
 
-  if(cp && cp.N >= (dataThin ? 14 : 10)){
+  if(cp && cp.N >= (dataThin ? 18 : 10)){
     const bpBase = cp.B + cp.P;
     if(bpBase > 0){
       const dataB = cp.B / bpBase;
       const dataP = cp.P / bpBase;
-      const w = Math.min(dataThin ? 0.10 : 0.18, cp.N * 0.006);
+      const w = Math.min(dataThin ? 0.10 : 0.18, cp.N * 0.0055);
       probs.B = probs.B * (1 - w) + dataB * w;
       probs.P = probs.P * (1 - w) + dataP * w;
     }
   }
+
+  const roadDeltaRaw = (scoreB - scoreP) * (dataThin ? 0.0075 : 0.0055);
+  const roadDelta = Math.max(-0.045, Math.min(0.045, roadDeltaRaw));
+  probs.B = Math.max(0.001, probs.B + roadDelta);
+  probs.P = Math.max(0.001, probs.P - roadDelta);
 
   const tc = features.F_Comp.running_count / Math.max(0.5, features.F_Comp.remain_cards / 52);
   probs.B = Math.max(0, probs.B - tc * 0.0005);
@@ -1435,12 +1486,20 @@ function executePolicyChain(features, patternDb, tau){
   probs = { B: probs.B / z, P: probs.P / z, T: probs.T / z };
   const ev = calcEVFromProbs(probs);
 
+  const gapNow = Math.abs(scoreB - scoreP);
   const warmupSoft =
     features.F_Path.history_len < WARMUP_HANDS &&
     features.F_Path.history_len >= WARMUP_SOFT_START &&
     (
-      (alignedB >= 4 && (scoreB - scoreP) >= 3) ||
-      (alignedP >= 4 && (scoreP - scoreB) >= 3)
+      (alignedB >= 4 && (scoreB - scoreP) >= 2.4) ||
+      (alignedP >= 4 && (scoreP - scoreB) >= 2.4) ||
+      (
+        features.F_Path.history_len >= WARMUP_PARTIAL_START &&
+        (
+          (alignedB >= 3 && (scoreB - scoreP) >= 3.4) ||
+          (alignedP >= 3 && (scoreP - scoreB) >= 3.4)
+        )
+      )
     );
 
   if(features.F_Path.history_len < WARMUP_HANDS && !warmupSoft){
@@ -1457,7 +1516,7 @@ function executePolicyChain(features, patternDb, tau){
       scoreB:Number(scoreB.toFixed(2)),
       scoreP:Number(scoreP.toFixed(2)),
       alignedB, alignedP,
-      gap:Number(Math.abs(scoreB - scoreP).toFixed(2)),
+      gap:Number(gapNow.toFixed(2)),
       overheat: path.trend_len >= 4 ? (path.trend_len >= 5 ? 2 : 1) : 0,
       chopRisk: path.chop_count >= 6 ? 2 : path.chop_count >= 4 ? 1 : 0,
       reasons:['暖機保護'],
@@ -1481,31 +1540,37 @@ function executePolicyChain(features, patternDb, tau){
   const chopRisk = path.chop_count >= 6 ? 2 : path.chop_count >= 4 ? 1 : 0;
   const effectiveTau = calcEffectiveTau(tau, aligned, gap, dataThin, warmupSoft);
 
-  if(gap < 1.5){
+  if(gap < 1.2){
     reasons.push('五路分差不足');
   }else if(candidate === 'PASS'){
     reasons.push('五路無明確主方向');
   }else if(aligned < 2){
     reasons.push('支持路數不足');
-  }else if(oppositeAligned >= 2 && gap < 3){
+  }else if(oppositeAligned >= 2 && gap < 2.4){
     reasons.push('反向衝突過強');
   }else{
     if(trendContinuing){
-      if(overheat >= 2 && aligned < 5) reasons.push('5連以上過熱，禁追');
-      else if(overheat >= 1 && aligned < 4) reasons.push('4連過熱但未達4路一致');
-      else if(trendLen >= 3 && aligned < 3) reasons.push('3連以上需至少3路一致');
-      else if(chopRisk >= 2 && aligned < 4) reasons.push('近期切換過快，禁止追延續');
+      if(overheat >= 2 && aligned < 4) reasons.push('5連以上過熱，禁追');
+      else if(overheat >= 1 && aligned < 3) reasons.push('4連過熱但未達3路一致');
+      else if(trendLen >= 3 && aligned < 2) reasons.push('3連以上需至少2路一致');
+      else if(chopRisk >= 2 && aligned < 3) reasons.push('近期切換過快，禁止弱追');
     }
     if(reversalCandidate){
       if(trendLen < 2) reasons.push('原趨勢不足，反轉條件不成立');
-      else if(aligned < 3) reasons.push('反轉至少要3路同步');
-      else if(gap < 2) reasons.push('反轉分差不足');
+      else if(aligned < 2) reasons.push('反轉支持路數不足');
+      else if(gap < 1.6) reasons.push('反轉分差不足');
+      else if(trendLen >= 4 && aligned < 4) reasons.push('長連後反轉需更強結構');
     }
   }
 
   if(reasons.length === 0){
     const evCandidate = candidate === 'B' ? ev.B : candidate === 'P' ? ev.P : 0;
-    const structuralOverride = aligned >= 5 && gap >= 4.5 && !reversalCandidate && evCandidate > -0.01;
+    const structuralOverride =
+      !reversalCandidate &&
+      (
+        (aligned >= 5 && gap >= 4.0 && evCandidate > -0.015) ||
+        (aligned >= 4 && gap >= 4.8 && evCandidate > -0.008)
+      );
 
     if(!Number.isFinite(evCandidate) || (evCandidate <= effectiveTau && !structuralOverride)){
       reasons.push('結構成立但 EV 未過動態閥值');
@@ -1592,7 +1657,7 @@ function updateRoadExplain(roads){
   }
 }
 
-function setSideBetPill(id, label, p, isPair, hasData){
+function setSideBetPill(id, label, p, isPair, hasData, isActive){
   const e = document.getElementById(id);
   if(!hasData){
     e.textContent = label + ' --%';
@@ -1600,7 +1665,7 @@ function setSideBetPill(id, label, p, isPair, hasData){
     return;
   }
   e.textContent = label + ' ' + (p * 100).toFixed(1) + '%';
-  e.className = p >= Config.side ? (isPair ? 'sidebet-pill active-pair' : 'sidebet-pill active') : 'sidebet-pill';
+  e.className = isActive ? (isPair ? 'sidebet-pill active-pair' : 'sidebet-pill active') : 'sidebet-pill';
 }
 
 function fmtStat(h, r){
@@ -1647,7 +1712,7 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v64.3：動態暖機 / 動態 EV / open shoe 穩定化';
+    rb.textContent = 'v64.3：主推次數提升 / 側注門檻收斂';
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '📊 五路結構門檻策略待命中';
     updateRoadExplain(displayRoads);
@@ -1701,20 +1766,17 @@ function render(livePrediction){
   }
 
   const ptn = patternStatsForCurrent();
-  const hasPatternData = ptn && !ptn.weak;
-  const fT = hasPatternData ? ptn.tieP : 0;
-  const fBP = hasPatternData ? ptn.bpP : 0;
-  const fPP = hasPatternData ? ptn.ppP : 0;
+  const sideSignals = getSidebetSignals(ptn);
 
   S.lastSideBets = {
-    tie: fT >= Config.side,
-    bp: fBP >= Config.side,
-    pp: fPP >= Config.side
+    tie: sideSignals.tie,
+    bp: sideSignals.bp,
+    pp: sideSignals.pp
   };
 
-  setSideBetPill('sbTie', '和局', fT, false, hasPatternData);
-  setSideBetPill('sbBP', '莊對', fBP, true, hasPatternData);
-  setSideBetPill('sbPP', '閒對', fPP, true, hasPatternData);
+  setSideBetPill('sbTie', '和局', sideSignals.tieP, false, sideSignals.hasPatternData, sideSignals.tie);
+  setSideBetPill('sbBP', '莊對', sideSignals.bpP, true, sideSignals.hasPatternData, sideSignals.bp);
+  setSideBetPill('sbPP', '閒對', sideSignals.ppP, true, sideSignals.hasPatternData, sideSignals.pp);
 
   updateDBUI();
   saveAll();
