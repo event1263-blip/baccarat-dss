@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v64.3 Panel Fix</title>
+  <title>百家樂量化終端 - v64.4 Version Tagged</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -431,7 +431,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v64.3</span>
+        <span class="version-badge">v64.4</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -515,7 +515,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v64.3</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v64.4</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -523,7 +523,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版維持目前介面，只修正：<b>主預測次數 / 側注推薦精度 / 結構進入決策</b>。
+        本版 v64.4 維持目前介面，只修正：<b>主預測次數 / 側注推薦精度 / 結構進入決策 / 版本註記更新</b>。
       </div>
     </div>
 
@@ -582,7 +582,7 @@ const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v64.3', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version:'v64.4', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10 };
 
@@ -900,7 +900,7 @@ function loadAll(){
       const lab = JSON.parse(labRaw);
       if(lab && typeof lab === 'object'){
         LabStore = {
-          schema_version:'v64.3',
+          schema_version:'v64.4',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -913,7 +913,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v64.3',
+          schema_version:'v64.4',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -989,7 +989,7 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(livePrediction)),
     policy_snapshot: {
-      model_id:'five_road_v64_3',
+      model_id:'five_road_v64_4',
       tau: livePrediction.tau,
       effectiveTau: livePrediction.effectiveTau,
       s: Config.side,
@@ -1002,7 +1002,7 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
       data_thin: !!livePrediction.dataThin
     },
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
-    audit:{ created_at: Date.now(), spec_version:'v64.3' }
+    audit:{ created_at: Date.now(), spec_version:'v64.4' }
   };
 }
 
@@ -1712,7 +1712,7 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v64.3：主推次數提升 / 側注門檻收斂';
+    rb.textContent = 'v64.4：主推次數提升 / 側注門檻收斂 / 版本註記更新';
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '📊 五路結構門檻策略待命中';
     updateRoadExplain(displayRoads);
@@ -2086,7 +2086,7 @@ function saveConfig(){
 async function exportDB(){
   try{
     const payload = {
-      version:'v64.3',
+      version:'v64.4',
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
@@ -2096,7 +2096,7 @@ async function exportDB(){
     };
     const json = JSON.stringify(payload, null, 2);
     const blob = new Blob([json], { type:'application/json' });
-    const fileName = 'bac_v64_3_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
+    const fileName = 'bac_v64_4_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
 
     if(window.showSaveFilePicker){
       try{
@@ -2123,7 +2123,7 @@ async function exportDB(){
         await navigator.share({
           files:[file],
           title:'百家樂資料匯出',
-          text:'bac v64.3 匯出資料'
+          text:'bac v64.4 匯出資料'
         });
         return;
       }
@@ -2165,7 +2165,7 @@ function importDB(event){
       let recoveredByMaterialized = false;
 
       const tempLab = {
-        schema_version:'v64.3',
+        schema_version:'v64.4',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:[]
@@ -2184,7 +2184,7 @@ function importDB(event){
       if(!validateOpenShoeConsistency(LabStore, S)){
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v64.3',
+            schema_version:'v64.4',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:[]
@@ -2196,7 +2196,7 @@ function importDB(event){
           const fallbackShoes = materializeAllShoes();
           if(fallbackShoes.length){
             LabStore = {
-              schema_version:'v64.3',
+              schema_version:'v64.4',
               rawShoes:fallbackShoes,
               currentOpenShoe:null,
               experiments:[]
@@ -2321,7 +2321,7 @@ function invokeQuantLab(){
   }
 
   const result = {
-    version:'v64.3',
+    version:'v64.4',
     shoes:shoes.length,
     test_shoes:runs.length,
     hands:totalHands,
@@ -2339,7 +2339,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v64.3 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v64.4 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     'Verdict: ' + result.verdict + '\n' +
@@ -2413,7 +2413,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v64.3',
+        schema_version:'v64.4',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
