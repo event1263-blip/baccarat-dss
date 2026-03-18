@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v64.4 Version Tagged</title>
+  <title>百家樂量化終端 - v64.5 Snapshot & Sidebet Fix</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -431,7 +431,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v64.4</span>
+        <span class="version-badge">v64.5</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -515,7 +515,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v64.4</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v64.5</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -523,7 +523,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v64.4 維持目前介面，只修正：<b>主預測次數 / 側注推薦精度 / 結構進入決策 / 版本註記更新</b>。
+        本版 v64.5 維持目前介面，只修正：<b>snapshot schema 補齊 / 強結構 PASS 放寬 / Tie-BP-PP 分開調整</b>。
       </div>
     </div>
 
@@ -575,14 +575,18 @@ const PATTERN_CAP = 50000;
 const DATA_THIN_TOTALHANDS = 180;
 
 const SIDE_PRIORS = { tie:0.0952, bp:0.0747, pp:0.0747 };
-const SIDE_MIN_N = { tie:26, bp:22, pp:22 };
+const SIDE_RULES = {
+  tie:{ minN:24, absFloor:0.126, edgeFloor:0.014, hotAbs:0.142, hotEdge:0.022, confSpan:52, cfgPad:0.018 },
+  bp :{ minN:20, absFloor:0.101, edgeFloor:0.012, hotAbs:0.118, hotEdge:0.020, confSpan:40, cfgPad:0.015 },
+  pp :{ minN:30, absFloor:0.120, edgeFloor:0.021, hotAbs:0.138, hotEdge:0.028, confSpan:56, cfgPad:0.026 }
+};
 
 const countWeights = {1:1,2:1,3:2,4:2,5:1,6:-1,7:-2,8:-2,9:-2,10:0,11:0,12:0,13:0};
 const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v64.4', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version:'v64.5', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10 };
 
@@ -595,7 +599,6 @@ function syncViewportLayout(){
   if(viewportH){
     document.documentElement.style.setProperty('--app-vh', viewportH + 'px');
   }
-
   const hud = document.querySelector('.sticky-hud');
   if(hud){
     requestAnimationFrame(function(){
@@ -615,30 +618,153 @@ function materializeAllShoes(){
   return shoes;
 }
 
-function calcEffectiveTau(baseTau, aligned, gap, dataThin, warmupSoft){
-  let eff = Number.isFinite(Number(baseTau)) ? Number(baseTau) : Config.tau;
-  if(dataThin) eff = Math.min(eff, 0.0028);
-  if(aligned >= 3 && gap >= 2.2) eff = Math.min(eff, 0.0020);
-  if(aligned >= 4 && gap >= 2.8) eff = Math.min(eff, 0.0012);
-  if(aligned >= 5 && gap >= 4.0) eff = Math.min(eff, 0.0002);
-  if(warmupSoft) eff = Math.min(eff, 0.0008);
-  return Math.max(-1, Math.min(1, eff));
+function normalizeFiniteNumber(v, fallback){
+  return Number.isFinite(Number(v)) ? Number(v) : fallback;
 }
 
-function shouldRecommendSidebet(kind, p, n){
-  if(!Number.isFinite(p) || !Number.isFinite(n)) return false;
-  if(n < SIDE_MIN_N[kind]) return false;
+function normalizeDecision(v){
+  return v === 'B' || v === 'P' || v === 'PASS' ? v : 'PASS';
+}
 
+function normalizeOutcomeWinner(v){
+  return v === 'B' || v === 'P' || v === 'T' ? v : 'T';
+}
+
+function normalizeRoadSignals(arr){
+  return Array.isArray(arr) ? arr.map(function(x){
+    return {
+      label: x && typeof x.label === 'string' ? x.label : '',
+      side: x && (x.side === 'B' || x.side === 'P' || x.side === null) ? x.side : null,
+      strength: normalizeFiniteNumber(x && x.strength, 0),
+      text: x && typeof x.text === 'string' ? x.text : ''
+    };
+  }) : [];
+}
+
+function normalizePolicySnapshotShape(raw){
+  const originalModelId = raw && typeof raw.model_id === 'string'
+    ? raw.model_id
+    : (raw && typeof raw.model_id_original === 'string' ? raw.model_id_original : 'legacy');
+
+  const tau = normalizeFiniteNumber(raw && raw.tau, Config.tau);
+  const effectiveTau = normalizeFiniteNumber(raw && raw.effectiveTau, tau);
+
+  return {
+    model_id: originalModelId,
+    model_id_original: originalModelId,
+    snapshot_schema_version:'v64.5',
+    tau: tau,
+    effectiveTau: effectiveTau,
+    s: normalizeFiniteNumber(raw && raw.s, Config.side),
+    main_decision: normalizeDecision(raw && raw.main_decision),
+    recommend_tie: !!(raw && raw.recommend_tie),
+    recommend_bp: !!(raw && raw.recommend_bp),
+    recommend_pp: !!(raw && raw.recommend_pp),
+    is_warmup: !!(raw && raw.is_warmup),
+    is_warmup_soft: !!(raw && raw.is_warmup_soft),
+    data_thin: !!(raw && raw.data_thin)
+  };
+}
+
+function normalizeLivePredictionShape(raw){
+  const tau = normalizeFiniteNumber(raw && raw.tau, Config.tau);
+  const effectiveTau = normalizeFiniteNumber(raw && raw.effectiveTau, tau);
+
+  return {
+    probs: raw && raw.probs && typeof raw.probs === 'object' ? {
+      B: normalizeFiniteNumber(raw.probs.B, NAIVE_PRIORS.B),
+      P: normalizeFiniteNumber(raw.probs.P, NAIVE_PRIORS.P),
+      T: normalizeFiniteNumber(raw.probs.T, NAIVE_PRIORS.T)
+    } : { B:NAIVE_PRIORS.B, P:NAIVE_PRIORS.P, T:NAIVE_PRIORS.T },
+    ev: raw && raw.ev && typeof raw.ev === 'object' ? {
+      B: normalizeFiniteNumber(raw.ev.B, 0),
+      P: normalizeFiniteNumber(raw.ev.P, 0),
+      T: normalizeFiniteNumber(raw.ev.T, 0)
+    } : { B:0, P:0, T:0 },
+    decision: normalizeDecision(raw && raw.decision),
+    tau: tau,
+    effectiveTau: effectiveTau,
+    tier: raw && typeof raw.tier === 'string' ? raw.tier : (raw && raw.isWarmup ? 'WARMUP' : 'PASS'),
+    isWarmup: !!(raw && raw.isWarmup),
+    warmupSoft: !!(raw && raw.warmupSoft),
+    dataThin: !!(raw && raw.dataThin),
+    scoreB: normalizeFiniteNumber(raw && raw.scoreB, 0),
+    scoreP: normalizeFiniteNumber(raw && raw.scoreP, 0),
+    alignedB: Math.max(0, Math.floor(normalizeFiniteNumber(raw && raw.alignedB, 0))),
+    alignedP: Math.max(0, Math.floor(normalizeFiniteNumber(raw && raw.alignedP, 0))),
+    gap: normalizeFiniteNumber(raw && raw.gap, 0),
+    overheat: Math.max(0, Math.floor(normalizeFiniteNumber(raw && raw.overheat, 0))),
+    chopRisk: Math.max(0, Math.floor(normalizeFiniteNumber(raw && raw.chopRisk, 0))),
+    reasons: Array.isArray(raw && raw.reasons) ? raw.reasons.map(function(x){ return String(x); }) : ['legacy'],
+    roadSignals: normalizeRoadSignals(raw && raw.roadSignals)
+  };
+}
+
+function normalizeHandRecord(hand){
+  if(!hand || typeof hand !== 'object') return hand;
+
+  hand.live_prediction = normalizeLivePredictionShape(hand.live_prediction || {});
+  hand.policy_snapshot = normalizePolicySnapshotShape(hand.policy_snapshot || {});
+  hand.audit = {
+    created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
+    spec_version:'v64.5',
+    original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
+      ? hand.audit.original_spec_version
+      : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
+    snapshot_normalized:true
+  };
+
+  if(hand.outcome && typeof hand.outcome === 'object'){
+    hand.outcome.winner = normalizeOutcomeWinner(hand.outcome.winner || hand.outcome.w);
+    hand.outcome.w = hand.outcome.winner;
+    hand.outcome.pPt = Math.max(0, Math.min(9, Math.floor(normalizeFiniteNumber(hand.outcome.pPt, 0))));
+    hand.outcome.bPt = Math.max(0, Math.min(9, Math.floor(normalizeFiniteNumber(hand.outcome.bPt, 0))));
+    hand.outcome.bp = !!hand.outcome.bp;
+    hand.outcome.pp = !!hand.outcome.pp;
+  }
+
+  return hand;
+}
+
+function normalizeLabSnapshots(){
+  const normalizeShoe = function(shoe){
+    if(!shoe || !Array.isArray(shoe.hands)) return shoe;
+    shoe.hands = shoe.hands.map(function(h){
+      return normalizeHandRecord(h);
+    });
+    return shoe;
+  };
+
+  LabStore.rawShoes = Array.isArray(LabStore.rawShoes)
+    ? LabStore.rawShoes.map(function(shoe){ return normalizeShoe(shoe); })
+    : [];
+
+  if(LabStore.currentOpenShoe){
+    LabStore.currentOpenShoe = normalizeShoe(LabStore.currentOpenShoe);
+  }
+}
+
+function getCalibratedSideProb(kind, rawP, n){
+  const rule = SIDE_RULES[kind];
+  if(!rule) return 0;
   const base = SIDE_PRIORS[kind];
-  const absFloor = kind === 'tie' ? 0.135 : 0.112;
-  const edgeFloor = kind === 'tie' ? 0.022 : 0.017;
-  const hotAbs = kind === 'tie' ? 0.155 : 0.128;
-  const hotEdge = kind === 'tie' ? 0.030 : 0.023;
-  const dynFloor = Math.max(absFloor, Config.side + (kind === 'tie' ? 0.035 : 0.025));
-  const edge = p - base;
+  if(!Number.isFinite(rawP) || !Number.isFinite(n) || n <= 0) return base;
+  const conf = Math.max(0, Math.min(1, (n - rule.minN) / rule.confSpan));
+  return base * (1 - conf) + rawP * conf;
+}
 
-  if(p >= hotAbs && edge >= hotEdge) return true;
-  return p >= dynFloor && edge >= edgeFloor;
+function shouldRecommendSidebet(kind, rawP, n){
+  const rule = SIDE_RULES[kind];
+  if(!rule || !Number.isFinite(rawP) || !Number.isFinite(n)) return false;
+  if(n < rule.minN) return false;
+
+  const adjP = getCalibratedSideProb(kind, rawP, n);
+  const base = SIDE_PRIORS[kind];
+  const edge = adjP - base;
+  const dynFloor = Math.max(rule.absFloor, Config.side + rule.cfgPad);
+
+  if(adjP >= rule.hotAbs && edge >= rule.hotEdge) return true;
+  return adjP >= dynFloor && edge >= rule.edgeFloor;
 }
 
 function getSidebetSignals(ptn){
@@ -650,15 +776,31 @@ function getSidebetSignals(ptn){
       tie:false, bp:false, pp:false
     };
   }
+
+  const tieAdj = getCalibratedSideProb('tie', ptn.tieP, ptn.n);
+  const bpAdj = getCalibratedSideProb('bp', ptn.bpP, ptn.n);
+  const ppAdj = getCalibratedSideProb('pp', ptn.ppP, ptn.n);
+
   return {
     hasPatternData:true,
-    tieP:ptn.tieP,
-    bpP:ptn.bpP,
-    ppP:ptn.ppP,
+    tieP:tieAdj,
+    bpP:bpAdj,
+    ppP:ppAdj,
     tie:shouldRecommendSidebet('tie', ptn.tieP, ptn.n),
     bp:shouldRecommendSidebet('bp', ptn.bpP, ptn.n),
     pp:shouldRecommendSidebet('pp', ptn.ppP, ptn.n)
   };
+}
+
+function calcEffectiveTau(baseTau, aligned, gap, dataThin, warmupSoft){
+  let eff = Number.isFinite(Number(baseTau)) ? Number(baseTau) : Config.tau;
+  if(dataThin) eff = Math.min(eff, 0.0028);
+  if(aligned >= 3 && gap >= 2.2) eff = Math.min(eff, 0.0020);
+  if(aligned >= 4 && gap >= 2.8) eff = Math.min(eff, 0.0012);
+  if(aligned >= 5 && gap >= 4.0) eff = Math.min(eff, 0.0002);
+  if(aligned >= 5 && gap >= 6.0) eff = Math.min(eff, -0.0006);
+  if(warmupSoft) eff = Math.min(eff, 0.0008);
+  return Math.max(-1, Math.min(1, eff));
 }
 
 function createInitialState(){
@@ -801,13 +943,13 @@ function recalcDBStats(db){
     }
 
     if(cp.N >= SIDEBET_MIN_N){
-      const tieP = (cp.T + 0.5) / (allBase + 5);
-      const bpP = (cp.BP + 0.4) / (allBase + 5);
-      const ppP = (cp.PP + 0.4) / (allBase + 5);
+      const tieRaw = (cp.T + 0.5) / (allBase + 5);
+      const bpRaw = (cp.BP + 0.4) / (allBase + 5);
+      const ppRaw = (cp.PP + 0.4) / (allBase + 5);
 
-      if(shouldRecommendSidebet('tie', tieP, cp.N)){ db.acc.tRecs += allBase; db.acc.tHits += cp.T; }
-      if(shouldRecommendSidebet('bp', bpP, cp.N)){ db.acc.bpRecs += allBase; db.acc.bpHits += cp.BP; }
-      if(shouldRecommendSidebet('pp', ppP, cp.N)){ db.acc.ppRecs += allBase; db.acc.ppHits += cp.PP; }
+      if(shouldRecommendSidebet('tie', tieRaw, cp.N)){ db.acc.tRecs += allBase; db.acc.tHits += cp.T; }
+      if(shouldRecommendSidebet('bp', bpRaw, cp.N)){ db.acc.bpRecs += allBase; db.acc.bpHits += cp.BP; }
+      if(shouldRecommendSidebet('pp', ppRaw, cp.N)){ db.acc.ppRecs += allBase; db.acc.ppHits += cp.PP; }
     }
   }
   db.patterns = cleaned;
@@ -879,6 +1021,7 @@ function closeCurrentShoe(){
 }
 
 function saveAll(){
+  normalizeLabSnapshots();
   localStorage.setItem(DB_K, JSON.stringify(BigData));
   localStorage.setItem(LAB_K, JSON.stringify(LabStore));
   localStorage.setItem(ST_K, JSON.stringify(S));
@@ -900,7 +1043,7 @@ function loadAll(){
       const lab = JSON.parse(labRaw);
       if(lab && typeof lab === 'object'){
         LabStore = {
-          schema_version:'v64.4',
+          schema_version:'v64.5',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -913,7 +1056,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v64.4',
+          schema_version:'v64.5',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -939,6 +1082,8 @@ function loadAll(){
       S = createInitialState();
     }
   }
+
+  normalizeLabSnapshots();
 
   document.getElementById('cfgTau').value = Config.tau;
   document.getElementById('cfgSide').value = Config.side;
@@ -989,7 +1134,9 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(livePrediction)),
     policy_snapshot: {
-      model_id:'five_road_v64_4',
+      model_id:'five_road_v64_5',
+      model_id_original:'five_road_v64_5',
+      snapshot_schema_version:'v64.5',
       tau: livePrediction.tau,
       effectiveTau: livePrediction.effectiveTau,
       s: Config.side,
@@ -1002,7 +1149,12 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
       data_thin: !!livePrediction.dataThin
     },
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
-    audit:{ created_at: Date.now(), spec_version:'v64.4' }
+    audit:{
+      created_at: Date.now(),
+      spec_version:'v64.5',
+      original_spec_version:'v64.5',
+      snapshot_normalized:true
+    }
   };
 }
 
@@ -1536,6 +1688,7 @@ function executePolicyChain(features, patternDb, tau){
   const oppositeAligned = candidate === 'B' ? alignedP : alignedB;
   const trendContinuing = candidate !== 'PASS' && candidate === trendSide;
   const reversalCandidate = candidate !== 'PASS' && trendSide && candidate !== trendSide;
+  const reversalUltraStrong = reversalCandidate && aligned >= 5 && gap >= 5.5;
   const overheat = trendLen >= 4 ? (trendLen >= 5 ? 2 : 1) : 0;
   const chopRisk = path.chop_count >= 6 ? 2 : path.chop_count >= 4 ? 1 : 0;
   const effectiveTau = calcEffectiveTau(tau, aligned, gap, dataThin, warmupSoft);
@@ -1555,7 +1708,8 @@ function executePolicyChain(features, patternDb, tau){
       else if(trendLen >= 3 && aligned < 2) reasons.push('3連以上需至少2路一致');
       else if(chopRisk >= 2 && aligned < 3) reasons.push('近期切換過快，禁止弱追');
     }
-    if(reversalCandidate){
+
+    if(reversalCandidate && !reversalUltraStrong){
       if(trendLen < 2) reasons.push('原趨勢不足，反轉條件不成立');
       else if(aligned < 2) reasons.push('反轉支持路數不足');
       else if(gap < 1.6) reasons.push('反轉分差不足');
@@ -1565,11 +1719,24 @@ function executePolicyChain(features, patternDb, tau){
 
   if(reasons.length === 0){
     const evCandidate = candidate === 'B' ? ev.B : candidate === 'P' ? ev.P : 0;
+    const ultraStructuralOverride =
+      aligned >= 5 &&
+      gap >= 6.0 &&
+      evCandidate > -0.03 &&
+      (oppositeAligned === 0 || gap >= 7.0);
+
     const structuralOverride =
-      !reversalCandidate &&
+      ultraStructuralOverride ||
       (
-        (aligned >= 5 && gap >= 4.0 && evCandidate > -0.015) ||
-        (aligned >= 4 && gap >= 4.8 && evCandidate > -0.008)
+        !reversalCandidate &&
+        (
+          (aligned >= 5 && gap >= 4.0 && evCandidate > -0.015) ||
+          (aligned >= 4 && gap >= 4.8 && evCandidate > -0.008)
+        )
+      ) ||
+      (
+        reversalUltraStrong &&
+        evCandidate > -0.02
       );
 
     if(!Number.isFinite(evCandidate) || (evCandidate <= effectiveTau && !structuralOverride)){
@@ -1577,7 +1744,10 @@ function executePolicyChain(features, patternDb, tau){
     }else{
       decision = candidate;
 
-      if(structuralOverride && evCandidate <= effectiveTau){
+      if(ultraStructuralOverride){
+        tier = 'ULTRA';
+        reasons.push('五路壓倒性一致，啟用超強結構放行');
+      }else if(structuralOverride && evCandidate <= effectiveTau){
         tier = warmupSoft ? 'WARMUP_SOFT' : 'STRUCT';
         reasons.push('五路極強，啟用結構放行');
       }else if(aligned >= 4 && gap >= 3){
@@ -1590,6 +1760,7 @@ function executePolicyChain(features, patternDb, tau){
 
       if(warmupSoft) reasons.push('暖機結構放行');
       if(dataThin) reasons.push('Pattern 樣本薄，偏向路結構');
+      if(reversalUltraStrong) reasons.push('反轉結構極強，放寬 EV 攔截');
     }
   }
 
@@ -1712,7 +1883,7 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v64.4：主推次數提升 / 側注門檻收斂 / 版本註記更新';
+    rb.textContent = 'v64.5：snapshot schema 補齊 / 強結構 PASS 放寬 / Tie-BP-PP 分開調整';
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '📊 五路結構門檻策略待命中';
     updateRoadExplain(displayRoads);
@@ -1736,13 +1907,13 @@ function render(livePrediction){
   }else{
     if(livePrediction.decision === 'B'){
       ob.className = 'oracle-box banker';
-      om.textContent = livePrediction.tier === 'STRONG' ? '🔥 強推莊家' : '📌 推薦莊家';
-      ta.className = livePrediction.tier === 'STRONG' ? 'trend-alert alert-high' : 'trend-alert alert-info';
+      om.textContent = livePrediction.tier === 'STRONG' || livePrediction.tier === 'ULTRA' ? '🔥 強推莊家' : '📌 推薦莊家';
+      ta.className = livePrediction.tier === 'STRONG' || livePrediction.tier === 'ULTRA' ? 'trend-alert alert-high' : 'trend-alert alert-info';
       ta.textContent = '五路支持 ' + livePrediction.alignedB + '/5｜分差 ' + livePrediction.gap;
     }else if(livePrediction.decision === 'P'){
       ob.className = 'oracle-box player';
-      om.textContent = livePrediction.tier === 'STRONG' ? '🔥 強推閒家' : '📌 推薦閒家';
-      ta.className = livePrediction.tier === 'STRONG' ? 'trend-alert alert-high' : 'trend-alert alert-info';
+      om.textContent = livePrediction.tier === 'STRONG' || livePrediction.tier === 'ULTRA' ? '🔥 強推閒家' : '📌 推薦閒家';
+      ta.className = livePrediction.tier === 'STRONG' || livePrediction.tier === 'ULTRA' ? 'trend-alert alert-high' : 'trend-alert alert-info';
       ta.textContent = '五路支持 ' + livePrediction.alignedP + '/5｜分差 ' + livePrediction.gap;
     }else{
       ob.className = 'oracle-box pass';
@@ -2040,6 +2211,7 @@ function undo(){
   S = JSON.parse(JSON.stringify(bSt));
   BigData = JSON.parse(JSON.stringify(bDB));
   LabStore = JSON.parse(JSON.stringify(bLab));
+  normalizeLabSnapshots();
   recalcDBStats(BigData);
   clearCurrentInput();
   render();
@@ -2085,8 +2257,10 @@ function saveConfig(){
 
 async function exportDB(){
   try{
+    normalizeLabSnapshots();
+
     const payload = {
-      version:'v64.4',
+      version:'v64.5',
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
@@ -2096,7 +2270,7 @@ async function exportDB(){
     };
     const json = JSON.stringify(payload, null, 2);
     const blob = new Blob([json], { type:'application/json' });
-    const fileName = 'bac_v64_4_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
+    const fileName = 'bac_v64_5_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
 
     if(window.showSaveFilePicker){
       try{
@@ -2123,7 +2297,7 @@ async function exportDB(){
         await navigator.share({
           files:[file],
           title:'百家樂資料匯出',
-          text:'bac v64.4 匯出資料'
+          text:'bac v64.5 匯出資料'
         });
         return;
       }
@@ -2165,7 +2339,7 @@ function importDB(event){
       let recoveredByMaterialized = false;
 
       const tempLab = {
-        schema_version:'v64.4',
+        schema_version:'v64.5',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:[]
@@ -2179,16 +2353,18 @@ function importDB(event){
       S = tempState;
       Config = tempCfg;
 
+      normalizeLabSnapshots();
       BigData = rebuildBigDataFromAllShoes(materializeAllShoes());
 
       if(!validateOpenShoeConsistency(LabStore, S)){
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v64.4',
+            schema_version:'v64.5',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:[]
           };
+          normalizeLabSnapshots();
           BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
           S = createInitialState();
           recoveredByMaterialized = true;
@@ -2196,11 +2372,12 @@ function importDB(event){
           const fallbackShoes = materializeAllShoes();
           if(fallbackShoes.length){
             LabStore = {
-              schema_version:'v64.4',
+              schema_version:'v64.5',
               rawShoes:fallbackShoes,
               currentOpenShoe:null,
               experiments:[]
             };
+            normalizeLabSnapshots();
             BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
           }else{
             LabStore.currentOpenShoe = null;
@@ -2222,8 +2399,8 @@ function importDB(event){
 
       alert(
         recoveredByMaterialized
-          ? '✅ 匯入成功：已用 materializedShoes 回復資料；目前開放鞋已轉為封存快照。'
-          : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料（含開放鞋快照）。'
+          ? '✅ 匯入成功：已用 materializedShoes 回復資料；舊手數已補齊成 v64.5 snapshot schema。'
+          : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料（含開放鞋快照），並補齊 snapshot schema。'
       );
     }catch(err){
       console.error(err);
@@ -2321,7 +2498,7 @@ function invokeQuantLab(){
   }
 
   const result = {
-    version:'v64.4',
+    version:'v64.5',
     shoes:shoes.length,
     test_shoes:runs.length,
     hands:totalHands,
@@ -2339,7 +2516,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v64.4 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v64.5 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     'Verdict: ' + result.verdict + '\n' +
@@ -2413,11 +2590,12 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v64.4',
+        schema_version:'v64.5',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
       };
+      normalizeLabSnapshots();
       BigData = rebuildBigDataFromAllShoes(LabStore.rawShoes);
     }else{
       LabStore.currentOpenShoe = null;
