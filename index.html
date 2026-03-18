@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v64.5 Snapshot & Sidebet Fix</title>
+  <title>百家樂量化終端 - v64.6 Long Dragon Follow Fix</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -431,7 +431,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v64.5</span>
+        <span class="version-badge">v64.6</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -515,7 +515,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v64.5</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v64.6</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -523,7 +523,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v64.5 維持目前介面，只修正：<b>snapshot schema 補齊 / 強結構 PASS 放寬 / Tie-BP-PP 分開調整</b>。
+        本版 v64.6 維持目前介面，只修正：<b>長龍時被過熱擋掉的追龍放行條件</b>。
       </div>
     </div>
 
@@ -586,7 +586,7 @@ const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v64.5', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version:'v64.6', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10 };
 
@@ -652,7 +652,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v64.5',
+    snapshot_schema_version:'v64.6',
     tau: tau,
     effectiveTau: effectiveTau,
     s: normalizeFiniteNumber(raw && raw.s, Config.side),
@@ -707,7 +707,7 @@ function normalizeHandRecord(hand){
   hand.policy_snapshot = normalizePolicySnapshotShape(hand.policy_snapshot || {});
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v64.5',
+    spec_version:'v64.6',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -1043,7 +1043,7 @@ function loadAll(){
       const lab = JSON.parse(labRaw);
       if(lab && typeof lab === 'object'){
         LabStore = {
-          schema_version:'v64.5',
+          schema_version:'v64.6',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1056,7 +1056,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v64.5',
+          schema_version:'v64.6',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1134,9 +1134,9 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(livePrediction)),
     policy_snapshot: {
-      model_id:'five_road_v64_5',
-      model_id_original:'five_road_v64_5',
-      snapshot_schema_version:'v64.5',
+      model_id:'five_road_v64_6',
+      model_id_original:'five_road_v64_6',
+      snapshot_schema_version:'v64.6',
       tau: livePrediction.tau,
       effectiveTau: livePrediction.effectiveTau,
       s: Config.side,
@@ -1151,8 +1151,8 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v64.5',
-      original_spec_version:'v64.5',
+      spec_version:'v64.6',
+      original_spec_version:'v64.6',
       snapshot_normalized:true
     }
   };
@@ -1689,6 +1689,15 @@ function executePolicyChain(features, patternDb, tau){
   const trendContinuing = candidate !== 'PASS' && candidate === trendSide;
   const reversalCandidate = candidate !== 'PASS' && trendSide && candidate !== trendSide;
   const reversalUltraStrong = reversalCandidate && aligned >= 5 && gap >= 5.5;
+
+  const longDragonFollowWindow =
+    trendContinuing &&
+    trendLen >= 5 &&
+    (
+      (aligned >= 4 && gap >= 2.0) ||
+      (aligned >= 3 && gap >= 3.0 && oppositeAligned <= 1)
+    );
+
   const overheat = trendLen >= 4 ? (trendLen >= 5 ? 2 : 1) : 0;
   const chopRisk = path.chop_count >= 6 ? 2 : path.chop_count >= 4 ? 1 : 0;
   const effectiveTau = calcEffectiveTau(tau, aligned, gap, dataThin, warmupSoft);
@@ -1703,7 +1712,7 @@ function executePolicyChain(features, patternDb, tau){
     reasons.push('反向衝突過強');
   }else{
     if(trendContinuing){
-      if(overheat >= 2 && aligned < 4) reasons.push('5連以上過熱，禁追');
+      if(overheat >= 2 && aligned < 4 && !longDragonFollowWindow) reasons.push('5連以上過熱，禁追');
       else if(overheat >= 1 && aligned < 3) reasons.push('4連過熱但未達3路一致');
       else if(trendLen >= 3 && aligned < 2) reasons.push('3連以上需至少2路一致');
       else if(chopRisk >= 2 && aligned < 3) reasons.push('近期切換過快，禁止弱追');
@@ -1719,14 +1728,23 @@ function executePolicyChain(features, patternDb, tau){
 
   if(reasons.length === 0){
     const evCandidate = candidate === 'B' ? ev.B : candidate === 'P' ? ev.P : 0;
+
     const ultraStructuralOverride =
       aligned >= 5 &&
       gap >= 6.0 &&
       evCandidate > -0.03 &&
       (oppositeAligned === 0 || gap >= 7.0);
 
+    const longDragonEVOverride =
+      longDragonFollowWindow &&
+      (
+        (aligned >= 4 && gap >= 2.2 && evCandidate > -0.012) ||
+        (aligned >= 3 && gap >= 3.4 && oppositeAligned <= 1 && evCandidate > -0.006)
+      );
+
     const structuralOverride =
       ultraStructuralOverride ||
+      longDragonEVOverride ||
       (
         !reversalCandidate &&
         (
@@ -1747,6 +1765,9 @@ function executePolicyChain(features, patternDb, tau){
       if(ultraStructuralOverride){
         tier = 'ULTRA';
         reasons.push('五路壓倒性一致，啟用超強結構放行');
+      }else if(longDragonEVOverride && evCandidate <= effectiveTau){
+        tier = 'STRUCT';
+        reasons.push('長龍結構明確，放寬過熱/EV攔截');
       }else if(structuralOverride && evCandidate <= effectiveTau){
         tier = warmupSoft ? 'WARMUP_SOFT' : 'STRUCT';
         reasons.push('五路極強，啟用結構放行');
@@ -1758,6 +1779,9 @@ function executePolicyChain(features, patternDb, tau){
         tier = 'WEAK';
       }
 
+      if(longDragonFollowWindow && !reasons.some(function(x){ return /長龍/.test(x); })){
+        reasons.push('長龍結構明確，允許追龍');
+      }
       if(warmupSoft) reasons.push('暖機結構放行');
       if(dataThin) reasons.push('Pattern 樣本薄，偏向路結構');
       if(reversalUltraStrong) reasons.push('反轉結構極強，放寬 EV 攔截');
@@ -1883,7 +1907,7 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v64.5：snapshot schema 補齊 / 強結構 PASS 放寬 / Tie-BP-PP 分開調整';
+    rb.textContent = 'v64.6：長龍時不再被過熱條件直接擋掉';
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '📊 五路結構門檻策略待命中';
     updateRoadExplain(displayRoads);
@@ -2260,7 +2284,7 @@ async function exportDB(){
     normalizeLabSnapshots();
 
     const payload = {
-      version:'v64.5',
+      version:'v64.6',
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
@@ -2270,7 +2294,7 @@ async function exportDB(){
     };
     const json = JSON.stringify(payload, null, 2);
     const blob = new Blob([json], { type:'application/json' });
-    const fileName = 'bac_v64_5_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
+    const fileName = 'bac_v64_6_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
 
     if(window.showSaveFilePicker){
       try{
@@ -2297,7 +2321,7 @@ async function exportDB(){
         await navigator.share({
           files:[file],
           title:'百家樂資料匯出',
-          text:'bac v64.5 匯出資料'
+          text:'bac v64.6 匯出資料'
         });
         return;
       }
@@ -2339,7 +2363,7 @@ function importDB(event){
       let recoveredByMaterialized = false;
 
       const tempLab = {
-        schema_version:'v64.5',
+        schema_version:'v64.6',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:[]
@@ -2359,7 +2383,7 @@ function importDB(event){
       if(!validateOpenShoeConsistency(LabStore, S)){
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v64.5',
+            schema_version:'v64.6',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:[]
@@ -2372,7 +2396,7 @@ function importDB(event){
           const fallbackShoes = materializeAllShoes();
           if(fallbackShoes.length){
             LabStore = {
-              schema_version:'v64.5',
+              schema_version:'v64.6',
               rawShoes:fallbackShoes,
               currentOpenShoe:null,
               experiments:[]
@@ -2399,7 +2423,7 @@ function importDB(event){
 
       alert(
         recoveredByMaterialized
-          ? '✅ 匯入成功：已用 materializedShoes 回復資料；舊手數已補齊成 v64.5 snapshot schema。'
+          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v64.6。'
           : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料（含開放鞋快照），並補齊 snapshot schema。'
       );
     }catch(err){
@@ -2498,7 +2522,7 @@ function invokeQuantLab(){
   }
 
   const result = {
-    version:'v64.5',
+    version:'v64.6',
     shoes:shoes.length,
     test_shoes:runs.length,
     hands:totalHands,
@@ -2516,7 +2540,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v64.5 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v64.6 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     'Verdict: ' + result.verdict + '\n' +
@@ -2590,7 +2614,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v64.5',
+        schema_version:'v64.6',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
