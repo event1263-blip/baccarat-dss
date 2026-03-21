@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v64.14 Adaptive Regime Transition Fix</title>
+  <title>百家樂量化終端 - v64.15 Predictive Regime Engine</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -431,7 +431,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v64.14</span>
+        <span class="version-badge">v64.15</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -515,7 +515,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v64.14</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v64.15</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -523,7 +523,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v64.14 維持目前介面，只修正：<b>跳型主 regime 記憶、相對 K 轉龍、斷龍冷卻、三跳提早辨識</b>。
+        本版 v64.15 維持目前介面，只修正：<b>跳型主 regime 記憶、相對 K 轉龍、斷龍冷卻、三跳提早辨識</b>。
       </div>
     </div>
 
@@ -586,10 +586,10 @@ const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v64.14', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version:'v64.15', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10 };
-let UnifiedAudit = { generated_at:null, replayModelId:'five_road_v64_14', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
+let UnifiedAudit = { generated_at:null, replayModelId:'five_road_v64_15', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
 
 let bSt = null, bDB = null, bLab = null;
 let cOrder = ['p1','b1','p2','b2','p3','b3'];
@@ -631,6 +631,7 @@ function normalizeOutcomeWinner(v){
   return v === 'B' || v === 'P' || v === 'T' ? v : 'T';
 }
 
+
 function normalizeRoadSignals(arr){
   return Array.isArray(arr) ? arr.map(function(x){
     return {
@@ -641,6 +642,92 @@ function normalizeRoadSignals(arr){
     };
   }) : [];
 }
+
+function normalizeProbabilityMap(raw, keys){
+  const map = {};
+  let sum = 0;
+  (keys || []).forEach(function(key){
+    const value = Math.max(0, normalizeFiniteNumber(raw && raw[key], 0));
+    map[key] = value;
+    sum += value;
+  });
+  if(sum <= 0){
+    const base = keys && keys.length ? 1 / keys.length : 0;
+    (keys || []).forEach(function(key){ map[key] = base; });
+    return map;
+  }
+  (keys || []).forEach(function(key){ map[key] = map[key] / sum; });
+  return map;
+}
+
+function normalizeTransitionProbabilities(raw){
+  return normalizeProbabilityMap(raw, ['nextB','nextP','continue_same','break_to_opposite','fake_breakout','true_transition']);
+}
+
+function normalizeRegimeProbabilities(raw){
+  return normalizeProbabilityMap(raw, ['single','double','triple','dragon','hybrid','chaos']);
+}
+
+function normalizeEnergyShape(raw){
+  raw = raw && typeof raw === 'object' ? raw : {};
+  const breakdownB = raw.breakdownB && typeof raw.breakdownB === 'object' ? raw.breakdownB : {};
+  const breakdownP = raw.breakdownP && typeof raw.breakdownP === 'object' ? raw.breakdownP : {};
+  return {
+    B_energy: normalizeFiniteNumber(raw.B_energy, 0),
+    P_energy: normalizeFiniteNumber(raw.P_energy, 0),
+    energy_gap: normalizeFiniteNumber(raw.energy_gap, 0),
+    energy_trend: normalizeFiniteNumber(raw.energy_trend, 0),
+    breakdownB: {
+      road: normalizeFiniteNumber(breakdownB.road, 0),
+      regime: normalizeFiniteNumber(breakdownB.regime, 0),
+      momentum: normalizeFiniteNumber(breakdownB.momentum, 0),
+      history: normalizeFiniteNumber(breakdownB.history, 0),
+      count: normalizeFiniteNumber(breakdownB.count, 0),
+      interference: normalizeFiniteNumber(breakdownB.interference, 0)
+    },
+    breakdownP: {
+      road: normalizeFiniteNumber(breakdownP.road, 0),
+      regime: normalizeFiniteNumber(breakdownP.regime, 0),
+      momentum: normalizeFiniteNumber(breakdownP.momentum, 0),
+      history: normalizeFiniteNumber(breakdownP.history, 0),
+      count: normalizeFiniteNumber(breakdownP.count, 0),
+      interference: normalizeFiniteNumber(breakdownP.interference, 0)
+    }
+  };
+}
+
+function normalizeRegimeStateShape(raw){
+  raw = raw && typeof raw === 'object' ? raw : {};
+  return {
+    name: typeof raw.name === 'string' ? raw.name : 'stable',
+    dominant: typeof raw.dominant === 'string' ? raw.dominant : 'chaos',
+    breakout_delta: Math.max(0, Math.floor(normalizeFiniteNumber(raw.breakout_delta, 0))),
+    confidence: normalizeFiniteNumber(raw.confidence, 0),
+    note: typeof raw.note === 'string' ? raw.note : '',
+    cooldown_active: !!raw.cooldown_active
+  };
+}
+
+function softmaxMap(scores){
+  scores = scores || {};
+  const keys = Object.keys(scores);
+  if(!keys.length) return {};
+  const maxV = Math.max.apply(null, keys.map(function(k){ return normalizeFiniteNumber(scores[k], 0); }));
+  let sum = 0;
+  const exps = {};
+  keys.forEach(function(k){
+    exps[k] = Math.exp(normalizeFiniteNumber(scores[k], 0) - maxV);
+    sum += exps[k];
+  });
+  const out = {};
+  keys.forEach(function(k){ out[k] = sum > 0 ? exps[k] / sum : 1 / keys.length; });
+  return out;
+}
+
+function clamp01(v){
+  return Math.max(0, Math.min(1, normalizeFiniteNumber(v, 0)));
+}
+
 
 function normalizePolicySnapshotShape(raw){
   const originalModelId = raw && typeof raw.model_id === 'string'
@@ -653,7 +740,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v64.14',
+    snapshot_schema_version:'v64.15',
     tau: tau,
     effectiveTau: effectiveTau,
     s: normalizeFiniteNumber(raw && raw.s, Config.side),
@@ -666,6 +753,7 @@ function normalizePolicySnapshotShape(raw){
     data_thin: !!(raw && raw.data_thin)
   };
 }
+
 
 function normalizeLivePredictionShape(raw){
   const tau = normalizeFiniteNumber(raw && raw.tau, Config.tau);
@@ -698,13 +786,19 @@ function normalizeLivePredictionShape(raw){
     overheat: Math.max(0, Math.floor(normalizeFiniteNumber(raw && raw.overheat, 0))),
     chopRisk: Math.max(0, Math.floor(normalizeFiniteNumber(raw && raw.chopRisk, 0))),
     reasons: reasons,
-    roadSignals: normalizeRoadSignals(raw && raw.roadSignals)
+    roadSignals: normalizeRoadSignals(raw && raw.roadSignals),
+    regime_probs: normalizeRegimeProbabilities(raw && raw.regime_probs),
+    transition_probs: normalizeTransitionProbabilities(raw && raw.transition_probs),
+    energy: normalizeEnergyShape(raw && raw.energy),
+    regime_state: normalizeRegimeStateShape(raw && raw.regime_state)
   };
   if(normalized.reasons.length === 0){
     normalized.reasons = buildNativeReasonList(normalized);
   }
   return normalized;
 }
+
+
 
 function normalizeCurrentEvalShape(raw){
   if(!raw || typeof raw !== 'object') return null;
@@ -713,8 +807,8 @@ function normalizeCurrentEvalShape(raw){
   const decision = normalizeDecision(raw.decision);
   let reasons = Array.isArray(raw.reasons) ? raw.reasons.map(function(x){ return String(x); }).filter(Boolean) : [];
   const normalized = {
-    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'five_road_v64_14',
-    replay_schema_version:'v64.14',
+    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'five_road_v64_15',
+    replay_schema_version:'v64.15',
     decision: decision,
     tier: typeof raw.tier === 'string' ? raw.tier : (decision === 'PASS' ? 'PASS' : 'MID'),
     tau: tau,
@@ -733,13 +827,18 @@ function normalizeCurrentEvalShape(raw){
     recommend_pp: !!raw.recommend_pp,
     settled_return: normalizeFiniteNumber(raw.settled_return, 0),
     hit_main: !!raw.hit_main,
-    push_main: !!raw.push_main
+    push_main: !!raw.push_main,
+    regime_probs: normalizeRegimeProbabilities(raw.regime_probs),
+    transition_probs: normalizeTransitionProbabilities(raw.transition_probs),
+    energy: normalizeEnergyShape(raw.energy),
+    regime_state: normalizeRegimeStateShape(raw.regime_state)
   };
   if(normalized.reasons.length === 0){
     normalized.reasons = buildNativeReasonList(normalized);
   }
   return normalized;
 }
+
 
 function normalizeHandRecord(hand){
   if(!hand || typeof hand !== 'object') return hand;
@@ -750,7 +849,7 @@ function normalizeHandRecord(hand){
 
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v64.14',
+    spec_version:'v64.15',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -894,22 +993,31 @@ function mergeAuditBucket(target, source){
   return finalizeAuditBucket(target);
 }
 
+
 function buildNativeReasonList(pred){
   pred = pred || {};
   const decision = pred.decision || 'PASS';
   const reasons = [];
+  const regimeState = pred.regime_state && pred.regime_state.name ? pred.regime_state : null;
+  const regimeProbs = pred.regime_probs || {};
+  const energy = pred.energy || {};
   if(decision === 'PASS'){
     if(pred.isWarmup) reasons.push('暖機保護');
+    else if(regimeState && regimeState.note) reasons.push(regimeState.note);
     else reasons.push('PASS');
     return reasons;
   }
   const aligned = decision === 'B' ? Number(pred.alignedB || 0) : Number(pred.alignedP || 0);
+  const energyGap = normalizeFiniteNumber(energy.energy_gap, 0);
   reasons.push('五路支持 ' + aligned + '/5');
   reasons.push('結構分差 ' + Number(pred.gap || 0).toFixed(2));
+  if(regimeState && regimeState.note) reasons.push(regimeState.note);
+  else if(regimeState && regimeState.name) reasons.push('Regime ' + regimeState.name);
   if(pred.tier) reasons.push('Tier ' + pred.tier);
+  if(regimeProbs.dragon >= 0.36) reasons.push('龍型機率偏高');
+  else if((regimeProbs.single || 0) + (regimeProbs.double || 0) + (regimeProbs.triple || 0) >= 0.52) reasons.push('跳型主體仍在');
+  if(energyGap >= 1.6) reasons.push('能量差 ' + energyGap.toFixed(2));
   if(pred.warmupSoft) reasons.push('暖機結構放行');
-  else if(pred.overheat >= 2) reasons.push('高溫區過濾後仍放行');
-  else if(pred.overheat === 1) reasons.push('短連後結構成立');
   if(pred.dataThin) reasons.push('Pattern 樣本薄，偏向路結構');
   const seen = {};
   return reasons.filter(function(x){
@@ -918,6 +1026,7 @@ function buildNativeReasonList(pred){
     return true;
   });
 }
+
 
 function recordDecisionToBucket(bucket, decision, winner){
   if(!bucket) return;
@@ -951,6 +1060,202 @@ function ensureDecisionReasons(pred, context){
   return pred;
 }
 
+let HistoricalTransitionCache = { fingerprint:'', contexts:[] };
+
+function computeRegimeProbabilities(path){
+  const runs = path && Array.isArray(path.runs) ? path.runs.slice(-8) : [];
+  if(!runs.length){
+    return { scores:{ single:0, double:0, triple:0, dragon:0, hybrid:0, chaos:1 }, probs:normalizeRegimeProbabilities({ chaos:1 }), dominant:'chaos' };
+  }
+  const lens = runs.map(function(run){ return run.len; });
+  const exact1 = lens.filter(function(len){ return len === 1; }).length / lens.length;
+  const exact2 = lens.filter(function(len){ return len === 2; }).length / lens.length;
+  const exact3 = lens.filter(function(len){ return len === 3; }).length / lens.length;
+  const within2 = lens.filter(function(len){ return len <= 2; }).length / lens.length;
+  const within3 = lens.filter(function(len){ return len <= 3; }).length / lens.length;
+  const fourPlus = lens.filter(function(len){ return len >= 4; }).length / lens.length;
+  const avgLen = lens.reduce(function(a,b){ return a + b; }, 0) / lens.length;
+  const dominant = path && path.dominantRegime ? path.dominantRegime.mode : 'chaos';
+  const prior = path && path.priorJumpRegime ? path.priorJumpRegime.mode : null;
+  const scores = {
+    single: 1.35 * exact1 + 0.55 * within2 + 0.35 * (path && path.alternatingTight ? 1 : 0) - 1.05 * fourPlus + (dominant === 'single' ? 0.34 : 0) + (prior === 'single' ? 0.22 : 0),
+    double: 1.20 * exact2 + 0.72 * within2 + 0.18 * exact1 - 0.88 * fourPlus + (dominant === 'double' ? 0.30 : 0) + (prior === 'double' ? 0.20 : 0),
+    triple: 1.18 * exact3 + 0.66 * within3 + 0.10 * exact2 - 0.62 * fourPlus + (dominant === 'triple' ? 0.28 : 0) + (prior === 'triple' ? 0.18 : 0),
+    dragon: 1.55 * fourPlus + 0.24 * Math.max(0, avgLen - 2.6) + ((path && path.trend_len >= 4) ? 0.25 : 0) + (dominant === 'dragon' ? 0.28 : 0),
+    hybrid: 0.72 * Math.min(within2, fourPlus + 0.35) + 0.30 * Math.max(exact2, exact3) + ((path && path.breakoutFromRegime) ? 0.30 : 0),
+    chaos: 0.72 * clamp01((path && path.chop_count ? path.chop_count : 0) / 6) + 0.34 * Math.abs(exact1 - exact2) + 0.24 * Math.abs(exact2 - exact3)
+  };
+  const probs = normalizeRegimeProbabilities(softmaxMap(scores));
+  let dominantKey = 'chaos';
+  let dominantVal = -1;
+  Object.keys(probs).forEach(function(key){ if(probs[key] > dominantVal){ dominantVal = probs[key]; dominantKey = key; } });
+  return { scores:scores, probs:probs, dominant:dominantKey };
+}
+
+function getHistoricalTransitionFingerprint(){
+  const shoes = materializeAllShoes();
+  let hands = 0;
+  shoes.forEach(function(shoe){ hands += Array.isArray(shoe && shoe.hands) ? shoe.hands.length : 0; });
+  return shoes.length + ':' + hands + ':' + (BigData && BigData.totalHands || 0);
+}
+
+function buildHistoricalTransitionContexts(){
+  const fingerprint = getHistoricalTransitionFingerprint();
+  if(HistoricalTransitionCache.fingerprint === fingerprint && Array.isArray(HistoricalTransitionCache.contexts)) return HistoricalTransitionCache.contexts;
+  const contexts = [];
+  const shoes = materializeAllShoes();
+  shoes.forEach(function(shoe){
+    const hands = Array.isArray(shoe && shoe.hands) ? shoe.hands : [];
+    let simHist = [];
+    for(let i=0;i<hands.length;i++){
+      const h = hands[i];
+      const winner = h && h.outcome && (h.outcome.winner || h.outcome.w) ? (h.outcome.winner || h.outcome.w) : 'T';
+      const path = extractPathFeaturesCore(simHist);
+      if(path && path.history_len >= 4){
+        const regime = path.priorJumpRegime && path.priorJumpRegime.mode ? path.priorJumpRegime : (path.dominantRegime || { mode:'chaos', capLen:null });
+        const capLen = regime && regime.capLen ? regime.capLen : 0;
+        const breakoutDelta = capLen && path.trend_side && path.trend_len > capLen ? Math.min(4, path.trend_len - capLen) : 0;
+        const futurePure = [];
+        for(let j=i;j<hands.length;j++){
+          const fw = hands[j] && hands[j].outcome && (hands[j].outcome.winner || hands[j].outcome.w) ? (hands[j].outcome.winner || hands[j].outcome.w) : 'T';
+          if(fw !== 'T') futurePure.push(fw);
+        }
+        const nextPure = futurePure.length ? futurePure[0] : null;
+        let futureContinuation = 0;
+        if(path.trend_side && futurePure.length && futurePure[0] === path.trend_side){
+          while(futureContinuation < futurePure.length && futurePure[futureContinuation] === path.trend_side) futureContinuation++;
+        }
+        const finalRunLen = path.trend_len + futureContinuation;
+        contexts.push({
+          regimeMode: regime && regime.mode ? regime.mode : 'chaos',
+          capLen: capLen || 0,
+          trendSide: path.trend_side || null,
+          trendLen: path.trend_len || 0,
+          breakoutDelta: breakoutDelta,
+          recentBias: path.recent_shoe_bias || null,
+          chop: path.chop_count || 0,
+          nextPure: nextPure,
+          continueSame: !!(path.trend_side && nextPure === path.trend_side),
+          breakOpposite: !!(path.trend_side && nextPure && nextPure !== path.trend_side),
+          fakeBreakout: !!(breakoutDelta > 0 && finalRunLen <= capLen + 1),
+          trueTransition: !!(breakoutDelta > 0 && finalRunLen >= capLen + 3),
+          finalRunLen: finalRunLen
+        });
+      }
+      simHist.push({
+        w:winner,
+        pPt:Number(h && h.outcome && h.outcome.pPt) || 0,
+        bPt:Number(h && h.outcome && h.outcome.bPt) || 0,
+        bp:!!(h && h.outcome && h.outcome.bp),
+        pp:!!(h && h.outcome && h.outcome.pp)
+      });
+    }
+  });
+  HistoricalTransitionCache = { fingerprint:fingerprint, contexts:contexts };
+  return contexts;
+}
+
+function getHistoricalTransitionProbabilities(path, candidate){
+  const regime = path && (path.priorJumpRegime && path.priorJumpRegime.mode ? path.priorJumpRegime : path.dominantRegime) ? (path.priorJumpRegime && path.priorJumpRegime.mode ? path.priorJumpRegime : path.dominantRegime) : { mode:'chaos', capLen:0 };
+  const capLen = regime && regime.capLen ? regime.capLen : 0;
+  const breakoutDelta = capLen && path && path.trend_side && path.trend_len > capLen ? Math.min(4, path.trend_len - capLen) : 0;
+  const contexts = buildHistoricalTransitionContexts();
+  let matched = 0;
+  let totalW = 0;
+  let nextBW = 0, nextPW = 0, continueW = 0, breakW = 0, fakeW = 0, trueW = 0;
+  contexts.forEach(function(ctx){
+    let w = 0.12;
+    if(ctx.regimeMode === regime.mode) w += 0.58;
+    if((ctx.capLen || 0) === (capLen || 0)) w += 0.32;
+    if((ctx.trendSide || null) === (path.trend_side || null)) w += 0.16;
+    if(Math.abs((ctx.trendLen || 0) - (path.trend_len || 0)) <= 1) w += 0.20;
+    if((ctx.breakoutDelta || 0) === breakoutDelta) w += 0.30;
+    if((ctx.recentBias || null) === (path.recent_shoe_bias || null)) w += 0.08;
+    if(Math.abs((ctx.chop || 0) - (path.chop_count || 0)) <= 2) w += 0.06;
+    if(w <= 0.15) return;
+    matched += 1;
+    totalW += w;
+    if(ctx.nextPure === 'B') nextBW += w;
+    if(ctx.nextPure === 'P') nextPW += w;
+    if(path && path.trend_side && candidate === path.trend_side){
+      if(ctx.continueSame) continueW += w;
+      if(ctx.breakOpposite) breakW += w;
+      if(ctx.fakeBreakout) fakeW += w;
+      if(ctx.trueTransition) trueW += w;
+    }else if(path && path.trend_side && candidate && candidate !== path.trend_side){
+      if(ctx.breakOpposite) continueW += w;
+      if(ctx.continueSame) breakW += w;
+      if(ctx.fakeBreakout) continueW += w * 0.7;
+      if(ctx.trueTransition) trueW += w * 0.4;
+    }
+  });
+  const denom = totalW + 1.2;
+  const nextB = (nextBW + 0.6) / denom;
+  const nextP = (nextPW + 0.6) / denom;
+  const continueSame = (continueW + 0.55) / denom;
+  const breakOpposite = (breakW + 0.55) / denom;
+  const fakeBreakout = (fakeW + 0.40) / denom;
+  const trueTransition = (trueW + 0.40) / denom;
+  const nextSideProb = candidate === 'B' ? nextB : nextP;
+  const directionBoost = Math.max(-1.2, Math.min(1.2, ((nextSideProb - 0.5) * 2.8) + ((trueTransition - fakeBreakout) * (candidate === (path && path.trend_side) ? 1.4 : 0.8))));
+  return {
+    sample: matched,
+    nextB: nextB,
+    nextP: nextP,
+    nextSideProb: nextSideProb,
+    continue_same: continueSame,
+    break_to_opposite: breakOpposite,
+    fake_breakout: fakeBreakout,
+    true_transition: trueTransition,
+    directionBoost: directionBoost
+  };
+}
+
+function computeEnergyModel(path, scoreB, scoreP, alignedB, alignedP, gap, chopRisk, regimeProbs, histB, histP, runningCount, remainCards){
+  const jumpProb = (regimeProbs.single || 0) + (regimeProbs.double || 0) + (regimeProbs.triple || 0);
+  const capLen = path && ((path.priorJumpRegime && path.priorJumpRegime.capLen) || (path.dominantRegime && path.dominantRegime.capLen)) ? ((path.priorJumpRegime && path.priorJumpRegime.capLen) || (path.dominantRegime && path.dominantRegime.capLen)) : null;
+  const tc = remainCards > 0 ? normalizeFiniteNumber(runningCount, 0) / Math.max(0.5, remainCards / 52) : 0;
+  const momentum = path && path.runs && path.runs.length >= 2 ? (path.runs[path.runs.length - 1].len - path.runs[path.runs.length - 2].len) : 0;
+  function sideEnergy(side, roadScore, aligned, hist, oppositeAligned){
+    let regime = 0;
+    if((regimeProbs.dragon || 0) >= 0.34){ regime += path.trend_side === side ? 0.95 : -0.35; }
+    if(jumpProb >= 0.40 && capLen && path.trend_side){
+      if(path.trend_len >= capLen && side !== path.trend_side) regime += 0.88;
+      if(path.trend_len >= capLen + 1 && side === path.trend_side) regime -= 0.92;
+      if(path.trend_len < capLen && side === path.trend_side) regime += 0.22;
+    }
+    if((regimeProbs.hybrid || 0) >= 0.22) regime += side === path.trend_side ? 0.20 : 0.10;
+    const histComp = (hist.nextSideProb - 0.5) * 3.2 + (hist.true_transition - hist.fake_breakout) * 1.4;
+    const mom = (path.trend_side === side ? momentum : -momentum) * 0.18 + (path.recent_shoe_bias === side ? 0.22 : 0);
+    const cnt = side === 'B' ? (-tc * 0.06) : (tc * 0.06);
+    const interference = oppositeAligned * 0.32 + chopRisk * 0.25;
+    const total = roadScore * 1.02 + aligned * 0.26 + regime + histComp + mom + cnt - interference;
+    return { total:total, road:roadScore * 1.02 + aligned * 0.26, regime:regime, momentum:mom, history:histComp, count:cnt, interference:-interference };
+  }
+  const b = sideEnergy('B', scoreB, alignedB, histB, alignedP);
+  const p = sideEnergy('P', scoreP, alignedP, histP, alignedB);
+  return {
+    B_energy:Number(b.total.toFixed(3)),
+    P_energy:Number(p.total.toFixed(3)),
+    energy_gap:Number(Math.abs(b.total - p.total).toFixed(3)),
+    energy_trend:Number((path.trend_side === 'B' ? b.total - p.total : p.total - b.total).toFixed(3)),
+    breakdownB:{ road:Number(b.road.toFixed(3)), regime:Number(b.regime.toFixed(3)), momentum:Number(b.momentum.toFixed(3)), history:Number(b.history.toFixed(3)), count:Number(b.count.toFixed(3)), interference:Number(b.interference.toFixed(3)) },
+    breakdownP:{ road:Number(p.road.toFixed(3)), regime:Number(p.regime.toFixed(3)), momentum:Number(p.momentum.toFixed(3)), history:Number(p.history.toFixed(3)), count:Number(p.count.toFixed(3)), interference:Number(p.interference.toFixed(3)) }
+  };
+}
+
+function deriveRegimeState(path, regimeProbs, dragonTransition, dragonBreakCooldown){
+  const dominant = regimeProbs && regimeProbs.single !== undefined ? Object.keys(regimeProbs).sort(function(a,b){ return regimeProbs[b] - regimeProbs[a]; })[0] : 'chaos';
+  if(dragonBreakCooldown && dragonBreakCooldown.active){
+    return { name:'cooldown', dominant:dominant, breakout_delta:0, confidence:clamp01((regimeProbs.chaos || 0) + 0.25), note:dragonBreakCooldown.text, cooldown_active:true };
+  }
+  if(dragonTransition && dragonTransition.state){
+    const map = { observe:'observe', candidate:'candidate', confirmed:'confirmed', hold:'confirmed', fatigue:'fatigue' };
+    return { name:map[dragonTransition.state] || 'stable', dominant:dominant, breakout_delta:Math.max(0, dragonTransition.delta || 0), confidence:clamp01((dragonTransition.score || 0) / 8), note:dragonTransition.text || '', cooldown_active:false };
+  }
+  return { name:'stable', dominant:dominant, breakout_delta:0, confidence:clamp01(regimeProbs[dominant] || 0), note:dominant === 'dragon' ? '龍型主體穩定' : dominant === 'chaos' ? '混沌主體，嚴控追價' : '跳型主體穩定', cooldown_active:false };
+}
+
 function patternStatsForHistory(patternDb, history){
   const pure = Array.isArray(history)
     ? history.filter(function(x){ return x && x.w !== 'T'; }).map(function(x){ return x.w; })
@@ -982,12 +1287,13 @@ function patternStatsForHistory(patternDb, history){
   };
 }
 
+
 function makeCurrentEvalSnapshot(pred, sideSignals, outcome){
   pred = ensureDecisionReasons(pred || {});
   const winner = outcome && outcome.winner ? outcome.winner : 'T';
   return {
-    model_id:'five_road_v64_14',
-    replay_schema_version:'v64.14',
+    model_id:'five_road_v64_15',
+    replay_schema_version:'v64.15',
     decision: pred.decision,
     tier: pred.tier,
     tau: pred.tau,
@@ -1006,9 +1312,14 @@ function makeCurrentEvalSnapshot(pred, sideSignals, outcome){
     recommend_pp: !!(sideSignals && sideSignals.pp),
     settled_return: pred.decision !== 'PASS' ? settleDecision(pred.decision, winner) : 0,
     hit_main: winner !== 'T' && pred.decision === winner,
-    push_main: winner === 'T' && pred.decision !== 'PASS'
+    push_main: winner === 'T' && pred.decision !== 'PASS',
+    regime_probs: normalizeRegimeProbabilities(pred.regime_probs),
+    transition_probs: normalizeTransitionProbabilities(pred.transition_probs),
+    energy: normalizeEnergyShape(pred.energy),
+    regime_state: normalizeRegimeStateShape(pred.regime_state)
   };
 }
+
 
 function getChronologicalShoeRefs(){
   const refs = [];
@@ -1093,7 +1404,7 @@ function buildUnifiedReplayAudit(shoes){
 
   const summary = {
     generated_at:new Date().toISOString(),
-    replayModelId:'five_road_v64_14',
+    replayModelId:'five_road_v64_15',
     replay:makeAuditBucket(),
     original:makeAuditBucket(),
     byVersion:{},
@@ -1444,7 +1755,7 @@ function loadAll(){
       const lab = JSON.parse(labRaw);
       if(lab && typeof lab === 'object'){
         LabStore = {
-          schema_version:'v64.14',
+          schema_version:'v64.15',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1457,7 +1768,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v64.14',
+          schema_version:'v64.15',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1535,9 +1846,9 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(livePrediction)),
     policy_snapshot: {
-      model_id:'five_road_v64_14',
-      model_id_original:'five_road_v64_14',
-      snapshot_schema_version:'v64.14',
+      model_id:'five_road_v64_15',
+      model_id_original:'five_road_v64_15',
+      snapshot_schema_version:'v64.15',
       tau: livePrediction.tau,
       effectiveTau: livePrediction.effectiveTau,
       s: Config.side,
@@ -1552,8 +1863,8 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v64.14',
-      original_spec_version:'v64.14',
+      spec_version:'v64.15',
+      original_spec_version:'v64.15',
       snapshot_normalized:true
     }
   };
@@ -2309,6 +2620,7 @@ function calcEVFromProbs(probs){
   };
 }
 
+
 function executePolicyChain(features, patternDb, tau){
   tau = Number.isFinite(Number(tau)) ? Number(tau) : Config.tau;
 
@@ -2324,16 +2636,12 @@ function executePolicyChain(features, patternDb, tau){
     if(r.side === 'P'){ scoreP += r.strength; alignedP++; }
   });
 
-  const jumpCapSignal = getJumpCapSignal(path);
-  if(jumpCapSignal){
-    if(jumpCapSignal.side === 'B'){
-      scoreB -= jumpCapSignal.penalty;
-      scoreP += jumpCapSignal.boost;
-    }else if(jumpCapSignal.side === 'P'){
-      scoreP -= jumpCapSignal.penalty;
-      scoreB += jumpCapSignal.boost;
-    }
-  }
+  const regimePack = computeRegimeProbabilities(path);
+  const regimeProbs = regimePack.probs;
+  const histB = getHistoricalTransitionProbabilities(path, 'B');
+  const histP = getHistoricalTransitionProbabilities(path, 'P');
+  scoreB += histB.directionBoost;
+  scoreP += histP.directionBoost;
 
   const pure = hist.filter(function(x){ return x.w !== 'T'; }).map(function(x){ return x.w; });
   const ptnKey = pure.length >= 3 ? pure.slice(-3).join(',') : null;
@@ -2351,7 +2659,11 @@ function executePolicyChain(features, patternDb, tau){
     }
   }
 
-  const roadDeltaRaw = (scoreB - scoreP) * (dataThin ? 0.0075 : 0.0055);
+  const histBlendW = Math.min(0.10, (histB.sample + histP.sample) / 400);
+  probs.B = probs.B * (1 - histBlendW) + histB.nextB * histBlendW;
+  probs.P = probs.P * (1 - histBlendW) + histP.nextP * histBlendW;
+
+  const roadDeltaRaw = (scoreB - scoreP) * (dataThin ? 0.0072 : 0.0058);
   const roadDelta = Math.max(-0.05, Math.min(0.05, roadDeltaRaw));
   probs.B = Math.max(0.001, probs.B + roadDelta);
   probs.P = Math.max(0.001, probs.P - roadDelta);
@@ -2362,9 +2674,59 @@ function executePolicyChain(features, patternDb, tau){
 
   const z = probs.B + probs.P + probs.T;
   probs = { B: probs.B / z, P: probs.P / z, T: probs.T / z };
-  const ev = calcEVFromProbs(probs);
+  let ev = calcEVFromProbs(probs);
+
+  const energy = computeEnergyModel(path, scoreB, scoreP, alignedB, alignedP, Math.abs(scoreB - scoreP), path.chop_count || 0, regimeProbs, histB, histP, features.F_Comp.running_count, features.F_Comp.remain_cards);
+  scoreB += energy.B_energy * 0.18;
+  scoreP += energy.P_energy * 0.18;
 
   const gapNow = Math.abs(scoreB - scoreP);
+  const warmupSoft =
+    features.F_Path.history_len < WARMUP_HANDS &&
+    features.F_Path.history_len >= WARMUP_SOFT_START &&
+    (
+      (alignedB >= 4 && (scoreB - scoreP) >= 2.6) ||
+      (alignedP >= 4 && (scoreP - scoreB) >= 2.6) ||
+      (
+        features.F_Path.history_len >= WARMUP_PARTIAL_START &&
+        (
+          (alignedB >= 3 && (scoreB - scoreP) >= 3.6) ||
+          (alignedP >= 3 && (scoreP - scoreB) >= 3.6)
+        )
+      )
+    );
+
+  if(features.F_Path.history_len < WARMUP_HANDS && !warmupSoft){
+    return ensureDecisionReasons({
+      probs:probs,
+      ev:{B:0,P:0,T:0},
+      decision:'PASS',
+      tau:tau,
+      effectiveTau:tau,
+      tier:'WARMUP',
+      isWarmup:true,
+      warmupSoft:false,
+      dataThin:dataThin,
+      scoreB:Number(scoreB.toFixed(2)),
+      scoreP:Number(scoreP.toFixed(2)),
+      alignedB:alignedB,
+      alignedP:alignedP,
+      gap:Number(gapNow.toFixed(2)),
+      overheat:path.trend_len >= 4 ? (path.trend_len >= 5 ? 2 : 1) : 0,
+      chopRisk:path.chop_count >= 6 ? 2 : path.chop_count >= 4 ? 1 : 0,
+      reasons:['暖機保護'],
+      roadSignals:roads,
+      regime_probs:regimeProbs,
+      transition_probs:{ nextB:histB.nextB, nextP:histP.nextP, continue_same:histB.continue_same, break_to_opposite:histP.continue_same, fake_breakout:Math.max(histB.fake_breakout, histP.fake_breakout), true_transition:Math.max(histB.true_transition, histP.true_transition) },
+      energy:energy,
+      regime_state:deriveRegimeState(path, regimeProbs, null, null)
+    });
+  }
+
+  const reasons = [];
+  let decision = 'PASS';
+  let tier = 'PASS';
+
   const trendSide = path.trend_side;
   const trendLen = path.trend_len || 0;
   const candidate = scoreB > scoreP ? 'B' : scoreP > scoreB ? 'P' : 'PASS';
@@ -2375,71 +2737,29 @@ function executePolicyChain(features, patternDb, tau){
   const reversalCandidate = candidate !== 'PASS' && trendSide && candidate !== trendSide;
   const overheat = trendLen >= 4 ? (trendLen >= 5 ? 2 : 1) : 0;
   const chopRisk = path.chop_count >= 6 ? 2 : path.chop_count >= 4 ? 1 : 0;
+
+  const jumpCapSignal = getJumpCapSignal(path);
   const candidateEVPreview = candidate === 'B' ? ev.B : candidate === 'P' ? ev.P : 0;
-  const beadSide = roads[0] && roads[0].side ? roads[0].side : null;
   const dragonTransition = getDragonTransitionSignal(path, candidate, aligned, oppositeAligned, gap, chopRisk, candidateEVPreview, dataThin);
   const dragonBreakCooldown = getDragonBreakCooldown(path, candidate, aligned, oppositeAligned, gap, candidateEVPreview);
-  const dominantRegime = path.priorJumpRegime || path.dominantRegime || { mode:'chaos', capLen:null, confidence:0 };
-  const regimeIsJump = ['single','double','triple'].indexOf(dominantRegime.mode) !== -1;
+  const regimeState = deriveRegimeState(path, regimeProbs, dragonTransition, dragonBreakCooldown);
 
-  const fixedJumpContinuationBlocked = !!(
-    jumpCapSignal &&
-    trendContinuing &&
-    candidate === jumpCapSignal.side &&
-    trendLen === jumpCapSignal.capLen
-  );
-
+  const fixedJumpContinuationBlocked = !!(jumpCapSignal && candidate === jumpCapSignal.side && trendLen >= jumpCapSignal.capLen + 1 && !(dragonTransition && (dragonTransition.state === 'candidate' || dragonTransition.state === 'confirmed' || dragonTransition.state === 'hold')));
   const fixedJumpReversalRelax = !!(
-    jumpCapSignal &&
-    reversalCandidate &&
-    candidate !== jumpCapSignal.side &&
-    trendLen >= jumpCapSignal.capLen &&
-    aligned >= 2 &&
-    gap >= (jumpCapSignal.capLen === 1 ? 0.9 : jumpCapSignal.capLen === 2 ? 1.15 : 1.35)
+    jumpCapSignal && candidate !== 'PASS' && candidate !== jumpCapSignal.side && trendLen >= jumpCapSignal.capLen &&
+    ((candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.53 || energy.energy_gap >= 1.4)
   );
 
-  const warmupSoft =
-    features.F_Path.history_len < WARMUP_HANDS &&
-    features.F_Path.history_len >= 8 &&
-    trendLen >= 2 &&
-    trendLen <= 4 &&
-    !fixedJumpContinuationBlocked &&
-    !(dragonTransition && dragonTransition.state === 'observe') &&
-    !dragonBreakCooldown &&
-    (
-      (candidate === 'B' && alignedB >= 4 && (scoreB - scoreP) >= 3.0 && trendSide === 'B') ||
-      (candidate === 'P' && alignedP >= 4 && (scoreP - scoreB) >= 3.0 && trendSide === 'P') ||
-      (
-        features.F_Path.history_len >= WARMUP_PARTIAL_START &&
-        (
-          (candidate === 'B' && alignedB >= 5 && (scoreB - scoreP) >= 4.4 && trendSide === 'B') ||
-          (candidate === 'P' && alignedP >= 5 && (scoreP - scoreB) >= 4.4 && trendSide === 'P')
-        )
-      )
-    );
+  const regimeIsJump = regimeState && ['single','double','triple'].indexOf(regimeState.dominant) !== -1;
+  const relativeDragonObserveWindow = !!(dragonTransition && dragonTransition.state === 'observe');
+  const relativeDragonCandidateWindow = !!(dragonTransition && dragonTransition.state === 'candidate');
+  const relativeDragonConfirmedWindow = !!(dragonTransition && dragonTransition.state === 'confirmed');
+  const relativeDragonHoldWindow = !!(dragonTransition && dragonTransition.state === 'hold');
+  const relativeDragonFatigueWindow = !!(dragonTransition && dragonTransition.state === 'fatigue');
 
-  if(features.F_Path.history_len < WARMUP_HANDS && !warmupSoft){
-    return {
-      probs, ev:{B:0,P:0,T:0}, decision:'PASS', tau, effectiveTau:tau, tier:'WARMUP',
-      isWarmup:true, warmupSoft:false, dataThin, scoreB:Number(scoreB.toFixed(2)), scoreP:Number(scoreP.toFixed(2)),
-      alignedB, alignedP, gap:Number(gapNow.toFixed(2)), overheat, chopRisk, reasons:['暖機保護'], roadSignals:roads
-    };
-  }
-
-  const reasons = [];
-  let decision = 'PASS';
-  let tier = 'PASS';
-  const reversalUltraStrong = reversalCandidate && aligned >= 5 && gap >= 5.8;
-
-  const relativeDragonObserveWindow = trendContinuing && regimeIsJump && dragonTransition && dragonTransition.state === 'observe';
-  const relativeDragonCandidateWindow = trendContinuing && regimeIsJump && dragonTransition && dragonTransition.state === 'candidate';
-  const relativeDragonConfirmedWindow = trendContinuing && regimeIsJump && dragonTransition && dragonTransition.state === 'confirmed';
-  const relativeDragonHoldWindow = trendContinuing && regimeIsJump && dragonTransition && dragonTransition.state === 'hold';
-  const relativeDragonFatigueWindow = trendContinuing && regimeIsJump && dragonTransition && dragonTransition.state === 'fatigue';
-
-  const longDragonObserveWindow = !regimeIsJump && trendContinuing && trendLen === 5 && ((aligned >= 4 && gap >= 2.2) || (aligned >= 3 && gap >= 3.4 && oppositeAligned <= 1));
-  const longDragonInitialFollowWindow = !regimeIsJump && trendContinuing && trendLen === 6 && !warmupSoft && !jumpCapSignal && path.recent_shoe_bias === candidate && chopRisk <= 1 && ((aligned >= 4 && gap >= 2.6 && oppositeAligned <= 1) || (aligned >= 5 && gap >= 2.2 && oppositeAligned <= 1));
-  const longDragonHoldWindow = !regimeIsJump && trendContinuing && trendLen >= 7 && !jumpCapSignal && chopRisk <= 1 && ((aligned >= 4 && gap >= 2.0 && oppositeAligned <= 1) || (aligned >= 5 && gap >= 1.8 && oppositeAligned <= 2));
+  const longDragonObserveWindow = !regimeIsJump && trendContinuing && trendLen === 5;
+  const longDragonInitialFollowWindow = !regimeIsJump && trendContinuing && trendLen >= 6 && ((aligned >= 4 && gap >= 2.6 && oppositeAligned <= 1) || (aligned >= 5 && gap >= 2.2 && oppositeAligned <= 2));
+  const longDragonHoldWindow = !regimeIsJump && trendContinuing && trendLen >= 7 && ((aligned >= 4 && gap >= 2.1 && oppositeAligned <= 1) || (aligned >= 5 && gap >= 1.8 && oppositeAligned <= 2));
   const longDragonExitWindow = (!regimeIsJump && trendContinuing && trendLen >= 6 && ((aligned < 3) || (gap < 1.7) || (chopRisk >= 2) || (oppositeAligned >= 2 && gap < 2.5))) || relativeDragonFatigueWindow;
 
   let effectiveTau = calcEffectiveTau(tau, aligned, gap, dataThin, warmupSoft);
@@ -2447,28 +2767,25 @@ function executePolicyChain(features, patternDb, tau){
   if(longDragonInitialFollowWindow) effectiveTau = Math.max(effectiveTau, 0.0012);
   if(longDragonHoldWindow) effectiveTau = Math.max(effectiveTau, 0.0008);
   if(relativeDragonCandidateWindow) effectiveTau = Math.max(effectiveTau, 0.0010);
-  if(relativeDragonConfirmedWindow) effectiveTau = Math.max(effectiveTau, 0.0005);
-  if(relativeDragonHoldWindow) effectiveTau = Math.max(effectiveTau, 0.0007);
+  if(relativeDragonConfirmedWindow) effectiveTau = Math.max(effectiveTau, 0.0004);
+  if(relativeDragonHoldWindow) effectiveTau = Math.max(effectiveTau, 0.0006);
   if(relativeDragonFatigueWindow) effectiveTau = Math.max(effectiveTau, 0.0016);
   if(dataThin && chopRisk >= 2) effectiveTau = Math.max(effectiveTau, 0.0016);
-  if(fixedJumpReversalRelax) effectiveTau = Math.max(effectiveTau, 0.0002);
-  if(dragonTransition && dragonTransition.state === 'candidate') effectiveTau = Math.max(effectiveTau, 0.0004);
-  if(dragonTransition && dragonTransition.state === 'confirmed') effectiveTau = Math.max(effectiveTau, 0.0001);
+  if(fixedJumpReversalRelax) effectiveTau = Math.max(effectiveTau, 0.0004);
+  if(energy.energy_gap >= 1.8 && aligned >= 4 && gap >= 4.5) effectiveTau = Math.min(effectiveTau, 0.0002);
 
   const isMidLate = features.F_Path.history_len >= 24;
   const isDeepLate = features.F_Path.history_len >= 40;
   const gapPassFloor = isDeepLate ? (aligned >= 3 ? 0.78 : 0.92) : isMidLate ? (aligned >= 3 ? 0.92 : 1.05) : 1.2;
   const conflictGapFloor = isDeepLate ? 2.05 : isMidLate ? 2.2 : 2.4;
 
-  const conditionalConflictRelax =
-    fixedJumpReversalRelax ||
-    (
-      reversalCandidate && trendLen === 1 && aligned === 3 && oppositeAligned === 2 && gap >= 1.6 && candidateEVPreview > 0 &&
-      (path.recent_shoe_bias === candidate || path.recent_shoe_bias === null || beadSide === candidate)
-    );
+  const conditionalConflictRelax = fixedJumpReversalRelax || (
+    reversalCandidate && trendLen === 1 && aligned === 3 && oppositeAligned === 2 && gap >= 1.6 && candidateEVPreview > -0.003 &&
+    ((candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.52 || energy.energy_gap >= 1.1)
+  );
 
   const thinChopHardBlock = dataThin && chopRisk >= 2 && trendLen >= 3 && !longDragonHoldWindow && !longDragonInitialFollowWindow && !fixedJumpReversalRelax;
-  const thinChopSecondLook = dataThin && chopRisk >= 2 && trendLen === 2 && aligned >= 4 && candidateEVPreview > 0 && path.recent_shoe_bias === candidate && !fixedJumpContinuationBlocked;
+  const thinChopSecondLook = dataThin && chopRisk >= 2 && trendLen === 2 && aligned >= 4 && candidateEVPreview > -0.002 && (candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.53 && !fixedJumpContinuationBlocked;
 
   if(gap < gapPassFloor){
     reasons.push(isMidLate ? '中後段分差仍不足' : '五路分差不足');
@@ -2502,15 +2819,9 @@ function executePolicyChain(features, patternDb, tau){
       else if(trendLen >= 3 && aligned < 2){ reasons.push('3連以上需至少2路一致'); }
       else if(chopRisk >= 2 && aligned < 3 && !longDragonHoldWindow){ reasons.push('近期切換過快，禁止弱追'); }
     }
-
-    if(reversalCandidate && !reversalUltraStrong && !fixedJumpReversalRelax){
-      if(trendLen >= 5){
-        if(aligned < 4 && !conditionalConflictRelax) reasons.push('長龍退場未完成，反轉至少需4路一致');
-        else if(gap < 4.4 && !conditionalConflictRelax) reasons.push('長龍退場未完成，反轉分差不足');
-      }else if(trendLen < 1) reasons.push('原趨勢不足，反轉條件不成立');
-      else if(aligned < 2) reasons.push('反轉支持路數不足');
-      else if(gap < 1.6 && !conditionalConflictRelax) reasons.push('反轉分差不足');
-      else if(trendLen >= 4 && aligned < 4 && !conditionalConflictRelax) reasons.push('長連後反轉需更強結構');
+    if(reversalCandidate && trendLen >= 5 && !fixedJumpReversalRelax){
+      if(aligned < 4 && !conditionalConflictRelax) reasons.push('長龍退場未完成，反轉至少需4路一致');
+      else if(gap < 4.2 && !conditionalConflictRelax) reasons.push('長龍退場未完成，反轉分差不足');
     }
   }
 
@@ -2519,23 +2830,12 @@ function executePolicyChain(features, patternDb, tau){
     const ultraStructuralOverride = !reversalCandidate && trendContinuing && trendLen >= 2 && trendLen <= 4 && aligned >= 5 && gap >= 7.2 && oppositeAligned === 0 && chopRisk === 0 && !jumpCapSignal && evCandidate > 0.004;
     const longDragonInitialEVOverride = longDragonInitialFollowWindow && ((aligned >= 4 && gap >= 2.6 && evCandidate > -0.004) || (aligned >= 5 && gap >= 2.2 && evCandidate > 0));
     const longDragonHoldOverride = longDragonHoldWindow && !longDragonExitWindow && ((aligned >= 4 && gap >= 2.0 && evCandidate > -0.008) || (aligned >= 5 && gap >= 1.8 && oppositeAligned <= 2 && evCandidate > -0.004));
-    const strongStructureEvRelax = !jumpCapSignal && !dragonBreakCooldown && aligned >= 4 && gap >= 4.5 && evCandidate > -0.006;
+    const strongStructureEvRelax = aligned >= 4 && gap >= 4.5 && (evCandidate > -0.006 || energy.energy_gap >= 1.7);
     const dragonTransitionOverride = trendContinuing && regimeIsJump && dragonTransition && (((dragonTransition.state === 'confirmed' || dragonTransition.state === 'hold') && evCandidate > -0.004 && aligned >= 4) || (dragonTransition.state === 'candidate' && evCandidate > -0.001 && aligned >= 4 && gap >= 3.0));
     const thinStrongBlocked = dataThin && chopRisk >= 2 && trendLen >= 3 && !longDragonHoldWindow && !longDragonInitialEVOverride && !fixedJumpReversalRelax;
     const fixedJumpReversalOverride = fixedJumpReversalRelax && evCandidate > -0.006;
 
-    const structuralOverride =
-      ultraStructuralOverride ||
-      longDragonInitialEVOverride ||
-      longDragonHoldOverride ||
-      fixedJumpReversalOverride ||
-      dragonTransitionOverride ||
-      strongStructureEvRelax ||
-      (
-        !reversalCandidate && !longDragonHoldWindow && !thinStrongBlocked && !thinChopSecondLook && !jumpCapSignal && !dragonBreakCooldown &&
-        ((aligned >= 5 && gap >= 4.5 && evCandidate > -0.010) || (aligned >= 4 && gap >= 4.5 && evCandidate > -0.006))
-      ) ||
-      (reversalUltraStrong && evCandidate > -0.010);
+    const structuralOverride = ultraStructuralOverride || longDragonInitialEVOverride || longDragonHoldOverride || fixedJumpReversalOverride || dragonTransitionOverride || strongStructureEvRelax || (!reversalCandidate && !longDragonHoldWindow && !thinStrongBlocked && !thinChopSecondLook && !jumpCapSignal && !dragonBreakCooldown && ((aligned >= 5 && gap >= 4.5 && evCandidate > -0.010) || (aligned >= 4 && gap >= 4.5 && evCandidate > -0.006))) || (reversalCandidate && conditionalConflictRelax && evCandidate > -0.004);
 
     if(thinStrongBlocked && !ultraStructuralOverride && !longDragonInitialEVOverride && !longDragonHoldOverride && !fixedJumpReversalOverride){
       reasons.push('薄樣本切換風險高，第三手起不追');
@@ -2552,25 +2852,52 @@ function executePolicyChain(features, patternDb, tau){
       else if(thinChopSecondLook){ tier = 'MID'; reasons.push('薄樣本高切換風險，只允許第二手確認'); }
       else if(conditionalConflictRelax){ tier = 'MID'; reasons.push('反向衝突條件式放寬'); }
       else if(strongStructureEvRelax && evCandidate <= effectiveTau){ tier = warmupSoft ? 'WARMUP_SOFT' : 'STRUCT'; reasons.push('強結構接近零負 EV，放寬最終閥值'); }
-      else if(structuralOverride && evCandidate <= effectiveTau){ tier = warmupSoft ? 'WARMUP_SOFT' : 'STRUCT'; reasons.push('五路極強，啟用結構放行'); }
       else if(aligned >= 4 && gap >= 3){ tier = 'STRONG'; }
       else if(aligned >= 3 && gap >= 2){ tier = 'MID'; }
       else{ tier = 'WEAK'; }
-
       if(relativeDragonObserveWindow && !reasons.some(function(x){ return /觀察/.test(x); })){ reasons.push(dragonTransition.text); }
       if(relativeDragonHoldWindow && !reasons.some(function(x){ return /續抱|轉龍後結構穩定/.test(x); })){ reasons.push(dragonTransition.text); }
       if(longDragonObserveWindow && !reasons.some(function(x){ return /觀察/.test(x); })){ reasons.push('長龍第5手先觀察'); }
       if(longDragonHoldWindow && !longDragonExitWindow && !reasons.some(function(x){ return /續抱/.test(x); })){ reasons.push('長龍續抱條件成立'); }
       if(warmupSoft) reasons.push('暖機僅限趨勢成形後放行');
       if(dataThin) reasons.push('Pattern 樣本薄，偏向路結構');
-      if(reversalUltraStrong) reasons.push('反轉結構極強，放寬 EV 攔截');
+      if(regimeProbs.dragon >= 0.34) reasons.push('歷史轉場機率支持龍型延續');
+      if((regimeProbs.single || 0) + (regimeProbs.double || 0) + (regimeProbs.triple || 0) >= 0.52 && fixedJumpReversalRelax) reasons.push('歷史跳型回歸機率偏高');
     }
   }
 
+  const transitionProbs = {
+    nextB: histB.nextB,
+    nextP: histP.nextP,
+    continue_same: candidate === trendSide ? histB.continue_same : histP.continue_same,
+    break_to_opposite: candidate === trendSide ? histP.continue_same : histB.continue_same,
+    fake_breakout: Math.max(histB.fake_breakout, histP.fake_breakout),
+    true_transition: Math.max(histB.true_transition, histP.true_transition)
+  };
+
   return ensureDecisionReasons({
-    probs:probs, ev:ev, decision:decision, tau:tau, effectiveTau:effectiveTau, tier:tier,
-    isWarmup:false, warmupSoft:warmupSoft, dataThin:dataThin, scoreB:Number(scoreB.toFixed(2)), scoreP:Number(scoreP.toFixed(2)),
-    alignedB:alignedB, alignedP:alignedP, gap:Number(gap.toFixed(2)), overheat:overheat, chopRisk:chopRisk, reasons:reasons, roadSignals:roads
+    probs:probs,
+    ev:ev,
+    decision:decision,
+    tau:tau,
+    effectiveTau:effectiveTau,
+    tier:tier,
+    isWarmup:false,
+    warmupSoft:warmupSoft,
+    dataThin:dataThin,
+    scoreB:Number(scoreB.toFixed(2)),
+    scoreP:Number(scoreP.toFixed(2)),
+    alignedB:alignedB,
+    alignedP:alignedP,
+    gap:Number(gap.toFixed(2)),
+    overheat:overheat,
+    chopRisk:chopRisk,
+    reasons:reasons,
+    roadSignals:roads,
+    regime_probs:regimeProbs,
+    transition_probs:transitionProbs,
+    energy:energy,
+    regime_state:regimeState
   });
 }
 
@@ -2682,7 +3009,7 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v64.14：修正跳型主體記憶、相對K轉龍、動態斷龍觀察窗';
+    rb.textContent = 'v64.15：加入 regime 機率 / transition 機率 / energy / 動態狀態';
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '📊 五路結構門檻策略待命中';
     updateRoadExplain(displayRoads);
@@ -3060,7 +3387,7 @@ async function exportDB(){
     normalizeLabSnapshots();
 
     const payload = {
-      version:'v64.14',
+      version:'v64.15',
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
@@ -3071,7 +3398,7 @@ async function exportDB(){
     };
     const json = JSON.stringify(payload, null, 2);
     const blob = new Blob([json], { type:'application/json' });
-    const fileName = 'bac_v64_9_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
+    const fileName = 'bac_v64_15_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
 
     if(window.showSaveFilePicker){
       try{
@@ -3098,7 +3425,7 @@ async function exportDB(){
         await navigator.share({
           files:[file],
           title:'百家樂資料匯出',
-          text:'bac v64.14 匯出資料'
+          text:'bac v64.15 匯出資料'
         });
         return;
       }
@@ -3140,7 +3467,7 @@ function importDB(event){
       let recoveredByMaterialized = false;
 
       const tempLab = {
-        schema_version:'v64.14',
+        schema_version:'v64.15',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:[]
@@ -3160,7 +3487,7 @@ function importDB(event){
       if(!validateOpenShoeConsistency(LabStore, S)){
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v64.14',
+            schema_version:'v64.15',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:[]
@@ -3173,7 +3500,7 @@ function importDB(event){
           const fallbackShoes = materializeAllShoes();
           if(fallbackShoes.length){
             LabStore = {
-              schema_version:'v64.14',
+              schema_version:'v64.15',
               rawShoes:fallbackShoes,
               currentOpenShoe:null,
               experiments:[]
@@ -3200,7 +3527,7 @@ function importDB(event){
 
       alert(
         recoveredByMaterialized
-          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v64.14。'
+          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v64.15。'
           : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料（含開放鞋快照），並補齊 snapshot schema。'
       );
     }catch(err){
@@ -3256,9 +3583,9 @@ function invokeQuantLab(){
   });
 
   const result = {
-    version:'v64.14',
+    version:'v64.15',
     generated_at:new Date().toISOString(),
-    replay_model_id:'five_road_v64_14',
+    replay_model_id:'five_road_v64_15',
     shoes:shoeRows.length,
     original:UnifiedAudit.original,
     replay:UnifiedAudit.replay,
@@ -3274,7 +3601,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v64.14 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v64.15 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     '全部現版: ' + result.replay.hits + '/' + result.replay.bets + '｜' + (result.replay.returnSum >= 0 ? '+' : '') + result.replay.returnSum.toFixed(2) + '\n' +
@@ -3343,7 +3670,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v64.14',
+        schema_version:'v64.15',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
