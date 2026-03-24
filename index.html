@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v64.16 Predictive Recovery Engine</title>
+  <title>百家樂量化終端 - v64.17 Predictive Recovery Engine</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -431,7 +431,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v64.16</span>
+        <span class="version-badge">v64.17</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -515,7 +515,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v64.16</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v64.17</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -523,7 +523,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v64.16 維持目前介面，只修正：<b>暖機硬鎖放寬、強結構 EV 放寬、歷史轉移機率加權、regime/energy 主導、側注重校準</b>。
+        本版 v64.17 維持目前介面，只修正：<b>暖機硬鎖放寬、強結構 EV 放寬、歷史轉移機率加權、regime/energy 主導、側注重校準</b>。
       </div>
     </div>
 
@@ -577,8 +577,8 @@ const DATA_THIN_TOTALHANDS = 180;
 const SIDE_PRIORS = { tie:0.0952, bp:0.0747, pp:0.0747 };
 const SIDE_RULES = {
   tie:{ minN:20, absFloor:0.118, edgeFloor:0.010, hotAbs:0.134, hotEdge:0.016, confSpan:50, cfgPad:0.014 },
-  bp :{ minN:18, absFloor:0.094, edgeFloor:0.010, hotAbs:0.110, hotEdge:0.016, confSpan:38, cfgPad:0.012 },
-  pp :{ minN:28, absFloor:0.128, edgeFloor:0.024, hotAbs:0.145, hotEdge:0.032, confSpan:54, cfgPad:0.028 }
+  bp :{ minN:22, absFloor:0.102, edgeFloor:0.014, hotAbs:0.118, hotEdge:0.020, confSpan:42, cfgPad:0.015 },
+  pp :{ minN:24, absFloor:0.116, edgeFloor:0.016, hotAbs:0.134, hotEdge:0.024, confSpan:50, cfgPad:0.020 }
 };
 
 const countWeights = {1:1,2:1,3:2,4:2,5:1,6:-1,7:-2,8:-2,9:-2,10:0,11:0,12:0,13:0};
@@ -586,10 +586,10 @@ const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v64.16', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version:'v64.17', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10 };
-let UnifiedAudit = { generated_at:null, replayModelId:'five_road_v64_16', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
+let UnifiedAudit = { generated_at:null, replayModelId:'five_road_v64_17', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
 
 let bSt = null, bDB = null, bLab = null;
 let cOrder = ['p1','b1','p2','b2','p3','b3'];
@@ -740,7 +740,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v64.16',
+    snapshot_schema_version:'v64.17',
     tau: tau,
     effectiveTau: effectiveTau,
     s: normalizeFiniteNumber(raw && raw.s, Config.side),
@@ -807,8 +807,8 @@ function normalizeCurrentEvalShape(raw){
   const decision = normalizeDecision(raw.decision);
   let reasons = Array.isArray(raw.reasons) ? raw.reasons.map(function(x){ return String(x); }).filter(Boolean) : [];
   const normalized = {
-    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'five_road_v64_16',
-    replay_schema_version:'v64.16',
+    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'five_road_v64_17',
+    replay_schema_version:'v64.17',
     decision: decision,
     tier: typeof raw.tier === 'string' ? raw.tier : (decision === 'PASS' ? 'PASS' : 'MID'),
     tau: tau,
@@ -849,7 +849,7 @@ function normalizeHandRecord(hand){
 
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v64.16',
+    spec_version:'v64.17',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -1192,7 +1192,7 @@ function getHistoricalTransitionProbabilities(path, candidate){
   const priorFake = breakoutDelta > 0 && regime.mode !== 'dragon' ? 0.38 : 0.18;
   const priorTrue = breakoutDelta > 0 ? (regime.mode === 'dragon' ? 0.52 : 0.28) : 0.14;
 
-  const priorMass = matched >= 18 ? 0.45 : matched >= 8 ? 0.75 : 1.15;
+  const priorMass = matched >= 18 ? 0.22 : matched >= 8 ? 0.42 : 0.82;
   const denom = totalW + priorMass;
   const nextB = clamp01((nextBW + priorNextB * priorMass) / Math.max(0.001, denom));
   const nextP = clamp01((nextPW + priorNextP * priorMass) / Math.max(0.001, denom));
@@ -1205,9 +1205,9 @@ function getHistoricalTransitionProbabilities(path, candidate){
   const edge = nextSideProb - 0.5;
   const transitionEdge = trueTransition - fakeBreakout;
   const directionBoost = Math.max(-1.5, Math.min(1.5,
-    edge * 5.4 +
-    transitionEdge * (candidate === (path && path.trend_side) ? 2.4 : 1.6) +
-    (matched >= 12 ? 0.10 : 0)
+    edge * 6.8 +
+    transitionEdge * (candidate === (path && path.trend_side) ? 3.2 : 2.2) +
+    (matched >= 12 ? 0.16 : matched >= 6 ? 0.06 : 0)
   ));
 
   return {
@@ -1304,8 +1304,8 @@ function makeCurrentEvalSnapshot(pred, sideSignals, outcome){
   pred = ensureDecisionReasons(pred || {});
   const winner = outcome && outcome.winner ? outcome.winner : 'T';
   return {
-    model_id:'five_road_v64_16',
-    replay_schema_version:'v64.16',
+    model_id:'five_road_v64_17',
+    replay_schema_version:'v64.17',
     decision: pred.decision,
     tier: pred.tier,
     tau: pred.tau,
@@ -1416,7 +1416,7 @@ function buildUnifiedReplayAudit(shoes){
 
   const summary = {
     generated_at:new Date().toISOString(),
-    replayModelId:'five_road_v64_16',
+    replayModelId:'five_road_v64_17',
     replay:makeAuditBucket(),
     original:makeAuditBucket(),
     byVersion:{},
@@ -1767,7 +1767,7 @@ function loadAll(){
       const lab = JSON.parse(labRaw);
       if(lab && typeof lab === 'object'){
         LabStore = {
-          schema_version:'v64.16',
+          schema_version:'v64.17',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1780,7 +1780,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v64.16',
+          schema_version:'v64.17',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1858,9 +1858,9 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(livePrediction)),
     policy_snapshot: {
-      model_id:'five_road_v64_16',
-      model_id_original:'five_road_v64_16',
-      snapshot_schema_version:'v64.16',
+      model_id:'five_road_v64_17',
+      model_id_original:'five_road_v64_17',
+      snapshot_schema_version:'v64.17',
       tau: livePrediction.tau,
       effectiveTau: livePrediction.effectiveTau,
       s: Config.side,
@@ -1875,8 +1875,8 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v64.16',
-      original_spec_version:'v64.16',
+      spec_version:'v64.17',
+      original_spec_version:'v64.17',
       snapshot_normalized:true
     }
   };
@@ -2788,7 +2788,7 @@ function executePolicyChain(features, patternDb, tau){
   const fixedJumpContinuationBlocked = !!(jumpCapSignal && candidate === jumpCapSignal.side && trendLen >= jumpCapSignal.capLen + 1 && !(dragonTransition && (dragonTransition.state === 'candidate' || dragonTransition.state === 'confirmed' || dragonTransition.state === 'hold')));
   const fixedJumpReversalRelax = !!(
     jumpCapSignal && candidate !== 'PASS' && candidate !== jumpCapSignal.side && trendLen >= jumpCapSignal.capLen &&
-    ((candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.53 || energy.energy_gap >= 1.4)
+    (aligned >= 3 && (candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.54 && energy.energy_gap >= 1.8)
   );
 
   const regimeIsJump = regimeState && ['single','double','triple'].indexOf(regimeState.dominant) !== -1;
@@ -2799,7 +2799,7 @@ function executePolicyChain(features, patternDb, tau){
   const relativeDragonFatigueWindow = !!(dragonTransition && dragonTransition.state === 'fatigue');
 
   const longDragonObserveWindow = !regimeIsJump && trendContinuing && trendLen === 5;
-  const longDragonInitialFollowWindow = !regimeIsJump && trendContinuing && trendLen >= 6 && ((aligned >= 4 && gap >= 2.6 && oppositeAligned <= 1) || (aligned >= 5 && gap >= 2.2 && oppositeAligned <= 2));
+  const longDragonInitialFollowWindow = !regimeIsJump && trendContinuing && trendLen >= 6 && candidatePredictiveEdge >= 1.10 && ((aligned >= 4 && gap >= 2.6 && oppositeAligned <= 1) || (aligned >= 5 && gap >= 2.2 && oppositeAligned <= 2));
   const longDragonHoldWindow = !regimeIsJump && trendContinuing && trendLen >= 7 && ((aligned >= 4 && gap >= 2.1 && oppositeAligned <= 1) || (aligned >= 5 && gap >= 1.8 && oppositeAligned <= 2));
   const longDragonExitWindow = (!regimeIsJump && trendContinuing && trendLen >= 6 && ((aligned < 3) || (gap < 1.7) || (chopRisk >= 2) || (oppositeAligned >= 2 && gap < 2.5))) || relativeDragonFatigueWindow;
 
@@ -2813,8 +2813,8 @@ function executePolicyChain(features, patternDb, tau){
   if(relativeDragonFatigueWindow) effectiveTau = Math.max(effectiveTau, 0.0016);
   if(dataThin && chopRisk >= 2) effectiveTau = Math.max(effectiveTau, 0.0016);
   if(fixedJumpReversalRelax) effectiveTau = Math.max(effectiveTau, 0.0004);
-  if(energy.energy_gap >= 1.8 && aligned >= 4 && gap >= 4.5) effectiveTau = Math.min(effectiveTau, -0.0014);
-  if(energy.energy_gap >= 3.4 && aligned >= 3 && gap >= 3.4 && candidatePredictiveEdge >= 1.10) effectiveTau = Math.min(effectiveTau, -0.0008);
+  if(energy.energy_gap >= 2.2 && aligned >= 4 && gap >= 4.2) effectiveTau = Math.min(effectiveTau, -0.0012);
+  if(energy.energy_gap >= 3.8 && aligned >= 3 && gap >= 3.5 && candidatePredictiveEdge >= 1.18) effectiveTau = Math.min(effectiveTau, -0.0006);
 
   const isMidLate = features.F_Path.history_len >= 24;
   const isDeepLate = features.F_Path.history_len >= 40;
@@ -2823,11 +2823,11 @@ function executePolicyChain(features, patternDb, tau){
 
   const conditionalConflictRelax = fixedJumpReversalRelax || (
     reversalCandidate && trendLen === 1 && aligned === 3 && oppositeAligned === 2 && gap >= 1.6 && candidateEVPreview > -0.003 &&
-    ((candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.52 || energy.energy_gap >= 1.1)
+    ((candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.54 || energy.energy_gap >= 1.8)
   );
 
   const thinChopHardBlock = dataThin && chopRisk >= 2 && trendLen >= 3 && !longDragonHoldWindow && !longDragonInitialFollowWindow && !fixedJumpReversalRelax && candidatePredictiveEdge < 1.15;
-  const thinChopSecondLook = dataThin && chopRisk >= 2 && trendLen === 2 && aligned >= 4 && candidateEVPreview > -0.002 && (candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.53 && !fixedJumpContinuationBlocked;
+  const thinChopSecondLook = dataThin && chopRisk >= 2 && trendLen === 2 && aligned >= 4 && candidateEVPreview > -0.001 && (candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.58 && energy.energy_gap >= 2.8 && candidatePredictiveEdge >= 1.22 && !fixedJumpContinuationBlocked;
 
   if(gap < gapPassFloor){
     reasons.push(isMidLate ? '中後段分差仍不足' : '五路分差不足');
@@ -2870,9 +2870,9 @@ function executePolicyChain(features, patternDb, tau){
   if(reasons.length === 0){
     const evCandidate = candidateEVPreview;
     const ultraStructuralOverride = !reversalCandidate && trendContinuing && trendLen >= 2 && trendLen <= 4 && aligned >= 5 && gap >= 7.2 && oppositeAligned === 0 && chopRisk === 0 && !jumpCapSignal && evCandidate > 0.004;
-    const longDragonInitialEVOverride = longDragonInitialFollowWindow && ((aligned >= 4 && gap >= 2.6 && evCandidate > -0.004) || (aligned >= 5 && gap >= 2.2 && evCandidate > 0));
+    const longDragonInitialEVOverride = longDragonInitialFollowWindow && candidateHist && candidateHist.true_transition >= 0.48 && candidatePredictiveEdge >= 1.24 && ((aligned >= 4 && gap >= 2.8 && evCandidate > -0.002) || (aligned >= 5 && gap >= 2.3 && evCandidate > 0));
     const longDragonHoldOverride = longDragonHoldWindow && !longDragonExitWindow && ((aligned >= 4 && gap >= 2.0 && evCandidate > -0.008) || (aligned >= 5 && gap >= 1.8 && oppositeAligned <= 2 && evCandidate > -0.004));
-    const strongStructureEvRelax = (aligned >= 4 && gap >= 4.5 && (evCandidate > -0.012 || energy.energy_gap >= 1.45 || candidatePredictiveEdge >= 1.05 || (candidateHist && candidateHist.nextSideProb >= 0.56))) || (aligned >= 3 && gap >= 3.4 && energy.energy_gap >= 3.8 && candidatePredictiveEdge >= 1.25 && evCandidate > -0.008);
+    const strongStructureEvRelax = (aligned >= 4 && gap >= 4.2 && (evCandidate > -0.010 || energy.energy_gap >= 2.0 || candidatePredictiveEdge >= 1.08 || (candidateHist && candidateHist.nextSideProb >= 0.57))) || (aligned >= 3 && gap >= 3.5 && energy.energy_gap >= 4.1 && candidatePredictiveEdge >= 1.30 && evCandidate > -0.006);
     const dragonTransitionOverride = trendContinuing && regimeIsJump && dragonTransition && (((dragonTransition.state === 'confirmed' || dragonTransition.state === 'hold') && evCandidate > -0.004 && aligned >= 4) || (dragonTransition.state === 'candidate' && evCandidate > -0.001 && aligned >= 4 && gap >= 3.0));
     const thinStrongBlocked = dataThin && chopRisk >= 2 && trendLen >= 3 && !longDragonHoldWindow && !longDragonInitialEVOverride && !fixedJumpReversalRelax;
     const fixedJumpReversalOverride = fixedJumpReversalRelax && evCandidate > -0.006;
@@ -3052,7 +3052,7 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v64.16：強化預判主導，放寬暖機/EV硬鎖，重做轉移機率與側注校準';
+    rb.textContent = 'v64.17：強化預判主導，放寬暖機/EV硬鎖，重做轉移機率與側注校準';
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '📊 五路結構門檻策略待命中';
     updateRoadExplain(displayRoads);
@@ -3430,7 +3430,7 @@ async function exportDB(){
     normalizeLabSnapshots();
 
     const payload = {
-      version:'v64.16',
+      version:'v64.17',
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
@@ -3468,7 +3468,7 @@ async function exportDB(){
         await navigator.share({
           files:[file],
           title:'百家樂資料匯出',
-          text:'bac v64.16 匯出資料'
+          text:'bac v64.17 匯出資料'
         });
         return;
       }
@@ -3510,7 +3510,7 @@ function importDB(event){
       let recoveredByMaterialized = false;
 
       const tempLab = {
-        schema_version:'v64.16',
+        schema_version:'v64.17',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:[]
@@ -3530,7 +3530,7 @@ function importDB(event){
       if(!validateOpenShoeConsistency(LabStore, S)){
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v64.16',
+            schema_version:'v64.17',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:[]
@@ -3543,7 +3543,7 @@ function importDB(event){
           const fallbackShoes = materializeAllShoes();
           if(fallbackShoes.length){
             LabStore = {
-              schema_version:'v64.16',
+              schema_version:'v64.17',
               rawShoes:fallbackShoes,
               currentOpenShoe:null,
               experiments:[]
@@ -3570,7 +3570,7 @@ function importDB(event){
 
       alert(
         recoveredByMaterialized
-          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v64.16。'
+          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v64.17。'
           : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料（含開放鞋快照），並補齊 snapshot schema。'
       );
     }catch(err){
@@ -3626,9 +3626,9 @@ function invokeQuantLab(){
   });
 
   const result = {
-    version:'v64.16',
+    version:'v64.17',
     generated_at:new Date().toISOString(),
-    replay_model_id:'five_road_v64_16',
+    replay_model_id:'five_road_v64_17',
     shoes:shoeRows.length,
     original:UnifiedAudit.original,
     replay:UnifiedAudit.replay,
@@ -3644,7 +3644,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v64.16 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v64.17 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     '全部現版: ' + result.replay.hits + '/' + result.replay.bets + '｜' + (result.replay.returnSum >= 0 ? '+' : '') + result.replay.returnSum.toFixed(2) + '\n' +
@@ -3713,7 +3713,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v64.16',
+        schema_version:'v64.17',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
