@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v66.1 Dual-Brain Predictive Engine</title>
+  <title>百家樂量化終端 - v66.3 Minimal Prediction Panel</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -355,22 +355,82 @@
     .db-actions button{border:none; border-radius:10px; padding:12px; font-weight:900; cursor:pointer; touch-action:manipulation}
 
 
+    .forecast-strip{
+      display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:6px; margin-top:8px;
+    }
+    .road-explain-grid,.brain-panel-grid,.road-brain-grid,.reason-badge{display:none !important;}
+    .forecast-strip{grid-template-columns:repeat(2, minmax(0,1fr));}
+    .forecast-tile{min-height:64px; display:flex; flex-direction:column; justify-content:center;}
+    .forecast-label{text-align:center;}
+    .forecast-value{font-size:20px; text-align:center;}
+    .forecast-meta{text-align:center;}
+
+    .forecast-tile{
+      background:#0d0d11; border:1px solid #2b2b33; border-radius:12px; padding:6px 7px; min-height:54px;
+      display:flex; flex-direction:column; justify-content:space-between; gap:3px;
+    }
+    .forecast-label{
+      font-size:8px; font-weight:950; color:var(--muted); letter-spacing:.2px; text-transform:uppercase;
+    }
+    .forecast-value{
+      font-size:11px; font-weight:950; color:#f4f4f5; line-height:1.2;
+    }
+    .forecast-meta{
+      font-size:8px; line-height:1.2; color:#d4d4d8; font-weight:800;
+    }
+    .forecast-value.banker{color:var(--b)}
+    .forecast-value.player{color:var(--p)}
+    .forecast-value.pass{color:var(--hl)}
     .brain-panel-grid{
       display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px;
     }
     .brain-card{
-      background:#0d0d11; border:1px solid #2b2b33; border-radius:12px; padding:6px 7px; min-height:76px;
-      display:flex; flex-direction:column; gap:4px;
+      background:#0d0d11; border:1px solid #2b2b33; border-radius:14px; padding:8px; min-height:122px;
+      display:flex; flex-direction:column; gap:7px;
+    }
+    .brain-head{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:8px;
     }
     .brain-card .brain-title{
       font-size:9px; font-weight:950; color:var(--muted); letter-spacing:.2px; text-transform:uppercase;
     }
+    .brain-state{
+      font-size:8px; font-weight:950; padding:3px 6px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.05); color:#e4e4e7; white-space:nowrap;
+    }
+    .brain-state.banker{color:var(--b); border-color:rgba(239,68,68,.35); background:rgba(239,68,68,.10)}
+    .brain-state.player{color:var(--p); border-color:rgba(59,130,246,.35); background:rgba(59,130,246,.10)}
+    .brain-state.pass{color:var(--hl); border-color:rgba(234,179,8,.35); background:rgba(234,179,8,.10)}
     .brain-main-line{
-      font-size:11px; font-weight:900; color:#f4f4f5; line-height:1.2;
+      font-size:14px; font-weight:950; color:#f4f4f5; line-height:1.15;
     }
     .brain-sub-line{
-      font-size:8px; line-height:1.25; color:#d4d4d8; font-weight:800;
+      font-size:9px; line-height:1.25; color:#d4d4d8; font-weight:800;
     }
+    .brain-metric-grid{
+      display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px;
+    }
+    .brain-metric{
+      background:#121218; border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:6px 5px;
+      display:flex; flex-direction:column; gap:3px;
+    }
+    .brain-metric-label{
+      font-size:8px; color:var(--muted); font-weight:900; line-height:1;
+    }
+    .brain-metric-value{
+      font-size:11px; font-weight:950; color:#f4f4f5; line-height:1.1;
+    }
+    .brain-bar-wrap{display:flex; flex-direction:column; gap:4px;}
+    .brain-bar-row{display:grid; grid-template-columns:44px 1fr 36px; align-items:center; gap:6px;}
+    .brain-bar-label{font-size:8px; color:var(--muted); font-weight:900;}
+    .brain-bar-track{height:7px; border-radius:999px; background:#202028; overflow:hidden;}
+    .brain-bar-fill{height:100%; border-radius:999px; background:#6b7280;}
+    .brain-bar-fill.banker{background:var(--b)}
+    .brain-bar-fill.player{background:var(--p)}
+    .brain-bar-fill.warn{background:var(--warn)}
+    .brain-bar-fill.ok{background:var(--ok)}
+    .brain-bar-fill.hl{background:var(--hl)}
+    .brain-bar-value{font-size:8px; color:#d4d4d8; font-weight:900; text-align:right;}
     .brain-chip-row{display:flex; flex-wrap:wrap; gap:4px;}
     .brain-chip{
       font-size:8px; font-weight:900; padding:2px 5px; border-radius:999px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.05); color:#e4e4e7;
@@ -378,17 +438,21 @@
     .brain-chip.warn{color:var(--warn); border-color:rgba(249,115,22,.45); background:rgba(249,115,22,.10)}
     .brain-chip.ok{color:var(--t); border-color:rgba(34,197,94,.45); background:rgba(34,197,94,.10)}
     .brain-chip.hl{color:var(--hl); border-color:rgba(234,179,8,.45); background:rgba(234,179,8,.12)}
+    .brain-footnote{
+      font-size:8px; line-height:1.25; color:#d4d4d8; font-weight:800;
+    }
     .road-brain-grid{
-      display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:4px; margin-top:8px;
+      display:grid; grid-template-columns:1fr; gap:6px; margin-top:8px;
     }
     .road-brain-card{
-      background:#0d0d11; border:1px solid #2b2b33; border-radius:10px; padding:5px 4px; min-height:58px;
-      display:flex; flex-direction:column; gap:2px; justify-content:center;
+      background:#0d0d11; border:1px solid #2b2b33; border-radius:12px; padding:8px; min-height:66px;
+      display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr); gap:8px; align-items:center;
     }
     .road-brain-card.focus{border-color:rgba(234,179,8,.55); box-shadow:0 0 0 1px rgba(234,179,8,.20) inset}
-    .road-brain-label{font-size:8px; font-weight:950; text-align:center; color:var(--muted)}
-    .road-brain-side{font-size:9px; font-weight:950; text-align:center; color:#f4f4f5}
-    .road-brain-meta{font-size:7px; line-height:1.2; text-align:center; color:#d4d4d8; font-weight:800}
+    .road-brain-left,.road-brain-right{display:flex; flex-direction:column; gap:4px; min-width:0}
+    .road-brain-label{font-size:8px; font-weight:950; color:var(--muted); letter-spacing:.2px; text-transform:uppercase}
+    .road-brain-side{font-size:12px; font-weight:950; color:#f4f4f5}
+    .road-brain-meta{font-size:8px; line-height:1.25; color:#d4d4d8; font-weight:800}
 
     @media (max-width:1100px){
       .scroll-container{
@@ -424,9 +488,10 @@
       .road-pill-card{min-height:30px; padding:3px 2px}
       .road-pill{font-size:7px; padding:2px 3px}
       .road-text{font-size:6px}
+      .forecast-strip{grid-template-columns:repeat(2, minmax(0,1fr))}
       .brain-panel-grid{grid-template-columns:1fr}
-      .road-brain-grid{grid-template-columns:repeat(2, minmax(0,1fr))}
-      .brain-card{min-height:70px}
+      .brain-card{min-height:unset}
+      .road-brain-card{grid-template-columns:1fr}
 
       .scroll-container{
         padding:7px;
@@ -459,7 +524,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v66.1</span>
+        <span class="version-badge">v66.3</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -473,10 +538,12 @@
     <div id="oracleBox" class="oracle-box pass">
       <div class="trend-alert alert-safe" id="trendAlert">📊 預判主體待命中</div>
       <div class="oracle-main" id="oracleMain">等待輸入</div>
-      <div class="reason-badge" id="reasonBadge">v66.1：雙腦架構 / 下三路雙腦後台統計 / 僅顯示大路摘要 / 仲裁器整合</div>
+      <div class="reason-badge" id="reasonBadge">v66.3：前台僅顯示預判與開龍/斷龍</div>
 
       <div class="oracle-road-wrap">
         <div class="road-explain-grid" id="roadExplain"></div>
+
+        <div class="forecast-strip" id="forecastStrip"></div>
 
         <div class="brain-panel-grid">
           <div class="brain-card" id="patternBrainCard"></div>
@@ -545,7 +612,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v66.1</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v66.3</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -553,7 +620,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v66.1 以 v65.8 為基礎：<b>保留雙腦架構與下三路雙腦後台統計；下三路腦卡不顯示，只保留大路摘要卡；兩顆大腦平行分析、不直接互改分數</b>。
+        本版 v66.2 以 v65.8 為基礎：<b>保留雙腦架構與下三路雙腦後台統計；下三路腦卡不顯示，只保留大路摘要卡；兩顆大腦平行分析、不直接互改分數</b>。
       </div>
     </div>
 
@@ -588,10 +655,10 @@
   </div>
 
 <script>
-const DB_K = 'bac_v66_1_db';
-const LAB_K = 'bac_v66_1_lab';
-const ST_K = 'bac_v66_1_state';
-const CF_K = 'bac_v66_1_cfg';
+const DB_K = 'bac_v66_3_db';
+const LAB_K = 'bac_v66_3_lab';
+const ST_K = 'bac_v66_3_state';
+const CF_K = 'bac_v66_3_cfg';
 
 const LEGACY_DB_KEYS = ['bac_v65_4_db','bac_v65_3_db','bac_v64_3_db','bac_v64_2_db','bac_v64_db','bac_db_v63','bac_db_v62','bac_db_v61'];
 const LEGACY_LAB_KEYS = ['bac_v65_4_lab','bac_v65_3_lab','bac_v64_3_lab','bac_v64_2_lab','bac_v64_lab','bac_lab_v63','bac_lab_v62','bac_lab_v61'];
@@ -610,10 +677,10 @@ const NAIVE_PRIORS = { B:0.50685, P:0.49315 };
 const PAYOUTS = { B:0.95, P:1.0 };
 
 let BigData = { totalHands:0, patternSamples:0, patterns:{}, acc:{recs:0,hits:0,pushes:0,returnSum:0} };
-let LabStore = { schema_version:'v66.1', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version:'v66.3', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
 let Config = { tau:0.005, nBins:10 };
-let UnifiedAudit = { generated_at:null, replayModelId:'dual_brain_v66_1', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 } } };
+let UnifiedAudit = { generated_at:null, replayModelId:'dual_brain_v66_3', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 } } };
 
 let bSt = null, bDB = null, bLab = null;
 let cOrder = ['p1','b1','p2','b2','p3','b3'];
@@ -838,7 +905,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v66.1',
+    snapshot_schema_version:'v66.3',
     tau: tau,
     effectiveTau: Math.max(0, effectiveTau),
     main_decision: normalizeDecision(raw && raw.main_decision),
@@ -903,8 +970,8 @@ function normalizeCurrentEvalShape(raw){
   const decision = normalizeDecision(raw.decision);
   let reasons = Array.isArray(raw.reasons) ? raw.reasons.map(function(x){ return String(x); }).filter(Boolean) : [];
   const normalized = {
-    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'dual_brain_v66_1',
-    replay_schema_version:'v66.1',
+    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'dual_brain_v66_2',
+    replay_schema_version:'v66.3',
     decision: decision,
     tier: typeof raw.tier === 'string' ? raw.tier : (decision === 'PASS' ? 'PASS' : 'MID'),
     tau: tau,
@@ -946,7 +1013,7 @@ function normalizeHandRecord(hand){
 
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v66.1',
+    spec_version:'v66.3',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -1459,8 +1526,8 @@ function makeCurrentEvalSnapshot(pred, outcome){
   pred = ensureDecisionReasons(pred || {});
   const winner = outcome && outcome.winner ? outcome.winner : 'T';
   return {
-    model_id:'dual_brain_v66_1',
-    replay_schema_version:'v66.1',
+    model_id:'dual_brain_v66_3',
+    replay_schema_version:'v66.3',
     decision: pred.decision,
     tier: pred.tier,
     tau: pred.tau,
@@ -1570,7 +1637,7 @@ function buildUnifiedReplayAudit(shoes){
 
   const summary = {
     generated_at:new Date().toISOString(),
-    replayModelId:'dual_brain_v66_1',
+    replayModelId:'dual_brain_v66_3',
     replay:makeAuditBucket(),
     original:makeAuditBucket(),
     byVersion:{},
@@ -1869,7 +1936,7 @@ function loadAll(){
       const lab = JSON.parse(labRaw);
       if(lab && typeof lab === 'object'){
         LabStore = {
-          schema_version:'v66.1',
+          schema_version:'v66.3',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1936,9 +2003,9 @@ function captureObservation(state, features, livePrediction, inputs){
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(livePrediction)),
     policy_snapshot: {
-      model_id:'dual_brain_v66_1',
-      model_id_original:'dual_brain_v66_1',
-      snapshot_schema_version:'v66.1',
+      model_id:'dual_brain_v66_3',
+      model_id_original:'dual_brain_v66_3',
+      snapshot_schema_version:'v66.3',
       tau: livePrediction.tau,
       effectiveTau: Math.max(0, livePrediction.effectiveTau),
       main_decision: livePrediction.decision,
@@ -1949,8 +2016,8 @@ function captureObservation(state, features, livePrediction, inputs){
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v66.1',
-      original_spec_version:'v66.1',
+      spec_version:'v66.3',
+      original_spec_version:'v66.3',
       snapshot_normalized:true
     }
   };
@@ -3591,51 +3658,43 @@ function updateDBUI(){
 }
 
 
+function sideLabel(side){
+  return side === 'B' ? '偏莊' : side === 'P' ? '偏閒' : '觀望';
+}
+
+function sideClass(side){
+  return side === 'B' ? 'banker' : side === 'P' ? 'player' : 'pass';
+}
+
+function buildBrainBar(label, value, tone){
+  const width = Math.max(0, Math.min(100, normalizeFiniteNumber(value, 0) * 100));
+  return '<div class="brain-bar-row">' +
+    '<div class="brain-bar-label">' + label + '</div>' +
+    '<div class="brain-bar-track"><div class="brain-bar-fill ' + tone + '" style="width:' + width.toFixed(1) + '%"></div></div>' +
+    '<div class="brain-bar-value">' + formatPct(value) + '</div>' +
+  '</div>';
+}
+
 function updateDualBrainUI(pred){
   const patternCard = document.getElementById('patternBrainCard');
   const dragonCard = document.getElementById('dragonBrainCard');
   const roadGrid = document.getElementById('roadBrainGrid');
+  const forecastStrip = document.getElementById('forecastStrip');
   const pattern = pred && pred.brain_pattern ? normalizePatternBrainShape(pred.brain_pattern) : normalizePatternBrainShape(null);
   const dragon = pred && pred.brain_dragon ? normalizeDragonBrainShape(pred.brain_dragon) : normalizeDragonBrainShape(null);
   const roads = pred && pred.road_brains ? normalizeRoadBrainRows(pred.road_brains) : [];
   const arbiter = pred && pred.arbiter ? normalizeArbiterShape(pred.arbiter) : normalizeArbiterShape(null);
+  const mainRoad = roads.find(function(x){ return x.label === '大路'; }) || roads[0] || null;
+  const decisionText = pred && pred.decision ? (pred.decision === 'B' ? '推薦莊家' : pred.decision === 'P' ? '推薦閒家' : '觀望 PASS') : '等待輸入';
+  const decisionClass = pred && pred.decision ? sideClass(pred.decision === 'PASS' ? null : pred.decision) : 'pass';
+  const openDragonProb = dragon.dragon_state === '無龍' ? dragon.new_dragon_prob : dragon.dragon_continue_prob;
+  forecastStrip.innerHTML =
+    '<div class="forecast-tile"><div class="forecast-label">開龍</div><div class="forecast-value ' + sideClass(dragon.dragon_side) + '">' + formatPct(openDragonProb) + '</div><div class="forecast-meta">有龍時計續龍，無龍時計新龍</div></div>' +
+    '<div class="forecast-tile"><div class="forecast-label">斷龍</div><div class="forecast-value pass">' + formatPct(dragon.dragon_break_prob) + '</div><div class="forecast-meta">目前龍向 ' + (dragon.dragon_side ? (dragon.dragon_side === 'B' ? '莊龍' : '閒龍') : '無龍') + '</div></div>';
 
-  patternCard.innerHTML =
-    '<div class="brain-title">第一顆大腦｜規律腦</div>' +
-    '<div class="brain-main-line">' + (pattern.mainSide === 'B' ? '偏莊' : pattern.mainSide === 'P' ? '偏閒' : '觀望') + '｜' + pattern.mode + '</div>' +
-    '<div class="brain-sub-line">規律度 ' + formatPct(pattern.regularity_score) + '｜不規律 ' + formatPct(pattern.irregularity_score) + '｜假突破 ' + formatPct(pattern.fake_break_prob) + '</div>' +
-    '<div class="brain-chip-row">' +
-      '<span class="brain-chip ' + (pattern.passRisk >= 0.60 ? 'warn' : 'ok') + '">PASS風險 ' + formatPct(pattern.passRisk) + '</span>' +
-      '<span class="brain-chip">延續 ' + formatPct(pattern.continue_prob) + '</span>' +
-      '<span class="brain-chip">反轉 ' + formatPct(pattern.reverse_prob) + '</span>' +
-    '</div>';
-
-  dragonCard.innerHTML =
-    '<div class="brain-title">第二顆大腦｜龍腦</div>' +
-    '<div class="brain-main-line">' + dragon.dragon_state + (dragon.dragon_side ? '｜' + (dragon.dragon_side === 'B' ? '莊龍' : '閒龍') : '') + '</div>' +
-    '<div class="brain-sub-line">續龍 ' + formatPct(dragon.dragon_continue_prob) + '｜斷龍 ' + formatPct(dragon.dragon_break_prob) + '｜新龍 ' + formatPct(dragon.new_dragon_prob) + '</div>' +
-    '<div class="brain-chip-row">' +
-      '<span class="brain-chip ' + (dragon.dragon_break_prob > dragon.dragon_continue_prob ? 'warn' : 'ok') + '">龍強度 ' + formatPct(dragon.dragon_strength) + '</span>' +
-      '<span class="brain-chip">疲勞 ' + formatPct(dragon.dragon_fatigue) + '</span>' +
-      '<span class="brain-chip ' + (arbiter.blockByDragonBreak ? 'warn' : 'hl') + '">' + (arbiter.blockByDragonBreak ? '斷龍風險高' : '龍腦可追蹤') + '</span>' +
-    '</div>';
-
+  patternCard.innerHTML = '';
+  dragonCard.innerHTML = '';
   roadGrid.innerHTML = '';
-  ['大路'].forEach(function(label){
-    const row = roads.find(function(x){ return x.label === label; });
-    const card = document.createElement('div');
-    card.className = 'road-brain-card' + (row && row.focus ? ' focus' : '');
-    const sideText = row && row.side ? (row.side === 'B' ? '偏莊' : '偏閒') : '觀望';
-    const accText = row ? (row.recent6_hits + '/' + row.sample) : '0/0';
-    const mode = row ? row.pattern.mode : '待機';
-    const dragonState = row ? row.dragon.dragon_state : '無龍';
-    card.innerHTML =
-      '<div class="road-brain-label">' + label + (row && row.focus ? '｜近6顆主路' : '') + '</div>' +
-      '<div class="road-brain-side">' + sideText + '</div>' +
-      '<div class="road-brain-meta">規律 ' + mode + '｜龍 ' + dragonState + '</div>' +
-      '<div class="road-brain-meta">近6顆 ' + accText + '｜' + formatPct(row ? row.recent6_acc : 0) + '</div>';
-    roadGrid.appendChild(card);
-  });
 }
 
 function render(livePrediction){
@@ -3662,9 +3721,9 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v66.1：雙腦架構 / 下三路雙腦後台統計 / 僅顯示大路摘要 / 仲裁器整合';
+    rb.textContent = 'v66.3：前台僅顯示預判與開龍/斷龍';
     ta.className = 'trend-alert alert-safe';
-    ta.textContent = '📊 預判主體待命中';
+    ta.textContent = '📊 預判結果';
     updateRoadExplain(displayRoads);
     updateDualBrainUI(null);
     S.lastRecSide = 'PASS';
@@ -3682,7 +3741,7 @@ function render(livePrediction){
     om.textContent = '🔒 規律收集中';
     rb.textContent = '暖機保護中（' + S.history.length + '/' + WARMUP_HANDS + '）';
     ta.className = 'trend-alert alert-safe';
-    ta.textContent = '⚠️ 樣本不足，先觀察不下注';
+    ta.textContent = '⚠️ 先觀察';
     updateRoadExplain(displayRoads);
     updateDualBrainUI(livePrediction);
     S.lastRecSide = 'PASS';
@@ -3691,28 +3750,20 @@ function render(livePrediction){
       ob.className = 'oracle-box banker';
       om.textContent = livePrediction.tier === 'STRONG' || livePrediction.tier === 'ULTRA' ? '🔥 強推莊家' : '📌 推薦莊家';
       ta.className = livePrediction.tier === 'STRONG' || livePrediction.tier === 'ULTRA' ? 'trend-alert alert-high' : 'trend-alert alert-info';
-      ta.textContent = '五路支持 ' + livePrediction.alignedB + '/5｜分差 ' + livePrediction.gap;
+      ta.textContent = '📌 預判結果';
     }else if(livePrediction.decision === 'P'){
       ob.className = 'oracle-box player';
       om.textContent = livePrediction.tier === 'STRONG' || livePrediction.tier === 'ULTRA' ? '🔥 強推閒家' : '📌 推薦閒家';
       ta.className = livePrediction.tier === 'STRONG' || livePrediction.tier === 'ULTRA' ? 'trend-alert alert-high' : 'trend-alert alert-info';
-      ta.textContent = '五路支持 ' + livePrediction.alignedP + '/5｜分差 ' + livePrediction.gap;
+      ta.textContent = '📌 預判結果';
     }else{
       ob.className = 'oracle-box pass';
       om.textContent = '🛡️ 觀望 (PASS)';
       ta.className = livePrediction.reasons.some(function(x){ return /過熱|禁追/.test(x); }) ? 'trend-alert alert-warn' : 'trend-alert alert-safe';
-      ta.textContent = livePrediction.reasons[0] || '結構不足，建議等待';
+      ta.textContent = '🛡️ 觀望';
     }
 
-    const tc = remain > 0 ? (S.runningCount / Math.max(0.5, remain / 52)).toFixed(2) : '0.00';
-    const ev = livePrediction.decision === 'B' ? livePrediction.ev.B : livePrediction.decision === 'P' ? livePrediction.ev.P : 0;
-    const tauShow = Number.isFinite(livePrediction.effectiveTau) ? livePrediction.effectiveTau : livePrediction.tau;
-
-    rb.innerHTML =
-      'Tier: <b>' + livePrediction.tier + '</b>｜TC: ' + tc +
-      '｜Tau*: ' + tauShow.toFixed(4) +
-      '｜EV: ' + ev.toFixed(4) +
-      '｜理由：' + livePrediction.reasons.join(' / ');
+    rb.textContent = 'v66.3：前台僅顯示預判與開龍/斷龍';
 
     updateRoadExplain(displayRoads);
     updateDualBrainUI(livePrediction);
@@ -4028,7 +4079,7 @@ async function exportDB(){
     normalizeLabSnapshots();
 
     const payload = {
-      version:'v66.1',
+      version:'v66.2',
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
@@ -4039,7 +4090,7 @@ async function exportDB(){
     };
     const json = JSON.stringify(payload, null, 2);
     const blob = new Blob([json], { type:'application/json' });
-    const fileName = 'bac_v66_1_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
+    const fileName = 'bac_v66_3_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
 
     if(window.showSaveFilePicker){
       try{
@@ -4066,7 +4117,7 @@ async function exportDB(){
         await navigator.share({
           files:[file],
           title:'百家樂資料匯出',
-          text:'bac v66.1 匯出資料'
+          text:'bac v66.2 匯出資料'
         });
         return;
       }
@@ -4118,7 +4169,7 @@ function importDB(event){
       let recoveredByMaterialized = false;
 
       const tempLab = {
-        schema_version:'v66.1',
+        schema_version:'v66.3',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:[]
@@ -4154,7 +4205,7 @@ function importDB(event){
       if(!validateOpenShoeConsistency(LabStore, S)){
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v66.1',
+            schema_version:'v66.3',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:[]
@@ -4167,7 +4218,7 @@ function importDB(event){
           const fallbackShoes = materializeAllShoes();
           if(fallbackShoes.length){
             LabStore = {
-              schema_version:'v66.1',
+              schema_version:'v66.3',
               rawShoes:fallbackShoes,
               currentOpenShoe:null,
               experiments:[]
@@ -4193,8 +4244,8 @@ function importDB(event){
 
       alert(
         recoveredByMaterialized
-          ? '✅ 匯入成功：已用 materializedShoes 回復資料；舊版側注欄位已停用並升版到 v66.1。'
-          : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料，舊版側注欄位已停用並升版到 v66.1。'
+          ? '✅ 匯入成功：已用 materializedShoes 回復資料；舊版側注欄位已停用並升版到 v66.2。'
+          : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料，舊版側注欄位已停用並升版到 v66.2。'
       );
     }catch(err){
       console.error(err);
@@ -4249,9 +4300,9 @@ function invokeQuantLab(){
   });
 
   const result = {
-    version:'v66.1',
+    version:'v66.2',
     generated_at:new Date().toISOString(),
-    replay_model_id:'dual_brain_v66_1',
+    replay_model_id:'dual_brain_v66_3',
     shoes:shoeRows.length,
     original:UnifiedAudit.original,
     replay:UnifiedAudit.replay,
@@ -4267,7 +4318,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v66.1 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v66.2 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     '全部現版: ' + result.replay.hits + '/' + result.replay.bets + '｜' + (result.replay.returnSum >= 0 ? '+' : '') + result.replay.returnSum.toFixed(2) + '\n' +
@@ -4336,7 +4387,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v66.1',
+        schema_version:'v66.3',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
