@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v65.8 Predictive Transition Engine</title>
+  <title>百家樂量化終端 - v66.1 Dual-Brain Predictive Engine</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -354,6 +354,42 @@
     .db-actions{display:grid; grid-template-columns:1fr 1fr; gap:10px}
     .db-actions button{border:none; border-radius:10px; padding:12px; font-weight:900; cursor:pointer; touch-action:manipulation}
 
+
+    .brain-panel-grid{
+      display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px;
+    }
+    .brain-card{
+      background:#0d0d11; border:1px solid #2b2b33; border-radius:12px; padding:6px 7px; min-height:76px;
+      display:flex; flex-direction:column; gap:4px;
+    }
+    .brain-card .brain-title{
+      font-size:9px; font-weight:950; color:var(--muted); letter-spacing:.2px; text-transform:uppercase;
+    }
+    .brain-main-line{
+      font-size:11px; font-weight:900; color:#f4f4f5; line-height:1.2;
+    }
+    .brain-sub-line{
+      font-size:8px; line-height:1.25; color:#d4d4d8; font-weight:800;
+    }
+    .brain-chip-row{display:flex; flex-wrap:wrap; gap:4px;}
+    .brain-chip{
+      font-size:8px; font-weight:900; padding:2px 5px; border-radius:999px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.05); color:#e4e4e7;
+    }
+    .brain-chip.warn{color:var(--warn); border-color:rgba(249,115,22,.45); background:rgba(249,115,22,.10)}
+    .brain-chip.ok{color:var(--t); border-color:rgba(34,197,94,.45); background:rgba(34,197,94,.10)}
+    .brain-chip.hl{color:var(--hl); border-color:rgba(234,179,8,.45); background:rgba(234,179,8,.12)}
+    .road-brain-grid{
+      display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:4px; margin-top:8px;
+    }
+    .road-brain-card{
+      background:#0d0d11; border:1px solid #2b2b33; border-radius:10px; padding:5px 4px; min-height:58px;
+      display:flex; flex-direction:column; gap:2px; justify-content:center;
+    }
+    .road-brain-card.focus{border-color:rgba(234,179,8,.55); box-shadow:0 0 0 1px rgba(234,179,8,.20) inset}
+    .road-brain-label{font-size:8px; font-weight:950; text-align:center; color:var(--muted)}
+    .road-brain-side{font-size:9px; font-weight:950; text-align:center; color:#f4f4f5}
+    .road-brain-meta{font-size:7px; line-height:1.2; text-align:center; color:#d4d4d8; font-weight:800}
+
     @media (max-width:1100px){
       .scroll-container{
         grid-template-columns:1fr;
@@ -388,6 +424,9 @@
       .road-pill-card{min-height:30px; padding:3px 2px}
       .road-pill{font-size:7px; padding:2px 3px}
       .road-text{font-size:6px}
+      .brain-panel-grid{grid-template-columns:1fr}
+      .road-brain-grid{grid-template-columns:repeat(2, minmax(0,1fr))}
+      .brain-card{min-height:70px}
 
       .scroll-container{
         padding:7px;
@@ -420,7 +459,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v65.8</span>
+        <span class="version-badge">v66.1</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -434,10 +473,17 @@
     <div id="oracleBox" class="oracle-box pass">
       <div class="trend-alert alert-safe" id="trendAlert">📊 預判主體待命中</div>
       <div class="oracle-main" id="oracleMain">等待輸入</div>
-      <div class="reason-badge" id="reasonBadge">v65.8：精修假穩定高分差 / 非暖機期提前放行過薄 / 保留 jump-revert 安全邊界</div>
+      <div class="reason-badge" id="reasonBadge">v66.1：雙腦架構 / 下三路雙腦後台統計 / 僅顯示大路摘要 / 仲裁器整合</div>
 
       <div class="oracle-road-wrap">
         <div class="road-explain-grid" id="roadExplain"></div>
+
+        <div class="brain-panel-grid">
+          <div class="brain-card" id="patternBrainCard"></div>
+          <div class="brain-card" id="dragonBrainCard"></div>
+        </div>
+        <div class="road-brain-grid" id="roadBrainGrid"></div>
+
       </div>
       </div>
     </div>
@@ -499,7 +545,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v65.8</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v66.1</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -507,7 +553,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v65.7 只在 v65.8 上精修：<b>新增假穩定高分差阻擋、補上非暖機期提前放行過薄阻擋；jump-revert 不再硬加碼，避免誤殺正常跳型</b>。
+        本版 v66.1 以 v65.8 為基礎：<b>保留雙腦架構與下三路雙腦後台統計；下三路腦卡不顯示，只保留大路摘要卡；兩顆大腦平行分析、不直接互改分數</b>。
       </div>
     </div>
 
@@ -542,10 +588,10 @@
   </div>
 
 <script>
-const DB_K = 'bac_v65_8_db';
-const LAB_K = 'bac_v65_8_lab';
-const ST_K = 'bac_v65_8_state';
-const CF_K = 'bac_v65_8_cfg';
+const DB_K = 'bac_v66_1_db';
+const LAB_K = 'bac_v66_1_lab';
+const ST_K = 'bac_v66_1_state';
+const CF_K = 'bac_v66_1_cfg';
 
 const LEGACY_DB_KEYS = ['bac_v65_4_db','bac_v65_3_db','bac_v64_3_db','bac_v64_2_db','bac_v64_db','bac_db_v63','bac_db_v62','bac_db_v61'];
 const LEGACY_LAB_KEYS = ['bac_v65_4_lab','bac_v65_3_lab','bac_v64_3_lab','bac_v64_2_lab','bac_v64_lab','bac_lab_v63','bac_lab_v62','bac_lab_v61'];
@@ -564,10 +610,10 @@ const NAIVE_PRIORS = { B:0.50685, P:0.49315 };
 const PAYOUTS = { B:0.95, P:1.0 };
 
 let BigData = { totalHands:0, patternSamples:0, patterns:{}, acc:{recs:0,hits:0,pushes:0,returnSum:0} };
-let LabStore = { schema_version:'v65.8', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version:'v66.1', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
 let Config = { tau:0.005, nBins:10 };
-let UnifiedAudit = { generated_at:null, replayModelId:'five_road_v65_8', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 } } };
+let UnifiedAudit = { generated_at:null, replayModelId:'dual_brain_v66_1', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0 } } };
 
 let bSt = null, bDB = null, bLab = null;
 let cOrder = ['p1','b1','p2','b2','p3','b3'];
@@ -698,6 +744,68 @@ function normalizeRegimeStateShape(raw){
   };
 }
 
+
+function normalizePatternBrainShape(raw){
+  raw = raw && typeof raw === 'object' ? raw : {};
+  return {
+    label: typeof raw.label === 'string' ? raw.label : '規律腦',
+    mode: typeof raw.mode === 'string' ? raw.mode : '待機',
+    mainSide: raw.mainSide === 'B' || raw.mainSide === 'P' ? raw.mainSide : null,
+    mainConfidence: clamp01(raw.mainConfidence),
+    regularity_score: clamp01(raw.regularity_score),
+    irregularity_score: clamp01(raw.irregularity_score),
+    continue_prob: clamp01(raw.continue_prob),
+    reverse_prob: clamp01(raw.reverse_prob),
+    fake_break_prob: clamp01(raw.fake_break_prob),
+    passRisk: clamp01(raw.passRisk),
+    note: typeof raw.note === 'string' ? raw.note : ''
+  };
+}
+
+function normalizeDragonBrainShape(raw){
+  raw = raw && typeof raw === 'object' ? raw : {};
+  return {
+    label: typeof raw.label === 'string' ? raw.label : '龍腦',
+    dragon_state: typeof raw.dragon_state === 'string' ? raw.dragon_state : '無龍',
+    dragon_side: raw.dragon_side === 'B' || raw.dragon_side === 'P' ? raw.dragon_side : null,
+    dragon_strength: clamp01(raw.dragon_strength),
+    dragon_continue_prob: clamp01(raw.dragon_continue_prob),
+    dragon_break_prob: clamp01(raw.dragon_break_prob),
+    new_dragon_prob: clamp01(raw.new_dragon_prob),
+    dragon_fatigue: clamp01(raw.dragon_fatigue),
+    dragon_is_true: !!raw.dragon_is_true,
+    note: typeof raw.note === 'string' ? raw.note : ''
+  };
+}
+
+function normalizeRoadBrainRows(raw){
+  return Array.isArray(raw) ? raw.map(function(row){
+    row = row && typeof row === 'object' ? row : {};
+    return {
+      label: typeof row.label === 'string' ? row.label : '',
+      side: row.side === 'B' || row.side === 'P' ? row.side : null,
+      recent6_acc: clamp01(row.recent6_acc),
+      recent6_hits: Math.max(0, Math.floor(normalizeFiniteNumber(row.recent6_hits, 0))),
+      sample: Math.max(0, Math.floor(normalizeFiniteNumber(row.sample, 0))),
+      focus: !!row.focus,
+      pattern: normalizePatternBrainShape(row.pattern),
+      dragon: normalizeDragonBrainShape(row.dragon)
+    };
+  }) : [];
+}
+
+function normalizeArbiterShape(raw){
+  raw = raw && typeof raw === 'object' ? raw : {};
+  return {
+    blockByDragonBreak: !!raw.blockByDragonBreak,
+    blockByPatternIrregular: !!raw.blockByPatternIrregular,
+    dominantRoadLabel: typeof raw.dominantRoadLabel === 'string' ? raw.dominantRoadLabel : '',
+    roadFollowSide: raw.roadFollowSide === 'B' || raw.roadFollowSide === 'P' ? raw.roadFollowSide : null,
+    roadFollowBoost: clamp01(raw.roadFollowBoost),
+    consensus: clamp01(raw.consensus)
+  };
+}
+
 function softmaxMap(scores){
   scores = scores || {};
   const keys = Object.keys(scores);
@@ -730,7 +838,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v65.8',
+    snapshot_schema_version:'v66.1',
     tau: tau,
     effectiveTau: Math.max(0, effectiveTau),
     main_decision: normalizeDecision(raw && raw.main_decision),
@@ -774,7 +882,11 @@ function normalizeLivePredictionShape(raw){
     regime_probs: normalizeRegimeProbabilities(raw && raw.regime_probs),
     transition_probs: normalizeTransitionProbabilities(raw && raw.transition_probs),
     energy: normalizeEnergyShape(raw && raw.energy),
-    regime_state: normalizeRegimeStateShape(raw && raw.regime_state)
+    regime_state: normalizeRegimeStateShape(raw && raw.regime_state),
+    brain_pattern: normalizePatternBrainShape(raw && raw.brain_pattern),
+    brain_dragon: normalizeDragonBrainShape(raw && raw.brain_dragon),
+    road_brains: normalizeRoadBrainRows(raw && raw.road_brains),
+    arbiter: normalizeArbiterShape(raw && raw.arbiter)
   };
   if(normalized.reasons.length === 0){
     normalized.reasons = buildNativeReasonList(normalized);
@@ -791,8 +903,8 @@ function normalizeCurrentEvalShape(raw){
   const decision = normalizeDecision(raw.decision);
   let reasons = Array.isArray(raw.reasons) ? raw.reasons.map(function(x){ return String(x); }).filter(Boolean) : [];
   const normalized = {
-    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'five_road_v65_8',
-    replay_schema_version:'v65.8',
+    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'dual_brain_v66_1',
+    replay_schema_version:'v66.1',
     decision: decision,
     tier: typeof raw.tier === 'string' ? raw.tier : (decision === 'PASS' ? 'PASS' : 'MID'),
     tau: tau,
@@ -812,7 +924,11 @@ function normalizeCurrentEvalShape(raw){
     regime_probs: normalizeRegimeProbabilities(raw.regime_probs),
     transition_probs: normalizeTransitionProbabilities(raw.transition_probs),
     energy: normalizeEnergyShape(raw.energy),
-    regime_state: normalizeRegimeStateShape(raw.regime_state)
+    regime_state: normalizeRegimeStateShape(raw.regime_state),
+    brain_pattern: normalizePatternBrainShape(raw.brain_pattern),
+    brain_dragon: normalizeDragonBrainShape(raw.brain_dragon),
+    road_brains: normalizeRoadBrainRows(raw.road_brains),
+    arbiter: normalizeArbiterShape(raw.arbiter)
   };
   if(normalized.reasons.length === 0){
     normalized.reasons = buildNativeReasonList(normalized);
@@ -830,7 +946,7 @@ function normalizeHandRecord(hand){
 
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v65.8',
+    spec_version:'v66.1',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -1343,8 +1459,8 @@ function makeCurrentEvalSnapshot(pred, outcome){
   pred = ensureDecisionReasons(pred || {});
   const winner = outcome && outcome.winner ? outcome.winner : 'T';
   return {
-    model_id:'five_road_v65_8',
-    replay_schema_version:'v65.8',
+    model_id:'dual_brain_v66_1',
+    replay_schema_version:'v66.1',
     decision: pred.decision,
     tier: pred.tier,
     tau: pred.tau,
@@ -1364,7 +1480,11 @@ function makeCurrentEvalSnapshot(pred, outcome){
     regime_probs: normalizeRegimeProbabilities(pred.regime_probs),
     transition_probs: normalizeTransitionProbabilities(pred.transition_probs),
     energy: normalizeEnergyShape(pred.energy),
-    regime_state: normalizeRegimeStateShape(pred.regime_state)
+    regime_state: normalizeRegimeStateShape(pred.regime_state),
+    brain_pattern: normalizePatternBrainShape(pred.brain_pattern),
+    brain_dragon: normalizeDragonBrainShape(pred.brain_dragon),
+    road_brains: normalizeRoadBrainRows(pred.road_brains),
+    arbiter: normalizeArbiterShape(pred.arbiter)
   };
 }
 
@@ -1450,7 +1570,7 @@ function buildUnifiedReplayAudit(shoes){
 
   const summary = {
     generated_at:new Date().toISOString(),
-    replayModelId:'five_road_v65_8',
+    replayModelId:'dual_brain_v66_1',
     replay:makeAuditBucket(),
     original:makeAuditBucket(),
     byVersion:{},
@@ -1749,7 +1869,7 @@ function loadAll(){
       const lab = JSON.parse(labRaw);
       if(lab && typeof lab === 'object'){
         LabStore = {
-          schema_version:'v65.8',
+          schema_version:'v66.1',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1816,9 +1936,9 @@ function captureObservation(state, features, livePrediction, inputs){
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(livePrediction)),
     policy_snapshot: {
-      model_id:'five_road_v65_8',
-      model_id_original:'five_road_v65_8',
-      snapshot_schema_version:'v65.8',
+      model_id:'dual_brain_v66_1',
+      model_id_original:'dual_brain_v66_1',
+      snapshot_schema_version:'v66.1',
       tau: livePrediction.tau,
       effectiveTau: Math.max(0, livePrediction.effectiveTau),
       main_decision: livePrediction.decision,
@@ -1829,8 +1949,8 @@ function captureObservation(state, features, livePrediction, inputs){
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v65.8',
-      original_spec_version:'v65.8',
+      spec_version:'v66.1',
+      original_spec_version:'v66.1',
       snapshot_normalized:true
     }
   };
@@ -2606,6 +2726,207 @@ function getRoadSuite(history){
   return { roads, path };
 }
 
+
+function buildGenericRuns(seq){
+  const runs = [];
+  (seq || []).forEach(function(token){
+    if(token === null || token === undefined) return;
+    if(!runs.length || runs[runs.length - 1].token !== token) runs.push({ token:token, len:1 });
+    else runs[runs.length - 1].len += 1;
+  });
+  return runs;
+}
+
+function mapTokenSide(token, fallback){
+  if(token === 'B' || token === 'R') return fallback || 'B';
+  if(token === 'P' || token === 'Blue') return fallback || 'P';
+  return fallback || null;
+}
+
+function formatPct(v){
+  return (clamp01(v) * 100).toFixed(0) + '%';
+}
+
+function getRoadSignalByLabel(roads, label){
+  return (roads || []).find(function(r){ return r && r.label === label; }) || null;
+}
+
+function buildRoadSequences(history){
+  const pure = (history || []).filter(function(x){ return x && x.w !== 'T'; }).map(function(x){ return x.w; });
+  const meta = buildBigRoadMeta(history || []);
+  const derived = getDerivedRoads(meta);
+  return { big:pure, eye:derived.eye || [], small:derived.small || [], roach:derived.roach || [] };
+}
+
+function analyzePatternBrainSequence(sequence, opts){
+  const label = opts && opts.label ? opts.label : '規律腦';
+  const currentSide = opts && opts.currentSide ? opts.currentSide : null;
+  const seq = (sequence || []).filter(function(x){ return x !== null && x !== undefined; });
+  if(!seq.length){
+    return { label:label, mode:'待機', mainSide:currentSide, mainConfidence:0, regularity_score:0, irregularity_score:1, continue_prob:0.5, reverse_prob:0.5, fake_break_prob:0.18, passRisk:0.72, note:'資料不足' };
+  }
+  const runs = buildGenericRuns(seq);
+  const lens = runs.map(function(r){ return r.len; });
+  const current = runs[runs.length - 1];
+  const avgLen = lens.reduce(function(a,b){ return a + b; }, 0) / lens.length;
+  const altRate = runs.length > 1 ? (runs.length - 1) / Math.max(1, seq.length - 1) : 0;
+  const within1 = lens.filter(function(len){ return len === 1; }).length / lens.length;
+  const within2 = lens.filter(function(len){ return len <= 2; }).length / lens.length;
+  const within3 = lens.filter(function(len){ return len <= 3; }).length / lens.length;
+  const fourPlus = lens.filter(function(len){ return len >= 4; }).length / lens.length;
+  let mode = '混合';
+  if(within1 >= 0.62 && within2 >= 0.82) mode = '單跳';
+  else if(within2 >= 0.74 && fourPlus <= 0.18) mode = '雙跳';
+  else if(within3 >= 0.74 && fourPlus <= 0.22) mode = '三跳';
+  else if(avgLen >= 3.3 || fourPlus >= 0.30) mode = '長龍';
+  else if(altRate >= 0.78 && avgLen <= 2.2) mode = '亂流';
+  const regularity = clamp01(
+    (mode === '長龍' ? 0.62 : mode === '單跳' ? 0.60 : mode === '雙跳' ? 0.58 : mode === '三跳' ? 0.56 : mode === '混合' ? 0.46 : 0.28) +
+    Math.max(0, Math.min(0.18, (current.len - 1) * 0.04)) -
+    Math.max(0, altRate - 0.68) * 0.36 +
+    Math.max(0, fourPlus - 0.22) * (mode === '長龍' ? 0.18 : -0.24)
+  );
+  const irregularity = clamp01(1 - regularity * 0.82 + (mode === '亂流' ? 0.18 : 0) + Math.max(0, altRate - 0.72) * 0.18);
+  let continueProb = clamp01(0.48 + regularity * 0.18 + (mode === '長龍' ? 0.12 : 0) - irregularity * 0.14 + (current.len >= 2 ? 0.04 : -0.02));
+  let fakeBreakProb = clamp01(0.12 + irregularity * 0.28 + ((mode === '單跳' || mode === '雙跳' || mode === '三跳') && current.len >= 3 ? 0.16 : 0));
+  if(mode === '單跳' && current.len >= 2){ continueProb -= 0.12; fakeBreakProb += 0.18; }
+  if(mode === '雙跳' && current.len >= 3){ continueProb -= 0.10; fakeBreakProb += 0.16; }
+  if(mode === '三跳' && current.len >= 4){ continueProb -= 0.08; fakeBreakProb += 0.12; }
+  if(mode === '長龍' && current.len >= 5) continueProb += 0.06;
+  continueProb = clamp01(continueProb);
+  const reverseProb = clamp01(1 - continueProb + irregularity * 0.12 + fakeBreakProb * 0.08);
+  const confidence = clamp01(0.28 + regularity * 0.44 + Math.min(0.18, runs.length / 18));
+  const passRisk = clamp01(irregularity * 0.52 + fakeBreakProb * 0.28 + (current.len <= 1 && mode === '亂流' ? 0.14 : 0));
+  const note = mode === '長龍' ? '規律腦判定長龍延續結構' : mode === '亂流' ? '規律腦判定不規律偏高' : '規律腦判定' + mode + '主體';
+  return {
+    label:label,
+    mode:mode,
+    mainSide:currentSide || null,
+    mainConfidence:confidence,
+    regularity_score:regularity,
+    irregularity_score:irregularity,
+    continue_prob:continueProb,
+    reverse_prob:reverseProb,
+    fake_break_prob:fakeBreakProb,
+    passRisk:passRisk,
+    note:note
+  };
+}
+
+function analyzeDragonBrainSequence(sequence, opts){
+  const label = opts && opts.label ? opts.label : '龍腦';
+  const currentSide = opts && opts.currentSide ? opts.currentSide : null;
+  const seq = (sequence || []).filter(function(x){ return x !== null && x !== undefined; });
+  const runs = buildGenericRuns(seq);
+  if(!runs.length){
+    return { label:label, dragon_state:'無龍', dragon_side:currentSide || null, dragon_strength:0, dragon_continue_prob:0.34, dragon_break_prob:0.56, new_dragon_prob:0.20, dragon_fatigue:0, dragon_is_true:false, note:'尚未形成龍' };
+  }
+  const current = runs[runs.length - 1];
+  const altRate = runs.length > 1 ? (runs.length - 1) / Math.max(1, seq.length - 1) : 0;
+  const sameCompleted = runs.slice(0, -1).filter(function(run){ return run.token === current.token; });
+  const longer = sameCompleted.filter(function(run){ return run.len >= current.len; }).length;
+  let continueProb = current.len < 2 ? 0.34 : clamp01((longer + 0.9) / (sameCompleted.length + 1.8) + current.len * 0.05 - altRate * 0.16 + (current.len >= 4 ? 0.08 : 0));
+  let breakProb = current.len < 2 ? 0.56 : clamp01(1 - continueProb + (current.len >= 5 ? 0.10 : 0) + altRate * 0.08);
+  const fatigue = clamp01((current.len >= 4 ? (current.len - 3) * 0.12 : 0) + Math.max(0, breakProb - continueProb) * 0.8);
+  let state = '無龍';
+  if(current.len >= 2) state = '初龍';
+  if(current.len >= 4) state = '成龍';
+  if(current.len >= 6) state = '強龍';
+  if(fatigue >= 0.62 || (current.len >= 4 && breakProb > continueProb + 0.12)) state = '疲勞龍';
+  const dragonStrength = clamp01((current.len / 6) * 0.54 + continueProb * 0.38 - fatigue * 0.14);
+  const newDragonProb = clamp01((state === '無龍' ? 0.34 : breakProb * 0.46) + Math.max(0, altRate - 0.70) * 0.22);
+  const dragonIsTrue = current.len >= 3 && continueProb >= 0.48 && fatigue < 0.72;
+  const side = mapTokenSide(current.token, currentSide);
+  const note = state === '無龍' ? '龍腦判定無龍' : ('龍腦判定' + state + (fatigue >= 0.62 ? '，斷龍風險升高' : ''));
+  return {
+    label:label,
+    dragon_state:state,
+    dragon_side:side,
+    dragon_strength:dragonStrength,
+    dragon_continue_prob:continueProb,
+    dragon_break_prob:breakProb,
+    new_dragon_prob:newDragonProb,
+    dragon_fatigue:fatigue,
+    dragon_is_true:dragonIsTrue,
+    note:note
+  };
+}
+
+function computeRecentRoadEffectiveness(history, label){
+  const rows = [];
+  for(let i=2;i<history.length-1;i++){
+    const prefix = history.slice(0, i);
+    const next = history[i];
+    if(!next || next.w === 'T') continue;
+    const sig = getRoadSignalByLabel(getRoadSuite(prefix).roads, label);
+    if(!sig || !sig.side) continue;
+    rows.push({ hit:sig.side === next.w ? 1 : 0, side:sig.side });
+  }
+  const recent = rows.slice(-6);
+  const hits = recent.reduce(function(a,b){ return a + b.hit; }, 0);
+  return { sample:recent.length, hits:hits, recent6_acc:recent.length ? hits / recent.length : 0 };
+}
+
+function chooseDominantLowerRoad(roadRows){
+  const cands = (roadRows || []).filter(function(row){ return ['大眼','小路','曱甴'].indexOf(row.label) !== -1 && row.sample >= 4 && row.side; }).sort(function(a,b){
+    return (b.recent6_acc - a.recent6_acc) || (b.pattern.regularity_score - a.pattern.regularity_score);
+  });
+  if(!cands.length) return null;
+  const best = cands[0];
+  const second = cands[1] || null;
+  if(best.recent6_acc >= 0.67 && (!second || best.recent6_acc - second.recent6_acc >= 0.17)){
+    return Object.assign({}, best, { followRoad:true });
+  }
+  return null;
+}
+
+function analyzeDualBrainSystem(history, suite){
+  const seqs = buildRoadSequences(history);
+  const defs = [
+    { label:'大路', seq:seqs.big },
+    { label:'大眼', seq:seqs.eye },
+    { label:'小路', seq:seqs.small },
+    { label:'曱甴', seq:seqs.roach }
+  ];
+  const roadRows = defs.map(function(def){
+    const signal = getRoadSignalByLabel(suite.roads, def.label);
+    const pattern = analyzePatternBrainSequence(def.seq, { label:def.label + ' 規律腦', currentSide:signal && signal.side ? signal.side : null });
+    const dragon = analyzeDragonBrainSequence(def.seq, { label:def.label + ' 龍腦', currentSide:signal && signal.side ? signal.side : null });
+    const eff = computeRecentRoadEffectiveness(history, def.label);
+    return {
+      label:def.label,
+      side:signal && signal.side ? signal.side : null,
+      pattern:pattern,
+      dragon:dragon,
+      recent6_acc:eff.recent6_acc,
+      recent6_hits:eff.hits,
+      sample:eff.sample,
+      focus:false
+    };
+  });
+  const mainRow = roadRows[0];
+  const dominantLowerRoad = chooseDominantLowerRoad(roadRows);
+  if(dominantLowerRoad){
+    roadRows.forEach(function(row){ if(row.label === dominantLowerRoad.label) row.focus = true; });
+  }
+  const consensusCount = roadRows.filter(function(row){ return row.side && row.side === mainRow.side; }).length;
+  const arbiter = {
+    blockByDragonBreak: mainRow.dragon.dragon_state !== '無龍' && mainRow.dragon.dragon_break_prob >= 0.62 && mainRow.dragon.dragon_break_prob > mainRow.dragon.dragon_continue_prob + 0.06,
+    blockByPatternIrregular: mainRow.pattern.passRisk >= 0.66 && mainRow.pattern.regularity_score <= 0.46,
+    dominantRoadLabel: dominantLowerRoad ? dominantLowerRoad.label : '',
+    roadFollowSide: dominantLowerRoad ? dominantLowerRoad.side : null,
+    roadFollowBoost: dominantLowerRoad ? clamp01(0.20 + dominantLowerRoad.recent6_acc * 0.52 + dominantLowerRoad.pattern.regularity_score * 0.12) : 0,
+    consensus: clamp01(consensusCount / 4)
+  };
+  return {
+    patternMain: mainRow.pattern,
+    dragonMain: mainRow.dragon,
+    roadBrains: roadRows,
+    dominantLowerRoad: dominantLowerRoad,
+    arbiter: arbiter
+  };
+}
+
 function calcEVFromProbs(probs){
   return {
     B: probs.B * PAYOUTS.B - probs.P,
@@ -2621,6 +2942,12 @@ function executePolicyChain(features, patternDb, tau){
   const suite = getRoadSuite(hist);
   const path = suite.path;
   const roads = suite.roads;
+  const dualBrain = analyzeDualBrainSystem(hist, suite);
+  const patternBrain = dualBrain.patternMain;
+  const dragonBrain = dualBrain.dragonMain;
+  const roadBrains = dualBrain.roadBrains;
+  const dominantLowerRoad = dualBrain.dominantLowerRoad;
+  const arbiter = dualBrain.arbiter;
   const dataThin = (patternDb.totalHands || 0) < DATA_THIN_TOTALHANDS;
 
   let scoreB = 0, scoreP = 0, alignedB = 0, alignedP = 0;
@@ -2673,6 +3000,13 @@ function executePolicyChain(features, patternDb, tau){
   const chaosMode = detectChaosMode(path, regimeProbs, histB, histP, energy, path.chop_count >= 6 ? 2 : path.chop_count >= 4 ? 1 : 0);
   scoreB += energy.B_energy * (chaosMode.active ? 0.16 : 0.26);
   scoreP += energy.P_energy * (chaosMode.active ? 0.16 : 0.26);
+
+  if(patternBrain.mainSide === 'B') scoreB += 0.24 + patternBrain.mainConfidence * 0.52;
+  if(patternBrain.mainSide === 'P') scoreP += 0.24 + patternBrain.mainConfidence * 0.52;
+  if(dragonBrain.dragon_side === 'B' && dragonBrain.dragon_state !== '無龍') scoreB += Math.max(-0.55, Math.min(0.95, (dragonBrain.dragon_continue_prob - dragonBrain.dragon_break_prob) * 1.9 + dragonBrain.dragon_strength * 0.38));
+  if(dragonBrain.dragon_side === 'P' && dragonBrain.dragon_state !== '無龍') scoreP += Math.max(-0.55, Math.min(0.95, (dragonBrain.dragon_continue_prob - dragonBrain.dragon_break_prob) * 1.9 + dragonBrain.dragon_strength * 0.38));
+  if(dominantLowerRoad && dominantLowerRoad.followRoad && dominantLowerRoad.side === 'B') scoreB += 0.18 + arbiter.roadFollowBoost * 0.52;
+  if(dominantLowerRoad && dominantLowerRoad.followRoad && dominantLowerRoad.side === 'P') scoreP += 0.18 + arbiter.roadFollowBoost * 0.52;
 
   const gapNow = Math.abs(scoreB - scoreP);
   const predictiveReleaseB =
@@ -2746,7 +3080,11 @@ function executePolicyChain(features, patternDb, tau){
       regime_probs:regimeProbs,
       transition_probs:{ nextB:histB.nextB, nextP:histP.nextP, continue_same:histB.continue_same, break_to_opposite:histP.continue_same, fake_breakout:Math.max(histB.fake_breakout, histP.fake_breakout), true_transition:Math.max(histB.true_transition, histP.true_transition) },
       energy:energy,
-      regime_state:deriveRegimeState(path, regimeProbs, null, null, chaosMode)
+      regime_state:deriveRegimeState(path, regimeProbs, null, null, chaosMode),
+      brain_pattern:patternBrain,
+      brain_dragon:dragonBrain,
+      road_brains:roadBrains,
+      arbiter:arbiter
     });
   }
 
@@ -2775,6 +3113,35 @@ function executePolicyChain(features, patternDb, tau){
   const oppositeNextProb = normalizeFiniteNumber(oppositeHist && oppositeHist.nextSideProb, 0.5);
   const chosenProbGap = Math.abs(chosenNextProb - oppositeNextProb);
   const transitionLead = candidateHist ? (normalizeFiniteNumber(candidateHist.true_transition, 0) - normalizeFiniteNumber(candidateHist.fake_breakout, 0)) : 0;
+
+  const dragonBrainBreakBlock = !!(
+    candidate !== 'PASS' &&
+    dragonBrain.dragon_side === candidate &&
+    dragonBrain.dragon_state !== '無龍' &&
+    dragonBrain.dragon_break_prob >= 0.62 &&
+    dragonBrain.dragon_break_prob > dragonBrain.dragon_continue_prob + 0.06 &&
+    !reversalCandidate
+  );
+
+  const patternBrainIrregularBlock = !!(
+    candidate !== 'PASS' &&
+    patternBrain.passRisk >= 0.66 &&
+    patternBrain.regularity_score <= 0.46 &&
+    chosenProbGap < 0.055 &&
+    transitionLead < 0.06
+  );
+
+  const lowerRoadDisagreeBlock = !!(
+    candidate !== 'PASS' &&
+    dominantLowerRoad && dominantLowerRoad.followRoad && dominantLowerRoad.side && dominantLowerRoad.side !== candidate &&
+    dominantLowerRoad.recent6_acc >= 0.83 && dominantLowerRoad.sample >= 5 && chosenProbGap < 0.06
+  );
+
+  const lowerRoadFollowBoost = !!(
+    candidate !== 'PASS' &&
+    dominantLowerRoad && dominantLowerRoad.followRoad && dominantLowerRoad.side === candidate &&
+    dominantLowerRoad.recent6_acc >= 0.67
+  );
 
   const dragonTransition = getDragonTransitionSignal(path, candidate, aligned, oppositeAligned, gap, chopRisk, candidateEVPreview, dataThin);
   const dragonBreakCooldown = getDragonBreakCooldown(path, candidate, aligned, oppositeAligned, gap, candidateEVPreview);
@@ -2988,6 +3355,12 @@ function executePolicyChain(features, patternDb, tau){
     reasons.push('五路無明確主方向');
   }else if(aligned < 2){
     reasons.push('支持路數不足');
+  }else if(dragonBrainBreakBlock){
+    reasons.push('龍腦判定斷龍風險高');
+  }else if(patternBrainIrregularBlock){
+    reasons.push('規律腦判定假穩定，先觀望');
+  }else if(lowerRoadDisagreeBlock){
+    reasons.push('下三路近6顆優勢路與主方向衝突');
   }else if(warmupProbGuardFail){
     reasons.push('暖機優勢不足，先觀察');
   }else if(!predictiveCore && !predictiveStrong && !warmupSoft && !strongEarlyDragonRelease){
@@ -3077,6 +3450,8 @@ function executePolicyChain(features, patternDb, tau){
       }else if(predictiveStrong){
         tier = 'STRONG';
         reasons.push('transition / regime / energy 共振放行');
+      }else if(lowerRoadFollowBoost){
+        tier = aligned >= 4 ? 'STRONG' : 'MID';
       }else if(aligned >= 4 && gap >= 3){
         tier = 'STRONG';
       }else if(aligned >= 3 && gap >= 2){
@@ -3091,7 +3466,10 @@ function executePolicyChain(features, patternDb, tau){
       if(dragonTransition && dragonTransition.text && (dragonTransition.state === 'confirmed' || dragonTransition.state === 'hold') && !reasons.some(function(x){ return x === dragonTransition.text; })){
         reasons.push(dragonTransition.text);
       }
-      if((warmupSoft || strongEarlyDragonRelease) && !chaosMode.blockBet) reasons.push('暖機僅限趨勢成形後放行');
+      if(lowerRoadFollowBoost && dominantLowerRoad) reasons.push('下三路近6顆以' + dominantLowerRoad.label + '最穩');
+      reasons.push('規律腦：' + patternBrain.mode + '｜規律度 ' + formatPct(patternBrain.regularity_score));
+      if(dragonBrain.dragon_state !== '無龍') reasons.push('龍腦：' + dragonBrain.dragon_state + '｜續龍 ' + formatPct(dragonBrain.dragon_continue_prob) + '｜斷龍 ' + formatPct(dragonBrain.dragon_break_prob));
+      if((warmupSoft || strongEarlyDragonRelease) && !chaosMode.blockBet && features.F_Path.history_len < WARMUP_HANDS) reasons.push('暖機僅限趨勢成形後放行');
       if(dataThin && !chaosMode.blockBet) reasons.push('Pattern 樣本薄，偏向路結構');
       if(regimeProbs.dragon >= 0.34 && trendContinuing) reasons.push('歷史轉場機率支持龍型延續');
       if((regimeProbs.single || 0) + (regimeProbs.double || 0) + (regimeProbs.triple || 0) >= 0.52 && reversalCandidate) reasons.push('歷史跳型回歸機率偏高（動態 gap 驗證）');
@@ -3129,7 +3507,11 @@ function executePolicyChain(features, patternDb, tau){
     regime_probs:regimeProbs,
     transition_probs:transitionProbs,
     energy:energy,
-    regime_state:regimeState
+    regime_state:regimeState,
+    brain_pattern:patternBrain,
+    brain_dragon:dragonBrain,
+    road_brains:roadBrains,
+    arbiter:arbiter
   });
 }
 
@@ -3208,6 +3590,54 @@ function updateDBUI(){
     '<div class="db-stat-item"><span>Replay Model</span><span style="font-size:10px;">' + UnifiedAudit.replayModelId + '</span></div>';
 }
 
+
+function updateDualBrainUI(pred){
+  const patternCard = document.getElementById('patternBrainCard');
+  const dragonCard = document.getElementById('dragonBrainCard');
+  const roadGrid = document.getElementById('roadBrainGrid');
+  const pattern = pred && pred.brain_pattern ? normalizePatternBrainShape(pred.brain_pattern) : normalizePatternBrainShape(null);
+  const dragon = pred && pred.brain_dragon ? normalizeDragonBrainShape(pred.brain_dragon) : normalizeDragonBrainShape(null);
+  const roads = pred && pred.road_brains ? normalizeRoadBrainRows(pred.road_brains) : [];
+  const arbiter = pred && pred.arbiter ? normalizeArbiterShape(pred.arbiter) : normalizeArbiterShape(null);
+
+  patternCard.innerHTML =
+    '<div class="brain-title">第一顆大腦｜規律腦</div>' +
+    '<div class="brain-main-line">' + (pattern.mainSide === 'B' ? '偏莊' : pattern.mainSide === 'P' ? '偏閒' : '觀望') + '｜' + pattern.mode + '</div>' +
+    '<div class="brain-sub-line">規律度 ' + formatPct(pattern.regularity_score) + '｜不規律 ' + formatPct(pattern.irregularity_score) + '｜假突破 ' + formatPct(pattern.fake_break_prob) + '</div>' +
+    '<div class="brain-chip-row">' +
+      '<span class="brain-chip ' + (pattern.passRisk >= 0.60 ? 'warn' : 'ok') + '">PASS風險 ' + formatPct(pattern.passRisk) + '</span>' +
+      '<span class="brain-chip">延續 ' + formatPct(pattern.continue_prob) + '</span>' +
+      '<span class="brain-chip">反轉 ' + formatPct(pattern.reverse_prob) + '</span>' +
+    '</div>';
+
+  dragonCard.innerHTML =
+    '<div class="brain-title">第二顆大腦｜龍腦</div>' +
+    '<div class="brain-main-line">' + dragon.dragon_state + (dragon.dragon_side ? '｜' + (dragon.dragon_side === 'B' ? '莊龍' : '閒龍') : '') + '</div>' +
+    '<div class="brain-sub-line">續龍 ' + formatPct(dragon.dragon_continue_prob) + '｜斷龍 ' + formatPct(dragon.dragon_break_prob) + '｜新龍 ' + formatPct(dragon.new_dragon_prob) + '</div>' +
+    '<div class="brain-chip-row">' +
+      '<span class="brain-chip ' + (dragon.dragon_break_prob > dragon.dragon_continue_prob ? 'warn' : 'ok') + '">龍強度 ' + formatPct(dragon.dragon_strength) + '</span>' +
+      '<span class="brain-chip">疲勞 ' + formatPct(dragon.dragon_fatigue) + '</span>' +
+      '<span class="brain-chip ' + (arbiter.blockByDragonBreak ? 'warn' : 'hl') + '">' + (arbiter.blockByDragonBreak ? '斷龍風險高' : '龍腦可追蹤') + '</span>' +
+    '</div>';
+
+  roadGrid.innerHTML = '';
+  ['大路'].forEach(function(label){
+    const row = roads.find(function(x){ return x.label === label; });
+    const card = document.createElement('div');
+    card.className = 'road-brain-card' + (row && row.focus ? ' focus' : '');
+    const sideText = row && row.side ? (row.side === 'B' ? '偏莊' : '偏閒') : '觀望';
+    const accText = row ? (row.recent6_hits + '/' + row.sample) : '0/0';
+    const mode = row ? row.pattern.mode : '待機';
+    const dragonState = row ? row.dragon.dragon_state : '無龍';
+    card.innerHTML =
+      '<div class="road-brain-label">' + label + (row && row.focus ? '｜近6顆主路' : '') + '</div>' +
+      '<div class="road-brain-side">' + sideText + '</div>' +
+      '<div class="road-brain-meta">規律 ' + mode + '｜龍 ' + dragonState + '</div>' +
+      '<div class="road-brain-meta">近6顆 ' + accText + '｜' + formatPct(row ? row.recent6_acc : 0) + '</div>';
+    roadGrid.appendChild(card);
+  });
+}
+
 function render(livePrediction){
 
   renderRoads();
@@ -3232,10 +3662,11 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v65.8：精修假穩定高分差 / 非暖機期提前放行過薄 / 保留 jump-revert 安全邊界';
+    rb.textContent = 'v66.1：雙腦架構 / 下三路雙腦後台統計 / 僅顯示大路摘要 / 仲裁器整合';
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '📊 預判主體待命中';
     updateRoadExplain(displayRoads);
+    updateDualBrainUI(null);
     S.lastRecSide = 'PASS';
   }else if(S.isLegacyPartial){
     ob.className = 'oracle-box degraded';
@@ -3244,6 +3675,7 @@ function render(livePrediction){
     ta.className = 'trend-alert alert-warn';
     ta.textContent = '⚠️ 舊版相容模式：禁止新局結算';
     updateRoadExplain(displayRoads);
+    updateDualBrainUI(livePrediction);
     S.lastRecSide = 'PASS';
   }else if(livePrediction.isWarmup){
     ob.className = 'oracle-box locked';
@@ -3252,6 +3684,7 @@ function render(livePrediction){
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '⚠️ 樣本不足，先觀察不下注';
     updateRoadExplain(displayRoads);
+    updateDualBrainUI(livePrediction);
     S.lastRecSide = 'PASS';
   }else{
     if(livePrediction.decision === 'B'){
@@ -3282,6 +3715,7 @@ function render(livePrediction){
       '｜理由：' + livePrediction.reasons.join(' / ');
 
     updateRoadExplain(displayRoads);
+    updateDualBrainUI(livePrediction);
     S.lastRecSide = livePrediction.decision;
   }
 
@@ -3594,7 +4028,7 @@ async function exportDB(){
     normalizeLabSnapshots();
 
     const payload = {
-      version:'v65.8',
+      version:'v66.1',
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
@@ -3605,7 +4039,7 @@ async function exportDB(){
     };
     const json = JSON.stringify(payload, null, 2);
     const blob = new Blob([json], { type:'application/json' });
-    const fileName = 'bac_v65_8_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
+    const fileName = 'bac_v66_1_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
 
     if(window.showSaveFilePicker){
       try{
@@ -3632,7 +4066,7 @@ async function exportDB(){
         await navigator.share({
           files:[file],
           title:'百家樂資料匯出',
-          text:'bac v65.8 匯出資料'
+          text:'bac v66.1 匯出資料'
         });
         return;
       }
@@ -3684,7 +4118,7 @@ function importDB(event){
       let recoveredByMaterialized = false;
 
       const tempLab = {
-        schema_version:'v65.8',
+        schema_version:'v66.1',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:[]
@@ -3720,7 +4154,7 @@ function importDB(event){
       if(!validateOpenShoeConsistency(LabStore, S)){
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v65.8',
+            schema_version:'v66.1',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:[]
@@ -3733,7 +4167,7 @@ function importDB(event){
           const fallbackShoes = materializeAllShoes();
           if(fallbackShoes.length){
             LabStore = {
-              schema_version:'v65.8',
+              schema_version:'v66.1',
               rawShoes:fallbackShoes,
               currentOpenShoe:null,
               experiments:[]
@@ -3759,8 +4193,8 @@ function importDB(event){
 
       alert(
         recoveredByMaterialized
-          ? '✅ 匯入成功：已用 materializedShoes 回復資料；舊版側注欄位已停用並升版到 v65.8。'
-          : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料，舊版側注欄位已停用並升版到 v65.8。'
+          ? '✅ 匯入成功：已用 materializedShoes 回復資料；舊版側注欄位已停用並升版到 v66.1。'
+          : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料，舊版側注欄位已停用並升版到 v66.1。'
       );
     }catch(err){
       console.error(err);
@@ -3815,9 +4249,9 @@ function invokeQuantLab(){
   });
 
   const result = {
-    version:'v65.8',
+    version:'v66.1',
     generated_at:new Date().toISOString(),
-    replay_model_id:'five_road_v65_8',
+    replay_model_id:'dual_brain_v66_1',
     shoes:shoeRows.length,
     original:UnifiedAudit.original,
     replay:UnifiedAudit.replay,
@@ -3833,7 +4267,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v65.8 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v66.1 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     '全部現版: ' + result.replay.hits + '/' + result.replay.bets + '｜' + (result.replay.returnSum >= 0 ? '+' : '') + result.replay.returnSum.toFixed(2) + '\n' +
@@ -3902,7 +4336,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v65.8',
+        schema_version:'v66.1',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
