@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v67.4 Tri-Brain Consolidated Engine</title>
+  <title>百家樂量化終端 - v67.5 Tri-Brain Consolidated Engine</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -431,7 +431,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v67.4</span>
+        <span class="version-badge">v67.5</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -515,7 +515,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v67.4</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v67.5</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -523,7 +523,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v67.4 維持目前介面，只修正：<b>高能量乾淨初龍不再被硬擋、假穩定改看 gap 與能量落差、4/5/5/5 共振改成先觀察再封鎖</b>。
+        本版 v67.5 維持目前介面，只修正：<b>初龍加入能量豁免、假穩定僅擋虛胖高分差、4/5/5/5 共振在低亂流強能量時改為先觀察</b>。
       </div>
     </div>
 
@@ -562,10 +562,10 @@
   </div>
 
 <script>
-const DB_K = 'bac_v67_4_db';
-const LAB_K = 'bac_v67_4_lab';
-const ST_K = 'bac_v67_4_state';
-const CF_K = 'bac_v67_4_cfg';
+const DB_K = 'bac_v67_5_db';
+const LAB_K = 'bac_v67_5_lab';
+const ST_K = 'bac_v67_5_state';
+const CF_K = 'bac_v67_5_cfg';
 
 const WARMUP_HANDS = 15;
 const WARMUP_SOFT_START = 6;
@@ -586,10 +586,10 @@ const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v67.4', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version:'v67.5', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10 };
-let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v67_4', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
+let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v67_5', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
 
 let bSt = null, bDB = null, bLab = null;
 let cOrder = ['p1','b1','p2','b2','p3','b3'];
@@ -740,7 +740,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v67.4',
+    snapshot_schema_version:'v67.5',
     tau: tau,
     effectiveTau: effectiveTau,
     s: normalizeFiniteNumber(raw && raw.s, Config.side),
@@ -809,8 +809,8 @@ function normalizeCurrentEvalShape(raw){
   const decision = normalizeDecision(raw.decision);
   let reasons = Array.isArray(raw.reasons) ? raw.reasons.map(function(x){ return String(x); }).filter(Boolean) : [];
   const normalized = {
-    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v67_4',
-    replay_schema_version:'v67.4',
+    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v67_5',
+    replay_schema_version:'v67.5',
     decision: decision,
     tier: typeof raw.tier === 'string' ? raw.tier : (decision === 'PASS' ? 'PASS' : 'MID'),
     tau: tau,
@@ -853,7 +853,7 @@ function normalizeHandRecord(hand){
 
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v67.4',
+    spec_version:'v67.5',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -1411,8 +1411,8 @@ function makeCurrentEvalSnapshot(pred, sideSignals, outcome){
   pred = ensureDecisionReasons(pred || {});
   const winner = outcome && outcome.winner ? outcome.winner : 'T';
   return {
-    model_id:'tri_brain_v67_4',
-    replay_schema_version:'v67.4',
+    model_id:'tri_brain_v67_5',
+    replay_schema_version:'v67.5',
     decision: pred.decision,
     tier: pred.tier,
     tau: pred.tau,
@@ -1528,7 +1528,7 @@ function buildUnifiedReplayAudit(shoes){
 
   const summary = {
     generated_at:new Date().toISOString(),
-    replayModelId:'tri_brain_v67_4',
+    replayModelId:'tri_brain_v67_5',
     replay:makeAuditBucket(),
     original:makeAuditBucket(),
     byVersion:{},
@@ -1879,7 +1879,7 @@ function loadAll(){
       const lab = JSON.parse(labRaw);
       if(lab && typeof lab === 'object'){
         LabStore = {
-          schema_version:'v67.4',
+          schema_version:'v67.5',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1892,7 +1892,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v67.4',
+          schema_version:'v67.5',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1970,9 +1970,9 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(livePrediction)),
     policy_snapshot: {
-      model_id:'tri_brain_v67_4',
-      model_id_original:'tri_brain_v67_4',
-      snapshot_schema_version:'v67.4',
+      model_id:'tri_brain_v67_5',
+      model_id_original:'tri_brain_v67_5',
+      snapshot_schema_version:'v67.5',
       tau: livePrediction.tau,
       effectiveTau: livePrediction.effectiveTau,
       s: Config.side,
@@ -1987,8 +1987,8 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v67.4',
-      original_spec_version:'v67.4',
+      spec_version:'v67.5',
+      original_spec_version:'v67.5',
       snapshot_normalized:true
     }
   };
@@ -3219,8 +3219,9 @@ function analyzeRiskBrain(features, brain1, dragon){
   const dragonState = dragon && typeof dragon.state === 'string' ? dragon.state : 'none';
   const dragonConfirmed = !!(dragon && dragon.confirmed);
   const gapOverEnergy = gap - energyGap;
-  const strongEnergyProto = energyGap >= 2.0 || energyTrend >= 0.55;
+  const protoEnergyExempt = energyGap >= 2.5 && chopRisk === 0;
   const stableTransitionReady = transitionEdge >= 0.020 && chopRisk === 0;
+  const lowNoiseStrongEnergy = energyGap >= 3.0 && chopRisk === 0;
 
   let level = 'allow';
 
@@ -3260,10 +3261,16 @@ function analyzeRiskBrain(features, brain1, dragon){
     reasons.push('強共振但轉移優勢過薄');
   }
 
-  if(level !== 'block' && dragonState === 'proto' && trendLen <= 3 && chosenProbGap < 0.040 && !strongEnergyProto){
-    level = 'block';
-    tags.push('proto_break_risk');
-    reasons.push('初龍優勢過薄且能量未放大');
+  if(level !== 'block' && dragonState === 'proto' && trendLen <= 3 && chosenProbGap < 0.040){
+    if(!protoEnergyExempt || chopRisk >= 1){
+      level = 'block';
+      tags.push('proto_break_risk');
+      reasons.push('初龍優勢過薄且能量豁免不足');
+    }else if(level === 'allow'){
+      level = 'observe';
+      tags.push('proto_break_risk');
+      reasons.push('高能量乾淨初龍保留觀察，不直接封鎖');
+    }
   }
 
   if(level !== 'block' && dragonState === 'proto' && trendLen <= 3 && protoEdge < 0.050){
@@ -3278,23 +3285,23 @@ function analyzeRiskBrain(features, brain1, dragon){
     reasons.push('初龍斷龍風險偏高');
   }
 
-  if(level !== 'block' && chopRisk >= 1 && gap >= 4.0 && chosenProbGap <= 0.050 && gapOverEnergy >= 0.35 && energyTrend <= 0.60){
+  if(level !== 'block' && chopRisk >= 1 && gap >= 4.0 && chosenProbGap <= 0.050 && gapOverEnergy >= 0.80 && energyTrend <= 0.60){
     level = 'block';
     tags.push('choppy_fake_stability');
-    reasons.push('高分差領先能量且仍高切換，判定假穩定');
+    reasons.push('高分差明顯虛胖且仍高切換，判定假穩定');
   }
 
   if(level !== 'block' && strongRoadSupport && chosenProbGap < 0.045 && !dragonConfirmed){
     const isEarlyDragon = dragonState === 'none' || dragonState === 'proto';
     const veryThin = chosenProbGap < 0.038;
     const weakStructureLift = energyGap < 2.4 && energyTrend < 0.40;
-    const fragileResonance = chopRisk >= 1 || transitionEdge <= 0.015;
+    const hardFragileResonance = chopRisk >= 1 || transitionEdge <= 0.005;
 
-    if(isEarlyDragon && veryThin && fragileResonance && weakStructureLift){
+    if(isEarlyDragon && veryThin && hardFragileResonance && weakStructureLift && !lowNoiseStrongEnergy){
       level = 'block';
       tags.push('thin_edge_resonance');
-      reasons.push('極強共振但未成龍，且仍屬薄優勢');
-    }else if(level === 'allow' && chosenProbGap < 0.045 && !stableTransitionReady){
+      reasons.push('極強共振但未成龍，且仍屬早期薄優勢');
+    }else if(level === 'allow' && (chosenProbGap < 0.045 && !stableTransitionReady || lowNoiseStrongEnergy)){
       level = 'observe';
       tags.push('thin_edge_resonance');
       reasons.push('極強共振進入觀察，等待成龍或轉移優勢拉開');
@@ -3322,7 +3329,7 @@ function executePolicyChain(features, patternDb, tau){
   const dragon = analyzeDragonBrain(features, brain1);
   const risk = analyzeRiskBrain(features, brain1, dragon);
   const out = JSON.parse(JSON.stringify(brain1));
-  out.model_id = 'tri_brain_v67_4';
+  out.model_id = 'tri_brain_v67_5';
   out.brain_pattern = {
     mode: out.regime_state && out.regime_state.dominant ? out.regime_state.dominant : 'chaos',
     state: out.regime_state && out.regime_state.name ? out.regime_state.name : 'stable',
@@ -3458,7 +3465,7 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v67.4：第一腦採 v65.3 主體，第二腦看龍，第三腦補強初龍安全差、假穩定高分差、極強共振薄優勢阻擋';
+    rb.textContent = 'v67.5：第一腦採 v65.3 主體，第二腦看龍，第三腦改為初龍能量豁免、虛胖高分差阻擋、極強共振先觀察';
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '📊 五路結構門檻策略待命中';
     updateRoadExplain(displayRoads);
@@ -3836,7 +3843,7 @@ async function exportDB(){
     normalizeLabSnapshots();
 
     const payload = {
-      version:'v67.4',
+      version:'v67.5',
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
@@ -3874,7 +3881,7 @@ async function exportDB(){
         await navigator.share({
           files:[file],
           title:'百家樂資料匯出',
-          text:'bac v67.4 匯出資料'
+          text:'bac v67.5 匯出資料'
         });
         return;
       }
@@ -3916,7 +3923,7 @@ function importDB(event){
       let recoveredByMaterialized = false;
 
       const tempLab = {
-        schema_version:'v67.4',
+        schema_version:'v67.5',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:[]
@@ -3936,7 +3943,7 @@ function importDB(event){
       if(!validateOpenShoeConsistency(LabStore, S)){
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v67.4',
+            schema_version:'v67.5',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:[]
@@ -3949,7 +3956,7 @@ function importDB(event){
           const fallbackShoes = materializeAllShoes();
           if(fallbackShoes.length){
             LabStore = {
-              schema_version:'v67.4',
+              schema_version:'v67.5',
               rawShoes:fallbackShoes,
               currentOpenShoe:null,
               experiments:[]
@@ -3976,7 +3983,7 @@ function importDB(event){
 
       alert(
         recoveredByMaterialized
-          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v67.4。'
+          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v67.5。'
           : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料（含開放鞋快照），並補齊 snapshot schema。'
       );
     }catch(err){
@@ -4032,9 +4039,9 @@ function invokeQuantLab(){
   });
 
   const result = {
-    version:'v67.4',
+    version:'v67.5',
     generated_at:new Date().toISOString(),
-    replay_model_id:'tri_brain_v67_4',
+    replay_model_id:'tri_brain_v67_5',
     shoes:shoeRows.length,
     original:UnifiedAudit.original,
     replay:UnifiedAudit.replay,
@@ -4050,7 +4057,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v67.4 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v67.5 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     '全部現版: ' + result.replay.hits + '/' + result.replay.bets + '｜' + (result.replay.returnSum >= 0 ? '+' : '') + result.replay.returnSum.toFixed(2) + '\n' +
@@ -4119,7 +4126,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v67.4',
+        schema_version:'v67.5',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
