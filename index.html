@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v67.5 Tri-Brain Consolidated Engine</title>
+  <title>百家樂量化終端 - v67.8 Tri-Brain Consolidated Engine</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -431,7 +431,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v67.5</span>
+        <span class="version-badge">v67.8</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -515,7 +515,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v67.5</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v67.8</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -523,7 +523,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v67.5 維持目前介面，只修正：<b>初龍加入能量豁免、假穩定僅擋虛胖高分差、4/5/5/5 共振在低亂流強能量時改為先觀察</b>。
+        本版 v67.8 維持目前介面，只重寫：<b>龍腦狀態機、第一大腦下三路共識主判斷、裁決層決策表</b>。
       </div>
     </div>
 
@@ -562,10 +562,10 @@
   </div>
 
 <script>
-const DB_K = 'bac_v67_5_db';
-const LAB_K = 'bac_v67_5_lab';
-const ST_K = 'bac_v67_5_state';
-const CF_K = 'bac_v67_5_cfg';
+const DB_K = 'bac_v67_8_db';
+const LAB_K = 'bac_v67_8_lab';
+const ST_K = 'bac_v67_8_state';
+const CF_K = 'bac_v67_8_cfg';
 
 const WARMUP_HANDS = 15;
 const WARMUP_SOFT_START = 6;
@@ -586,10 +586,10 @@ const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v67.5', rawShoes:[], currentOpenShoe:null, experiments:[] };
+let LabStore = { schema_version:'v67.8', rawShoes:[], currentOpenShoe:null, experiments:[] };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10 };
-let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v67_5', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
+let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v67_8', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
 
 let bSt = null, bDB = null, bLab = null;
 let cOrder = ['p1','b1','p2','b2','p3','b3'];
@@ -740,7 +740,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v67.5',
+    snapshot_schema_version:'v67.8',
     tau: tau,
     effectiveTau: effectiveTau,
     s: normalizeFiniteNumber(raw && raw.s, Config.side),
@@ -809,8 +809,8 @@ function normalizeCurrentEvalShape(raw){
   const decision = normalizeDecision(raw.decision);
   let reasons = Array.isArray(raw.reasons) ? raw.reasons.map(function(x){ return String(x); }).filter(Boolean) : [];
   const normalized = {
-    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v67_5',
-    replay_schema_version:'v67.5',
+    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v67_8',
+    replay_schema_version:'v67.8',
     decision: decision,
     tier: typeof raw.tier === 'string' ? raw.tier : (decision === 'PASS' ? 'PASS' : 'MID'),
     tau: tau,
@@ -853,7 +853,7 @@ function normalizeHandRecord(hand){
 
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v67.5',
+    spec_version:'v67.8',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -1411,8 +1411,8 @@ function makeCurrentEvalSnapshot(pred, sideSignals, outcome){
   pred = ensureDecisionReasons(pred || {});
   const winner = outcome && outcome.winner ? outcome.winner : 'T';
   return {
-    model_id:'tri_brain_v67_5',
-    replay_schema_version:'v67.5',
+    model_id:'tri_brain_v67_8',
+    replay_schema_version:'v67.8',
     decision: pred.decision,
     tier: pred.tier,
     tau: pred.tau,
@@ -1528,7 +1528,7 @@ function buildUnifiedReplayAudit(shoes){
 
   const summary = {
     generated_at:new Date().toISOString(),
-    replayModelId:'tri_brain_v67_5',
+    replayModelId:'tri_brain_v67_8',
     replay:makeAuditBucket(),
     original:makeAuditBucket(),
     byVersion:{},
@@ -1879,7 +1879,7 @@ function loadAll(){
       const lab = JSON.parse(labRaw);
       if(lab && typeof lab === 'object'){
         LabStore = {
-          schema_version:'v67.5',
+          schema_version:'v67.8',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1892,7 +1892,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v67.5',
+          schema_version:'v67.8',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:[]
@@ -1970,9 +1970,9 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(livePrediction)),
     policy_snapshot: {
-      model_id:'tri_brain_v67_5',
-      model_id_original:'tri_brain_v67_5',
-      snapshot_schema_version:'v67.5',
+      model_id:'tri_brain_v67_8',
+      model_id_original:'tri_brain_v67_8',
+      snapshot_schema_version:'v67.8',
       tau: livePrediction.tau,
       effectiveTau: livePrediction.effectiveTau,
       s: Config.side,
@@ -1987,8 +1987,8 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v67.5',
-      original_spec_version:'v67.5',
+      spec_version:'v67.8',
+      original_spec_version:'v67.8',
       snapshot_normalized:true
     }
   };
@@ -2583,6 +2583,138 @@ function getDragonBreakCooldown(path, candidate, aligned, oppositeAligned, gap, 
   return null;
 }
 
+function analyzeDragonTransition(path, candidate, aligned, gap, candidatePredictiveEdge, regimeProbs, histB, histP, energy, jumpCapSignal){
+  if(!path || !candidate || candidate === 'PASS') return null;
+  const regime = path.priorJumpRegime && path.priorJumpRegime.capLen ? path.priorJumpRegime : path.dominantRegime;
+  if(!regime || !regime.capLen || ['single','double','triple'].indexOf(regime.mode) === -1) return null;
+  const runLen = path.trend_side === candidate ? (path.trend_len || 0) : 0;
+  if(runLen <= regime.capLen) return null;
+
+  const delta = runLen - regime.capLen;
+  const historicalRuns = Array.isArray(path.runs) && path.runs.length > 1 ? path.runs.slice(0, -1).filter(function(run){ return run.side === candidate; }) : [];
+  const breakoutRuns = historicalRuns.filter(function(run){ return run.len > regime.capLen; }).length;
+  const extend1 = historicalRuns.filter(function(run){ return run.len > regime.capLen + 1; }).length;
+  const extend2 = historicalRuns.filter(function(run){ return run.len > regime.capLen + 2; }).length;
+  const extend3 = historicalRuns.filter(function(run){ return run.len > regime.capLen + 3; }).length;
+  const pContinue1 = (extend1 + 0.6) / (breakoutRuns + 1.6);
+  const pContinue2 = (extend2 + 0.45) / (breakoutRuns + 1.45);
+  const pContinue3 = (extend3 + 0.30) / (breakoutRuns + 1.30);
+
+  const hist = candidate === 'B' ? histB : histP;
+  const oppositeHist = candidate === 'B' ? histP : histB;
+  const oppositeAligned = candidate === 'B' ? Math.max(0, Math.floor(normalizeFiniteNumber(histP && histP.oppositeAlignedPreview, 0))) : Math.max(0, Math.floor(normalizeFiniteNumber(histB && histB.oppositeAlignedPreview, 0)));
+  const trendBias = path.recent_shoe_bias === candidate ? 0.75 : 0;
+  const jumpPenalty = jumpCapSignal && jumpCapSignal.side === candidate ? 0.32 : 0;
+  const energyGap = normalizeFiniteNumber(energy && energy.energy_gap, 0);
+  const transitionEdge = hist ? (normalizeFiniteNumber(hist.true_transition, 0) - normalizeFiniteNumber(hist.fake_breakout, 0)) : 0;
+  const followEdge = hist ? (normalizeFiniteNumber(hist.continue_same, 0) - normalizeFiniteNumber(oppositeHist && oppositeHist.continue_same, 0)) : 0;
+  const dragonBias = Math.max(0, normalizeFiniteNumber(regimeProbs && regimeProbs.dragon, 0) - 0.12) * 0.8;
+
+  const score = Number((
+    aligned * 1.12 +
+    gap * 0.48 +
+    candidatePredictiveEdge * 1.05 +
+    energyGap * 0.18 +
+    trendBias +
+    dragonBias +
+    Math.max(-0.24, Math.min(0.36, transitionEdge * 3.0)) +
+    Math.max(-0.22, Math.min(0.28, followEdge * 2.2)) -
+    oppositeAligned * 0.68 -
+    jumpPenalty
+  ).toFixed(2));
+
+  const baseLabel = regime.capLen === 1 ? '單跳' : regime.capLen === 2 ? '雙跳' : '三跳';
+  const adaptiveConfirm = score + pContinue2 * 1.42 + pContinue3 * 0.88;
+  const adaptiveHold = score + pContinue3 * 1.36;
+
+  if(delta === 1){
+    return { state:'observe', score:score, delta:delta, text: baseLabel + '剛被突破，先進轉場觀察', pContinue1:pContinue1, pContinue2:pContinue2 };
+  }
+  if(delta === 2){
+    if((score + pContinue1 * 1.20) >= 5.8 && aligned >= 3 && gap >= 2.0){
+      return { state:'candidate', score:score, delta:delta, text: baseLabel + '突破延續，列為轉龍候選', pContinue1:pContinue1, pContinue2:pContinue2 };
+    }
+    return { state:'observe', score:score, delta:delta, text: baseLabel + '突破延續但仍未確認轉龍', pContinue1:pContinue1, pContinue2:pContinue2 };
+  }
+  if(delta === 3){
+    if((adaptiveConfirm >= 6.2 && aligned >= 4 && gap >= 2.5) || (aligned >= 5 && gap >= 4.4 && score >= 6.0)){
+      return { state:'confirmed', score:score, delta:delta, text: baseLabel + '突破後五路同步，確認轉龍', pContinue1:pContinue1, pContinue2:pContinue2 };
+    }
+    if(score >= 5.85 && aligned >= 3){
+      return { state:'candidate', score:score, delta:delta, text: baseLabel + '突破已拉長，保守視為轉龍候選', pContinue1:pContinue1, pContinue2:pContinue2 };
+    }
+    return { state:'observe', score:score, delta:delta, text: baseLabel + '突破已拉長但結構不足，先不承認真龍', pContinue1:pContinue1, pContinue2:pContinue2 };
+  }
+  if(delta >= 4){
+    if((adaptiveHold >= 6.0 && aligned >= 4) || (aligned >= 5 && gap >= 3.8 && score >= 5.8)){
+      return { state:'hold', score:score, delta:delta, text: baseLabel + '轉龍後結構穩定，允許續抱', pContinue2:pContinue2, pContinue3:pContinue3 };
+    }
+    if(score >= 5.6 && aligned >= 3){
+      return { state:'candidate', score:score, delta:delta, text: baseLabel + '轉龍後仍在高位，暫列保守續抱', pContinue2:pContinue2, pContinue3:pContinue3 };
+    }
+    return { state:'fatigue', score:score, delta:delta, text: baseLabel + '轉龍後結構轉弱，優先退場', pContinue2:pContinue2, pContinue3:pContinue3 };
+  }
+  return null;
+}
+
+function detectDragonBreakCooldown(path, candidate, aligned, gap, candidatePredictiveEdge, histB, histP, energy, jumpCapSignal, lowerConsensusCount){
+  if(!path || !Array.isArray(path.runs) || path.runs.length < 2) return null;
+  const last = path.runs[path.runs.length - 1];
+  const prev = path.runs[path.runs.length - 2];
+  if(!last || !prev || prev.len < 4 || last.len > 2) return null;
+
+  const oppositeAligned = Math.max(0, 5 - aligned);
+  const evPreview = normalizeFiniteNumber(candidatePredictiveEdge, 0) * 0.004 - 0.004;
+  const priorJump = path.priorJumpRegime && ['single','double','triple'].indexOf(path.priorJumpRegime.mode) !== -1 ? path.priorJumpRegime : null;
+  const jumpRecoverGap = priorJump ? (priorJump.capLen === 1 ? 2.8 : priorJump.capLen === 2 ? 2.2 : 1.9) : 9;
+  const recoveringJump = !!(
+    priorJump &&
+    candidate === prev.side &&
+    aligned >= 3 &&
+    gap >= jumpRecoverGap &&
+    (oppositeAligned <= 2 || path.recent_shoe_bias === candidate)
+  );
+  const newOppositeRegime = !!(
+    candidate === last.side &&
+    aligned >= 4 &&
+    gap >= 2.1 &&
+    evPreview > -0.003 &&
+    (last.len >= 2 || path.recent_shoe_bias === candidate || lowerConsensusCount >= 2)
+  );
+
+  if(last.len === 1){
+    if(newOppositeRegime && aligned >= 5 && gap >= 3.2){
+      return { active:false, resolved:'new_regime_fast', text:'斷龍後反向能量快速成形，提前解除冷卻' };
+    }
+    return {
+      active:true,
+      stage:'observe',
+      dragonSide:prev.side,
+      currentSide:last.side,
+      stepsRemaining:2,
+      text:'長龍剛斷，進入動態觀察窗'
+    };
+  }
+
+  if(last.len === 2){
+    if(newOppositeRegime){
+      return { active:false, resolved:'new_regime', text:'斷龍後反向延續成形，解除冷卻' };
+    }
+    if(recoveringJump){
+      return { active:false, resolved:'jump_recover', text:'斷龍後原跳型重現，解除冷卻' };
+    }
+    return {
+      active:true,
+      stage:'probe',
+      dragonSide:prev.side,
+      currentSide:last.side,
+      stepsRemaining:1,
+      text:'長龍斷後第二手試探，仍未確認新規則'
+    };
+  }
+  return null;
+}
+
 function extractPathFeaturesCore(history){
   const pure = history.filter(function(x){ return x.w !== 'T'; }).map(function(x){ return x.w; });
   const runs = buildRunSegments(pure);
@@ -2754,11 +2886,56 @@ function executeFirstBrain(features, patternDb, tau){
   const roads = suite.roads;
   const dataThin = (patternDb.totalHands || 0) < DATA_THIN_TOTALHANDS;
 
-  let scoreB = 0, scoreP = 0, alignedB = 0, alignedP = 0;
+  const mainRoads = roads.slice(0, 2);
+  const lowerRoads = roads.slice(2);
+
+  let alignedB = 0, alignedP = 0;
   roads.forEach(function(r){
-    if(r.side === 'B'){ scoreB += r.strength; alignedB++; }
-    if(r.side === 'P'){ scoreP += r.strength; alignedP++; }
+    if(r.side === 'B') alignedB++;
+    if(r.side === 'P') alignedP++;
   });
+
+  let mainScoreB = 0, mainScoreP = 0;
+  mainRoads.forEach(function(r){
+    if(r.side === 'B') mainScoreB += r.strength;
+    if(r.side === 'P') mainScoreP += r.strength;
+  });
+
+  let lowerScoreB = 0, lowerScoreP = 0;
+  lowerRoads.forEach(function(r){
+    if(r.side === 'B') lowerScoreB += r.strength;
+    if(r.side === 'P') lowerScoreP += r.strength;
+  });
+
+  const lowerB = lowerRoads.filter(function(r){ return r.side === 'B'; }).length;
+  const lowerP = lowerRoads.filter(function(r){ return r.side === 'P'; }).length;
+  const lowerConsensusSide = lowerB > lowerP ? 'B' : lowerP > lowerB ? 'P' : null;
+  const lowerConsensusCount = Math.max(lowerB, lowerP);
+  const lowerConflict = !!(lowerConsensusSide && path.trend_side && lowerConsensusSide !== path.trend_side);
+
+  let scoreB = mainScoreB * 1.08 + lowerScoreB * 0.72;
+  let scoreP = mainScoreP * 1.08 + lowerScoreP * 0.72;
+
+  if(lowerConsensusCount === 3){
+    if(lowerConsensusSide === 'B'){
+      scoreB += 2.55;
+      scoreP -= lowerConflict ? 1.18 : 0.82;
+    }else if(lowerConsensusSide === 'P'){
+      scoreP += 2.55;
+      scoreB -= lowerConflict ? 1.18 : 0.82;
+    }
+  }else if(lowerConsensusCount === 2){
+    if(lowerConsensusSide === 'B'){
+      scoreB += 1.48;
+      scoreP -= lowerConflict ? 0.92 : 0.52;
+    }else if(lowerConsensusSide === 'P'){
+      scoreP += 1.48;
+      scoreB -= lowerConflict ? 0.92 : 0.52;
+    }
+  }else if(lowerConsensusCount === 1){
+    if(lowerConsensusSide === 'B') scoreB += 0.20;
+    else if(lowerConsensusSide === 'P') scoreP += 0.20;
+  }
 
   const regimePack = computeRegimeProbabilities(path);
   const regimeProbs = regimePack.probs;
@@ -2804,6 +2981,10 @@ function executeFirstBrain(features, patternDb, tau){
   const chaosMode = detectChaosMode(path, regimeProbs, histB, histP, energy, path.chop_count >= 6 ? 2 : path.chop_count >= 4 ? 1 : 0);
   scoreB += energy.B_energy * (chaosMode.active ? 0.18 : 0.26);
   scoreP += energy.P_energy * (chaosMode.active ? 0.18 : 0.26);
+
+  const lowerHarmonyBonus = lowerConsensusCount >= 2 && lowerConsensusSide ? (lowerConsensusCount === 3 ? 0.48 : 0.26) : 0;
+  if(lowerConsensusSide === 'B') scoreB += lowerHarmonyBonus;
+  if(lowerConsensusSide === 'P') scoreP += lowerHarmonyBonus;
 
   const gapNow = Math.abs(scoreB - scoreP);
   const predictiveReleaseB =
@@ -2874,7 +3055,10 @@ function executeFirstBrain(features, patternDb, tau){
       regime_probs:regimeProbs,
       transition_probs:{ nextB:histB.nextB, nextP:histP.nextP, continue_same:histB.continue_same, break_to_opposite:histP.continue_same, fake_breakout:Math.max(histB.fake_breakout, histP.fake_breakout), true_transition:Math.max(histB.true_transition, histP.true_transition) },
       energy:energy,
-      regime_state:deriveRegimeState(path, regimeProbs, null, null)
+      regime_state:deriveRegimeState(path, regimeProbs, null, null),
+      lower_consensus_side: lowerConsensusSide,
+      lower_consensus_count: lowerConsensusCount,
+      lower_conflict: lowerConflict
     });
   }
 
@@ -2886,12 +3070,14 @@ function executeFirstBrain(features, patternDb, tau){
   const trendLen = path.trend_len || 0;
   const candidate = scoreB > scoreP ? 'B' : scoreP > scoreB ? 'P' : 'PASS';
   const gap = Math.abs(scoreB - scoreP);
-  const aligned = candidate === 'B' ? alignedB : alignedP;
-  const oppositeAligned = candidate === 'B' ? alignedP : alignedB;
+  const aligned = candidate === 'B' ? alignedB : candidate === 'P' ? alignedP : 0;
+  const oppositeAligned = candidate === 'B' ? alignedP : candidate === 'P' ? alignedB : 0;
   const trendContinuing = candidate !== 'PASS' && candidate === trendSide;
   const reversalCandidate = candidate !== 'PASS' && trendSide && candidate !== trendSide;
   const overheat = trendLen >= 4 ? (trendLen >= 5 ? 2 : 1) : 0;
   const chopRisk = path.chop_count >= 6 ? 2 : path.chop_count >= 4 ? 1 : 0;
+  const lowerRoadConflict = lowerConsensusCount >= 2 && lowerConsensusSide && candidate !== 'PASS' && candidate !== lowerConsensusSide;
+  const lowerRoadSupportHit = lowerConsensusCount >= 2 && lowerConsensusSide && candidate !== 'PASS' && candidate === lowerConsensusSide;
 
   const jumpCapSignal = getJumpCapSignal(path);
   const candidateEVPreview = candidate === 'B' ? ev.B : candidate === 'P' ? ev.P : 0;
@@ -2922,52 +3108,57 @@ function executeFirstBrain(features, patternDb, tau){
     energy.energy_gap >= 2.2 && gap >= 1.8 && aligned >= 2
   );
   const chaosNoChase = !!(
-    chaosMode.active && chaosMode.confidence >= 0.72 && candidate !== 'PASS' && trendSide && candidate === trendSide && candidateHist && (
-      (trendLen >= 2 && candidateHist.break_to_opposite > candidateHist.continue_same + 0.02 && fakeBreakoutMax >= 0.20) ||
-      (chopRisk >= 2 && energy.energy_gap < 2.4)
-    )
+    chaosMode.active && chaosMode.confidence >= 0.72 && candidate !== 'PASS' && trendSide && trendLen >= 3 && candidate === trendSide &&
+    aligned < 4 && candidatePredictiveEdge < 1.18 && energy.energy_gap < 3.4
   );
+  const chaosObserveWindow = !!(
+    chaosMode.active && candidate !== 'PASS' && aligned >= 3 && gap >= 2.0 && candidatePredictiveEdge >= 1.08 && energy.energy_gap >= 2.0 && !chaosNoChase
+  );
+  const chaosAggressiveFollow = !!(
+    chaosMode.active && candidate !== 'PASS' && trendContinuing && trendLen >= 4 && aligned >= 4 && gap >= 3.6 && energy.energy_gap >= 4.2 && candidatePredictiveEdge >= 1.32 && fakeBreakoutMax < 0.16
+  );
+  const chaosHardBlock = !!(
+    chaosMode.active && candidate !== 'PASS' && !chaosAggressiveFollow && !chaosTrueReversal && !chaosFakeBreakoutFade && !chaosFatigueFade && !chaosObserveWindow &&
+    (chopRisk >= 2 || candidatePredictiveEdge < 1.0 || energy.energy_gap < 1.6)
+  );
+
+  const longDragonInitialFollowWindow = !!(
+    trendContinuing && trendLen === 6 && aligned >= 4 && gap >= 2.4 && energy.energy_gap >= 2.6 && candidatePredictiveEdge >= 1.18
+  );
+  const longDragonObserveWindow = !!(
+    trendContinuing && trendLen === 5 && aligned >= 4 && gap >= 2.2 && energy.energy_gap >= 2.4 && candidatePredictiveEdge >= 1.12
+  );
+  const longDragonHoldWindow = !!(
+    trendContinuing && trendLen >= 6 && aligned >= 4 && gap >= 1.9 && energy.energy_gap >= 2.0 && candidatePredictiveEdge >= 0.96
+  );
+  const longDragonExitWindow = !!(
+    trendContinuing && trendLen >= 6 && (oppositeAligned >= 2 || candidatePredictiveEdge < 0.86 || energy.energy_gap < 1.4)
+  );
+
+  const fixedJumpContinuationBlocked = !!(jumpCapSignal && jumpCapSignal.blockContinuation && trendContinuing && !longDragonInitialFollowWindow && !longDragonHoldWindow);
+  const fixedJumpReversalRelax = !!(jumpCapSignal && jumpCapSignal.allowReversal && reversalCandidate && aligned >= 3 && gap >= 2.0 && energy.energy_gap >= 2.4 && candidatePredictiveEdge >= 1.0);
+  const conditionalConflictRelax = !!(
+    lowerRoadConflict && oppositeAligned >= 2 && aligned >= 3 && gap >= 3.2 && energy.energy_gap >= 3.2 && candidatePredictiveEdge >= 1.12
+  );
+
   const predictiveObserveOverride = !!(
-    candidate !== 'PASS' &&
-    candidateHist &&
-    aligned >= 4 &&
-    energy.energy_gap >= 4.8 &&
-    candidatePredictiveEdge >= 1.45 &&
-    candidateHist.true_transition >= 0.44 &&
-    candidateHist.nextSideProb >= 0.56
-  );
-  const dragonTransition = getDragonTransitionSignal(path, candidate, aligned, oppositeAligned, gap, chopRisk, candidateEVPreview, dataThin);
-  const dragonBreakCooldown = getDragonBreakCooldown(path, candidate, aligned, oppositeAligned, gap, candidateEVPreview);
-  let regimeState = deriveRegimeState(path, regimeProbs, dragonTransition, dragonBreakCooldown);
-  if(chaosMode.active){
-    regimeState = {
-      name:'chaos_mode',
-      dominant:'chaos',
-      breakout_delta:0,
-      confidence:clamp01(Math.max(regimeProbs.chaos || 0, chaosMode.confidence || (chaosMode.score / 3))),
-      note:chaosMode.note,
-      subtype:chaosMode.subtype || '',
-      cooldown_active:false
-    };
-  }
-
-  const fixedJumpContinuationBlocked = !!(!chaosMode.active && jumpCapSignal && candidate === jumpCapSignal.side && trendLen >= jumpCapSignal.capLen + 1 && !(dragonTransition && (dragonTransition.state === 'candidate' || dragonTransition.state === 'confirmed' || dragonTransition.state === 'hold')));
-  const fixedJumpReversalRelax = !!(
-    !chaosMode.active && jumpCapSignal && candidate !== 'PASS' && candidate !== jumpCapSignal.side && trendLen >= jumpCapSignal.capLen &&
-    (aligned >= 3 && (candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.54 && energy.energy_gap >= 1.8)
+    candidate !== 'PASS' && !chaosMode.active && aligned >= 3 && gap >= 3.0 && candidatePredictiveEdge >= 1.16 && energy.energy_gap >= 2.4 &&
+    ((candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.54 || energy.energy_gap >= 1.8)
   );
 
+  const thinChopHardBlock = dataThin && chopRisk >= 2 && trendLen >= 3 && !longDragonHoldWindow && !longDragonInitialFollowWindow && !fixedJumpReversalRelax && candidatePredictiveEdge < 1.15;
+  const generalChopHardBlock = chopRisk >= 2 && trendLen >= 2 && !longDragonHoldWindow && !fixedJumpReversalRelax && !predictiveObserveOverride && energy.energy_gap < 5.2 && candidatePredictiveEdge < 1.02 && aligned < 5;
+  const thinChopSecondLook = dataThin && chopRisk >= 2 && trendLen === 2 && aligned >= 4 && candidateEVPreview > -0.001 && (candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.58 && energy.energy_gap >= 2.8 && candidatePredictiveEdge >= 1.22 && !fixedJumpContinuationBlocked;
+
+  const dragonTransition = analyzeDragonTransition(path, candidate, aligned, gap, candidatePredictiveEdge, regimeProbs, histB, histP, energy, jumpCapSignal);
+  const dragonBreakCooldown = detectDragonBreakCooldown(path, candidate, aligned, gap, candidatePredictiveEdge, histB, histP, energy, jumpCapSignal, lowerConsensusCount);
+  const regimeState = deriveRegimeState(path, regimeProbs, dragonTransition, dragonBreakCooldown);
   const regimeIsJump = regimeState && ['single','double','triple'].indexOf(regimeState.dominant) !== -1;
-  const relativeDragonObserveWindow = !!(dragonTransition && dragonTransition.state === 'observe');
   const relativeDragonCandidateWindow = !!(dragonTransition && dragonTransition.state === 'candidate');
   const relativeDragonConfirmedWindow = !!(dragonTransition && dragonTransition.state === 'confirmed');
-  const relativeDragonHoldWindow = !!(dragonTransition && dragonTransition.state === 'hold');
+  const relativeDragonObserveWindow = !!(dragonTransition && dragonTransition.state === 'candidate' && !predictiveObserveOverride);
+  const relativeDragonHoldWindow = !!(dragonTransition && (dragonTransition.state === 'confirmed' || dragonTransition.state === 'hold'));
   const relativeDragonFatigueWindow = !!(dragonTransition && dragonTransition.state === 'fatigue');
-
-  const longDragonObserveWindow = !regimeIsJump && trendContinuing && trendLen === 5;
-  const longDragonInitialFollowWindow = !regimeIsJump && trendContinuing && trendLen >= 6 && candidatePredictiveEdge >= 1.10 && ((aligned >= 4 && gap >= 2.6 && oppositeAligned <= 1) || (aligned >= 5 && gap >= 2.2 && oppositeAligned <= 2));
-  const longDragonHoldWindow = !regimeIsJump && trendContinuing && trendLen >= 7 && ((aligned >= 4 && gap >= 2.1 && oppositeAligned <= 1) || (aligned >= 5 && gap >= 1.8 && oppositeAligned <= 2));
-  const longDragonExitWindow = (!regimeIsJump && trendContinuing && trendLen >= 6 && ((aligned < 3) || (gap < 1.7) || (chopRisk >= 2) || (oppositeAligned >= 2 && gap < 2.5))) || relativeDragonFatigueWindow;
 
   let effectiveTau = calcEffectiveTau(tau, aligned, gap, dataThin, warmupSoft);
   if(warmupSoft) effectiveTau = Math.max(effectiveTau, 0.0006);
@@ -2987,15 +3178,6 @@ function executeFirstBrain(features, patternDb, tau){
   const isDeepLate = features.F_Path.history_len >= 40;
   const gapPassFloor = isDeepLate ? (aligned >= 3 ? 0.78 : 0.92) : isMidLate ? (aligned >= 3 ? 0.92 : 1.05) : 1.2;
   const conflictGapFloor = isDeepLate ? 2.05 : isMidLate ? 2.2 : 2.4;
-
-  const conditionalConflictRelax = fixedJumpReversalRelax || (
-    reversalCandidate && trendLen === 1 && aligned === 3 && oppositeAligned === 2 && gap >= 1.6 && candidateEVPreview > -0.003 &&
-    ((candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.54 || energy.energy_gap >= 1.8)
-  );
-
-  const thinChopHardBlock = dataThin && chopRisk >= 2 && trendLen >= 3 && !longDragonHoldWindow && !longDragonInitialFollowWindow && !fixedJumpReversalRelax && candidatePredictiveEdge < 1.15;
-  const generalChopHardBlock = chopRisk >= 2 && trendLen >= 2 && !longDragonHoldWindow && !fixedJumpReversalRelax && !predictiveObserveOverride && energy.energy_gap < 5.2 && candidatePredictiveEdge < 1.02 && aligned < 5;
-  const thinChopSecondLook = dataThin && chopRisk >= 2 && trendLen === 2 && aligned >= 4 && candidateEVPreview > -0.001 && (candidate === 'B' ? histB.nextSideProb : histP.nextSideProb) >= 0.58 && energy.energy_gap >= 2.8 && candidatePredictiveEdge >= 1.22 && !fixedJumpContinuationBlocked;
 
   if(gap < gapPassFloor){
     reasons.push(isMidLate ? '中後段分差仍不足' : '五路分差不足');
@@ -3021,6 +3203,8 @@ function executeFirstBrain(features, patternDb, tau){
     reasons.push('反向衝突過強');
   }else if(oppositeAligned >= 2 && reversalCandidate && gap < conflictGapFloor + 0.25 && !conditionalConflictRelax){
     reasons.push('反向衝突過強');
+  }else if(chaosHardBlock){
+    reasons.push('亂流鞋模式仍高，不追價');
   }else{
     if(trendContinuing){
       if(relativeDragonObserveWindow){ reasons.push(dragonTransition.text); }
@@ -3050,7 +3234,7 @@ function executeFirstBrain(features, patternDb, tau){
     const thinStrongBlocked = dataThin && chopRisk >= 2 && trendLen >= 3 && !longDragonHoldWindow && !longDragonInitialEVOverride && !fixedJumpReversalRelax;
     const fixedJumpReversalOverride = fixedJumpReversalRelax && evCandidate > -0.006;
 
-    const structuralOverride = ultraStructuralOverride || longDragonInitialEVOverride || longDragonHoldOverride || fixedJumpReversalOverride || dragonTransitionOverride || predictiveObserveOverride || strongStructureEvRelax || chaosFakeBreakoutFade || chaosTrueReversal || chaosFatigueFade || (!reversalCandidate && !longDragonHoldWindow && !thinStrongBlocked && !thinChopSecondLook && !jumpCapSignal && !dragonBreakCooldown && !chaosMode.active && ((aligned >= 5 && gap >= 4.5 && evCandidate > -0.010) || (aligned >= 4 && gap >= 4.5 && evCandidate > -0.006))) || (reversalCandidate && conditionalConflictRelax && evCandidate > -0.004);
+    const structuralOverride = ultraStructuralOverride || longDragonInitialEVOverride || longDragonHoldOverride || fixedJumpReversalOverride || dragonTransitionOverride || predictiveObserveOverride || strongStructureEvRelax || chaosFakeBreakoutFade || chaosTrueReversal || chaosFatigueFade || (!reversalCandidate && !longDragonHoldWindow && !thinStrongBlocked && !thinChopSecondLook && !jumpCapSignal && !dragonBreakCooldown && !chaosMode.active && ((aligned >= 5 && gap >= 4.5 && evCandidate > -0.010) || (aligned >= 4 && gap >= 4.5 && evCandidate > -0.006))) || (reversalCandidate && conditionalConflictRelax && evCandidate > -0.004) || chaosAggressiveFollow;
 
     if((thinStrongBlocked || generalChopHardBlock) && !ultraStructuralOverride && !longDragonInitialEVOverride && !longDragonHoldOverride && !fixedJumpReversalOverride){
       reasons.push(thinStrongBlocked ? '薄樣本切換風險高，第三手起不追' : '近期亂流高，延續訊號先降級觀望');
@@ -3067,6 +3251,7 @@ function executeFirstBrain(features, patternDb, tau){
       else if(chaosTrueReversal){ tier = 'MID'; reasons.push('亂流鞋真反轉確認'); }
       else if(chaosFakeBreakoutFade){ tier = 'MID'; reasons.push('亂流鞋假突破回補'); }
       else if(chaosFatigueFade){ tier = 'MID'; reasons.push('亂流鞋尾段疲勞反手'); }
+      else if(chaosAggressiveFollow){ tier = 'MID'; reasons.push('亂流鞋但五路與下三路共識明確'); }
       else if(thinChopSecondLook){ tier = 'MID'; reasons.push('薄樣本高切換風險，只允許第二手確認'); }
       else if(conditionalConflictRelax){ tier = 'MID'; reasons.push('反向衝突條件式放寬'); }
       else if(predictiveObserveOverride){ tier = features.F_Path.history_len < WARMUP_HANDS ? 'MID' : 'STRONG'; reasons.push('歷史轉移與能量同步，提前放行預判'); }
@@ -3078,6 +3263,8 @@ function executeFirstBrain(features, patternDb, tau){
       if(relativeDragonHoldWindow && !reasons.some(function(x){ return /續抱|轉龍後結構穩定/.test(x); })){ reasons.push(dragonTransition.text); }
       if(longDragonObserveWindow && !reasons.some(function(x){ return /觀察/.test(x); })){ reasons.push('長龍第5手先觀察'); }
       if(longDragonHoldWindow && !longDragonExitWindow && !reasons.some(function(x){ return /續抱/.test(x); })){ reasons.push('長龍續抱條件成立'); }
+      if(lowerRoadSupportHit) reasons.push('下三路 ' + lowerConsensusCount + '/3 與主判斷同向');
+      if(lowerRoadConflict) reasons.push('下三路與主判斷相反，待裁決層複核');
       if((warmupSoft || strongEarlyDragonRelease) && !chaosMode.active) reasons.push('暖機僅限趨勢成形後放行');
       if(dataThin && !chaosMode.active) reasons.push('Pattern 樣本薄，偏向路結構');
       if(chaosMode.active) reasons.push(chaosMode.note || '亂流鞋模式已啟動');
@@ -3117,7 +3304,10 @@ function executeFirstBrain(features, patternDb, tau){
     regime_probs:regimeProbs,
     transition_probs:transitionProbs,
     energy:energy,
-    regime_state:regimeState
+    regime_state:regimeState,
+    lower_consensus_side: lowerConsensusSide,
+    lower_consensus_count: lowerConsensusCount,
+    lower_conflict: lowerConflict
   });
 }
 
@@ -3152,44 +3342,153 @@ function analyzeDragonBrain(features, brain1){
   const path = features && features.F_Path ? features.F_Path : extractPathFeaturesCore(features && features.__history ? features.__history : []);
   const t = brain1 && brain1.transition_probs ? brain1.transition_probs : {};
   const rp = brain1 && brain1.regime_probs ? brain1.regime_probs : {};
+  const hist = Array.isArray(features && features.__history) ? features.__history : [];
+  const histLen = path && path.history_len ? path.history_len : 0;
   const trendLen = path && path.trend_len ? path.trend_len : 0;
   const trendSide = path && path.trend_side ? path.trend_side : null;
-  const dom = path && path.dominantRegime && path.dominantRegime.mode ? path.dominantRegime.mode : 'chaos';
-  let state = 'none';
+  const chopCount = path && path.chop_count ? path.chop_count : 0;
+  const energyGap = normalizeFiniteNumber(brain1 && brain1.energy && brain1.energy.energy_gap, 0);
+  const transitionLift = normalizeFiniteNumber(t.true_transition, 0) - normalizeFiniteNumber(t.fake_breakout, 0);
+  const continueEdge = normalizeFiniteNumber(t.continue_same, 0) - normalizeFiniteNumber(t.break_to_opposite, 0);
+  const dragonProb = normalizeFiniteNumber(rp.dragon, 0);
+  const aligned = trendSide === 'B' ? Math.max(0, Math.floor(normalizeFiniteNumber(brain1 && brain1.alignedB, 0))) : trendSide === 'P' ? Math.max(0, Math.floor(normalizeFiniteNumber(brain1 && brain1.alignedP, 0))) : 0;
+
+  if(histLen < 4){
+    return normalizeDragonBrainShape({
+      state:'none',
+      side:null,
+      confirmed:false,
+      dragon_continue_prob:0,
+      dragon_break_prob:0,
+      new_dragon_prob:0,
+      fatigue:0,
+      reason:'前四顆不預測開龍/斷龍'
+    });
+  }
+
+  if(!trendSide || trendLen < 2){
+    return normalizeDragonBrainShape({
+      state:'none',
+      side:null,
+      confirmed:false,
+      dragon_continue_prob:0,
+      dragon_break_prob:0,
+      new_dragon_prob:0,
+      fatigue:0,
+      reason:'未形成連續結構，不預測開龍/斷龍'
+    });
+  }
+
+  let state = 'candidate';
   let confirmed = false;
-  if(dom === 'dragon' && trendSide){
-    state = trendLen >= 5 ? 'strong' : trendLen >= 3 ? 'active' : 'proto';
+  if(trendLen >= 4 && (dragonProb >= 0.22 || transitionLift >= 0.03 || energyGap >= 2.2 || aligned >= 4)){
+    state = 'confirmed';
     confirmed = true;
-  }else if(trendSide && trendLen >= 4 && normalizeFiniteNumber(rp.dragon, 0) >= 0.28 && normalizeFiniteNumber(t.true_transition, 0) >= normalizeFiniteNumber(t.fake_breakout, 0)){
-    state = 'active';
-    confirmed = true;
-  }else if(trendSide && trendLen >= 3 && path && path.breakoutFromRegime && normalizeFiniteNumber(t.true_transition, 0) >= normalizeFiniteNumber(t.fake_breakout, 0) + 0.01){
-    state = 'proto';
-  }else if(trendSide && trendLen >= 2 && dom === 'dragon'){
+  }else if(trendLen >= 3 && (dragonProb >= 0.16 || transitionLift >= 0.015 || energyGap >= 1.5 || aligned >= 3)){
     state = 'proto';
   }
 
-  let continueBase = state === 'strong' ? 0.68 : state === 'active' ? 0.60 : state === 'proto' ? 0.52 : 0.35;
-  continueBase += Math.max(-0.10, Math.min(0.10, (normalizeFiniteNumber(t.continue_same, 0) - normalizeFiniteNumber(t.break_to_opposite, 0)) * 0.8));
-  continueBase += Math.max(-0.08, Math.min(0.08, (normalizeFiniteNumber(rp.dragon, 0) - 0.25) * 0.4));
-  if(brain1 && brain1.overheat >= 2) continueBase -= 0.08;
-  const dragonContinue = clamp01(continueBase);
-  const dragonBreak = clamp01(1 - dragonContinue + (state === 'none' ? 0.06 : 0));
-  const newDragon = state === 'none'
-    ? clamp01(0.15 + (path && path.breakoutFromRegime ? 0.18 : 0) + Math.max(0, normalizeFiniteNumber(t.true_transition, 0) - normalizeFiniteNumber(t.fake_breakout, 0)) * 0.9 + Math.max(0, normalizeFiniteNumber(rp.dragon, 0) - 0.22) * 0.6)
-    : clamp01(normalizeFiniteNumber(rp.dragon, 0) * 0.45 + Math.max(0, normalizeFiniteNumber(t.true_transition, 0)) * 0.35);
-  const fatigue = clamp01((brain1 && brain1.overheat ? brain1.overheat : 0) * 0.22 + Math.max(0, normalizeFiniteNumber(t.break_to_opposite, 0) - normalizeFiniteNumber(t.continue_same, 0)) * 0.7);
+  let newDragon = 0;
+  let dragonContinue = 0;
+  let dragonBreak = 0;
+  let fatigue = 0;
+
+  if(!confirmed){
+    let openBase = trendLen === 2 ? 0.18 : trendLen === 3 ? 0.34 : 0.46;
+    openBase += Math.max(0, transitionLift) * 0.90;
+    openBase += Math.max(0, continueEdge) * 0.65;
+    openBase += Math.max(0, dragonProb - 0.12) * 0.70;
+    openBase += Math.max(0, energyGap - 1.0) * 0.08;
+    openBase -= chopCount * 0.07;
+    newDragon = clamp01(openBase);
+  }else{
+    if(trendLen >= 6 && ((brain1 && brain1.overheat >= 1) || continueEdge < 0.02 || chopCount >= 2)){
+      state = 'fatigue';
+    }
+    fatigue = clamp01(Math.max(0, trendLen - 4) * 0.14 + Math.max(0, normalizeFiniteNumber(t.break_to_opposite, 0) - normalizeFiniteNumber(t.continue_same, 0)) * 0.90 + chopCount * 0.05);
+    let continueBase = trendLen >= 6 ? 0.68 : 0.74;
+    continueBase += Math.max(-0.10, Math.min(0.08, continueEdge * 0.90));
+    continueBase += Math.max(-0.06, Math.min(0.06, (dragonProb - 0.20) * 0.60));
+    continueBase += Math.max(-0.05, Math.min(0.05, (energyGap - 2.0) * 0.04));
+    continueBase -= fatigue * 0.28;
+    dragonContinue = clamp01(continueBase);
+    dragonBreak = clamp01(Math.max(0.08, 1 - dragonContinue) + fatigue * 0.25);
+  }
 
   return normalizeDragonBrainShape({
     state: state,
     side: trendSide,
     confirmed: confirmed,
     dragon_continue_prob: dragonContinue,
-    dragon_break_prob: dragonBreak,
-    new_dragon_prob: newDragon,
-    fatigue: fatigue,
-    reason: confirmed ? '龍腦確認成龍' : (state === 'proto' ? '龍腦觀察中' : '龍腦未確認成龍')
+    dragon_break_prob: confirmed ? dragonBreak : 0,
+    new_dragon_prob: confirmed ? 0 : newDragon,
+    fatigue: confirmed ? fatigue : 0,
+    reason: confirmed ? (state === 'fatigue' ? '成龍後進入疲勞監測，開始預測斷龍' : '成龍確認後，開始預測斷龍') : state === 'proto' ? '第5顆後進入 proto，僅預測開龍' : '第5顆後候選龍觀察，僅預測開龍'
   });
+}
+
+function analyzeJudgeBrain(features, brain1, dragon, risk){
+  const path = features && features.F_Path ? features.F_Path : extractPathFeaturesCore(features && features.__history ? features.__history : []);
+  const roads = brain1 && Array.isArray(brain1.roadSignals) ? brain1.roadSignals : [];
+  const lowerRoads = roads.slice(2);
+  const lowerB = lowerRoads.filter(function(r){ return r.side === 'B'; }).length;
+  const lowerP = lowerRoads.filter(function(r){ return r.side === 'P'; }).length;
+  const lowerConsensusSide = lowerB > lowerP ? 'B' : lowerP > lowerB ? 'P' : null;
+  const lowerConsensusCount = Math.max(lowerB, lowerP);
+  const chosen = brain1 && brain1.decision ? brain1.decision : 'PASS';
+  const gap = normalizeFiniteNumber(brain1 && brain1.gap, 0);
+  const energyGap = normalizeFiniteNumber(brain1 && brain1.energy && brain1.energy.energy_gap, 0);
+  const dragonConfirmed = !!(dragon && dragon.confirmed);
+  const dragonState = dragon && typeof dragon.state === 'string' ? dragon.state : 'none';
+  const trendLen = path && path.trend_len ? path.trend_len : 0;
+  const historyLen = path && path.history_len ? path.history_len : 0;
+  const reasons = [];
+  const tags = [];
+  let level = 'allow';
+  const chosenProbGap = normalizeFiniteNumber(risk && risk.chosen_prob_gap, 0);
+  const transitionEdge = normalizeFiniteNumber(risk && risk.transition_edge, 0);
+
+  if(chosen === 'PASS'){
+    return { level:'allow', tags:[], reasons:[] };
+  }
+
+  if(lowerConsensusCount >= 2 && lowerConsensusSide && chosen !== lowerConsensusSide){
+    if(lowerConsensusCount === 3 || (!dragonConfirmed && trendLen >= 2 && gap < 4.2) || chosenProbGap <= 0.02 || transitionEdge <= 0){
+      level = 'block';
+      tags.push('judge_lower_road_veto');
+      reasons.push('下三路 2/3 以上明確反對，裁決層直接否決');
+    }else{
+      level = 'observe';
+      tags.push('judge_lower_road_conflict');
+      reasons.push('主路與下三路衝突，裁決層要求再觀察');
+    }
+  }
+
+  if(level === 'allow' && lowerConsensusCount < 2){
+    if(historyLen >= 6 && gap < 2.8){
+      level = 'observe';
+      tags.push('judge_lower_road_wait');
+      reasons.push('下三路尚未形成共識，裁決層先觀察');
+    }else if((dragonState === 'candidate' || dragonState === 'proto') && chosenProbGap < 0.05){
+      level = 'observe';
+      tags.push('judge_early_dragon_wait');
+      reasons.push('龍腦仍在早期狀態，裁決層先觀察');
+    }else if(transitionEdge <= 0 && !dragonConfirmed){
+      level = 'observe';
+      tags.push('judge_transition_wait');
+      reasons.push('轉移優勢未拉開，裁決層先觀察');
+    }
+  }
+
+  if(level === 'allow' && lowerConsensusCount >= 2 && lowerConsensusSide === chosen){
+    reasons.push('下三路 ' + lowerConsensusCount + '/3 與主判斷同向');
+  }
+
+  if(level === 'allow' && dragonConfirmed && dragon.side === chosen){
+    reasons.push('龍腦與主判斷同向');
+  }
+
+  return { level:level, tags:tags, reasons:reasons };
 }
 
 function analyzeRiskBrain(features, brain1, dragon){
@@ -3243,16 +3542,16 @@ function analyzeRiskBrain(features, brain1, dragon){
     reasons.push('單跳轉龍確認線停用');
   }
 
-  if(level !== 'block' && reason1 === '五路支持 3/5' && chosenProbGap < 0.060 && gap < 2.50){
+  if(level !== 'block' && reason1 === '五路支持 3/5' && chopRisk >= 1){
     level = 'block';
-    tags.push('five_road_thin_edge');
-    reasons.push('三路共振優勢不足');
+    tags.push('weak_resonance_in_chop');
+    reasons.push('五路僅 3/5 且處於切換區，禁止放行');
   }
 
-  if(level !== 'block' && reason1 === '五路支持 3/5' && gap >= 3.80 && dragonState === 'none' && path && path.chop_count >= 2){
+  if(level !== 'block' && reason1 === '五路支持 3/5' && energyGap < 2.5 && chosenProbGap < 0.05){
     level = 'block';
-    tags.push('five_road_high_gap_fake_stability');
-    reasons.push('三路共振高分差假穩定');
+    tags.push('weak_resonance_thin_edge');
+    reasons.push('五路僅 3/5 且能量/機率優勢不足，禁止放行');
   }
 
   if(level !== 'block' && strongResonance && regimeConf < 0.28 && chosenProbGap < 0.035){
@@ -3285,10 +3584,32 @@ function analyzeRiskBrain(features, brain1, dragon){
     reasons.push('初龍斷龍風險偏高');
   }
 
+  const isDragonTransitionReason = brain1Reasons.some(function(r){
+    return r && (r.indexOf('轉龍候選') !== -1 || r.indexOf('確認轉龍') !== -1 || r.indexOf('允許續抱') !== -1);
+  });
+
+  if(level !== 'block' && isDragonTransitionReason && transitionEdge <= 0.01){
+    if(level === 'allow') level = 'observe';
+    tags.push('dragon_fake_breakout_risk');
+    reasons.push('轉龍優勢過薄，疑似假突破');
+  }
+
+  if(level !== 'block' && isDragonTransitionReason && gap < 3.0 && chopRisk >= 1){
+    if(level === 'allow') level = 'observe';
+    tags.push('dragon_breakout_in_chop');
+    reasons.push('亂流中結構分差不足，轉龍先觀察');
+  }
+
   if(level !== 'block' && chopRisk >= 1 && gap >= 4.0 && chosenProbGap <= 0.050 && gapOverEnergy >= 0.80 && energyTrend <= 0.60){
     level = 'block';
     tags.push('choppy_fake_stability');
     reasons.push('高分差明顯虛胖且仍高切換，判定假穩定');
+  }
+
+  if(level !== 'block' && strongRoadSupport && chopRisk >= 2 && chosenProbGap < 0.04 && energyGap < 3.0){
+    level = 'block';
+    tags.push('strong_resonance_fake_stability');
+    reasons.push('強共振但處於亂流且優勢薄弱，判定假穩定');
   }
 
   if(level !== 'block' && strongRoadSupport && chosenProbGap < 0.045 && !dragonConfirmed){
@@ -3328,8 +3649,9 @@ function executePolicyChain(features, patternDb, tau){
   const brain1 = executeFirstBrain(features, patternDb, tau);
   const dragon = analyzeDragonBrain(features, brain1);
   const risk = analyzeRiskBrain(features, brain1, dragon);
+  const judge = analyzeJudgeBrain(features, brain1, dragon, risk);
   const out = JSON.parse(JSON.stringify(brain1));
-  out.model_id = 'tri_brain_v67_5';
+  out.model_id = 'tri_brain_v67_8';
   out.brain_pattern = {
     mode: out.regime_state && out.regime_state.dominant ? out.regime_state.dominant : 'chaos',
     state: out.regime_state && out.regime_state.name ? out.regime_state.name : 'stable',
@@ -3337,6 +3659,7 @@ function executePolicyChain(features, patternDb, tau){
   };
   out.brain_dragon = dragon;
   out.brain_risk = risk;
+  out.brain_judge = judge;
 
   if(out.decision === 'PASS') return ensureDecisionReasons(out);
 
@@ -3347,10 +3670,24 @@ function executePolicyChain(features, patternDb, tau){
     return ensureDecisionReasons(out);
   }
 
+  if(judge.level === 'block'){
+    out.decision = 'PASS';
+    out.tier = 'PASS';
+    out.reasons = ['裁決層：' + (judge.reasons[0] || '下三路否決')].concat(out.reasons || []);
+    return ensureDecisionReasons(out);
+  }
+
   if(risk.level === 'observe'){
     if(out.tier === 'ULTRA' || out.tier === 'STRONG' || out.tier === 'STRUCT') out.tier = 'MID';
     if(risk.reasons.length){
       out.reasons = ['風險腦：' + risk.reasons[0]].concat(out.reasons || []);
+    }
+  }
+
+  if(judge.level === 'observe'){
+    if(out.tier === 'ULTRA' || out.tier === 'STRONG' || out.tier === 'STRUCT') out.tier = 'MID';
+    if(judge.reasons.length){
+      out.reasons = ['裁決層：' + judge.reasons[0]].concat(out.reasons || []);
     }
   }
 
@@ -3465,7 +3802,7 @@ function render(livePrediction){
   if(S.history.length < 1){
     ob.className = 'oracle-box pass';
     om.textContent = '等待輸入';
-    rb.textContent = 'v67.5：第一腦採 v65.3 主體，第二腦看龍，第三腦改為初龍能量豁免、虛胖高分差阻擋、極強共振先觀察';
+    rb.textContent = 'v67.8：龍腦改為狀態機、第一腦以下三路共識主判斷、裁決層改為決策表';
     ta.className = 'trend-alert alert-safe';
     ta.textContent = '📊 五路結構門檻策略待命中';
     updateRoadExplain(displayRoads);
@@ -3520,8 +3857,8 @@ function render(livePrediction){
 
   const dragonBrainDisplay = normalizeDragonBrainShape(livePrediction.brain_dragon || {});
   S.lastSideBets = { tie:false, bp:false, pp:false };
-  const openDragonPct = dragonBrainDisplay.state === 'none' ? dragonBrainDisplay.new_dragon_prob : dragonBrainDisplay.dragon_continue_prob;
-  const breakDragonPct = dragonBrainDisplay.dragon_break_prob;
+  const openDragonPct = dragonBrainDisplay.confirmed ? 0 : dragonBrainDisplay.new_dragon_prob;
+  const breakDragonPct = dragonBrainDisplay.confirmed ? dragonBrainDisplay.dragon_break_prob : 0;
   const openEl = document.getElementById('sbTie');
   const breakEl = document.getElementById('sbBP');
   const hiddenEl = document.getElementById('sbPP');
@@ -3843,7 +4180,7 @@ async function exportDB(){
     normalizeLabSnapshots();
 
     const payload = {
-      version:'v67.5',
+      version:'v67.8',
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
@@ -3881,7 +4218,7 @@ async function exportDB(){
         await navigator.share({
           files:[file],
           title:'百家樂資料匯出',
-          text:'bac v67.5 匯出資料'
+          text:'bac v67.8 匯出資料'
         });
         return;
       }
@@ -3923,7 +4260,7 @@ function importDB(event){
       let recoveredByMaterialized = false;
 
       const tempLab = {
-        schema_version:'v67.5',
+        schema_version:'v67.8',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:[]
@@ -3943,7 +4280,7 @@ function importDB(event){
       if(!validateOpenShoeConsistency(LabStore, S)){
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v67.5',
+            schema_version:'v67.8',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:[]
@@ -3956,7 +4293,7 @@ function importDB(event){
           const fallbackShoes = materializeAllShoes();
           if(fallbackShoes.length){
             LabStore = {
-              schema_version:'v67.5',
+              schema_version:'v67.8',
               rawShoes:fallbackShoes,
               currentOpenShoe:null,
               experiments:[]
@@ -3983,7 +4320,7 @@ function importDB(event){
 
       alert(
         recoveredByMaterialized
-          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v67.5。'
+          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v67.8。'
           : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料（含開放鞋快照），並補齊 snapshot schema。'
       );
     }catch(err){
@@ -4039,9 +4376,9 @@ function invokeQuantLab(){
   });
 
   const result = {
-    version:'v67.5',
+    version:'v67.8',
     generated_at:new Date().toISOString(),
-    replay_model_id:'tri_brain_v67_5',
+    replay_model_id:'tri_brain_v67_8',
     shoes:shoeRows.length,
     original:UnifiedAudit.original,
     replay:UnifiedAudit.replay,
@@ -4057,7 +4394,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v67.5 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v67.8 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     '全部現版: ' + result.replay.hits + '/' + result.replay.bets + '｜' + (result.replay.returnSum >= 0 ? '+' : '') + result.replay.returnSum.toFixed(2) + '\n' +
@@ -4126,7 +4463,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v67.5',
+        schema_version:'v67.8',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
