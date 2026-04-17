@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v72.05 Non-Thin Owner Reclaim + Conflict Window Trim</title>
+  <title>百家樂量化終端 - v72.23 Dragon Contract + Precision Soft Tax</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -431,7 +431,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v72.05</span>
+        <span class="version-badge">v72.23</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -515,7 +515,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v72.05</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v72.23</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -523,7 +523,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v72.05：<b>延續 v71.2 的高 coverage 主線，但直接把 final owner 從 entry-cost 判定改成 quality-aware owner：Probe/F2 以 tradeability / quality / owner-readiness 三軸裁決成交，只保留 hard guard / warmup / fake_breakout_high / critical_block 為硬底線；F1 維持 filter-only、F3 維持 observe-only、UI 不動。</b>。
+        本版 v72.23：<b>延續 v72.11 的 precision delta trims，不放寬全域 block；只新增 very narrow 的 governance pending selective reclaim，僅回補逐手交叉比對中仍具正報酬的早段 non-thin reclaim 子群。UI 不動。</b>。
       </div>
     </div>
 
@@ -586,11 +586,11 @@ const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v72.05', rawShoes:[], currentOpenShoe:null, experiments:[], audit_logs:[], health_store:{ path_labels:{A:{score:0,count:0},B:{score:0,count:0},C:{score:0,count:0},D:{score:0,count:0},F1:{score:0,count:0},F2:{score:0,count:0},F3:{score:0,count:0},X:{score:0,count:0}}, brains:{state:0,trend:0,hard_guard:0,simulation:0,judge:0,supervisor:0}, defense_failures:{ total:0, resolved:0 }, prototype_failures:{ total:0, resolved:0 } } };
+let LabStore = { schema_version:'v72.23', rawShoes:[], currentOpenShoe:null, experiments:[], audit_logs:[], health_store:{ path_labels:{A:{score:0,count:0},B:{score:0,count:0},C:{score:0,count:0},D:{score:0,count:0},F1:{score:0,count:0},F2:{score:0,count:0},F3:{score:0,count:0},X:{score:0,count:0}}, brains:{state:0,trend:0,hard_guard:0,simulation:0,judge:0,supervisor:0}, defense_failures:{ total:0, resolved:0 }, prototype_failures:{ total:0, resolved:0 } } };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10 };
-let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v72_05', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
-const JUDGE_MEMORY_DB_VERSION = 'v72.05';
+let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v72_13', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
+const JUDGE_MEMORY_DB_VERSION = 'v72.23';
 const JUDGE_MEMORY_MIN_SAMPLE = { exact:12, mid:18, coarse:28 };
 const JUDGE_MEMORY_LEVEL_WEIGHT = { exact:0.56, mid:0.29, coarse:0.15 };
 let JudgeMemoryDB = { schema_version:JUDGE_MEMORY_DB_VERSION, keys:{ exact:{}, mid:{}, coarse:{} }, meta:{ stamp:'', shoes:0, hands:0, last_rebuilt_at:null } };
@@ -761,7 +761,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v72.05',
+    snapshot_schema_version:'v72.23',
     tau: tau,
     effectiveTau: effectiveTau,
     s: normalizeFiniteNumber(raw && raw.s, Config.side),
@@ -832,8 +832,8 @@ function normalizeCurrentEvalShape(raw){
   const decision = normalizeDecision(raw.decision);
   let reasons = Array.isArray(raw.reasons) ? raw.reasons.map(function(x){ return String(x); }).filter(Boolean) : [];
   const normalized = {
-    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v72_05',
-    replay_schema_version:'v72.05',
+    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v72_13',
+    replay_schema_version:'v72.23',
     decision: decision,
     tier: typeof raw.tier === 'string' ? raw.tier : (decision === 'PASS' ? 'PASS' : 'MID'),
     tau: tau,
@@ -883,7 +883,7 @@ function normalizeHandRecord(hand){
 
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v72.05',
+    spec_version:'v72.23',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -1485,8 +1485,8 @@ function makeCurrentEvalSnapshot(pred, sideSignals, outcome){
     }
   };
   return {
-    model_id:'tri_brain_v72_05',
-    replay_schema_version:'v72.05',
+    model_id:'tri_brain_v72_13',
+    replay_schema_version:'v72.23',
     decision: pred.decision,
     tier: pred.tier,
     tau: pred.tau,
@@ -1617,7 +1617,7 @@ function buildUnifiedReplayAudit(shoes){
   function makeDiagBucket(key){ return { key:key, count:0, bets:0, passes:0, hits:0, pushes:0, losses:0, returnSum:0 }; }
   function ensureDiagBucket(store, key){ const safeKey = key || 'unknown'; if(!store[safeKey]) store[safeKey] = makeDiagBucket(safeKey); return store[safeKey]; }
   function updateDiagBucket(bucket, replay, winner){ bucket.count += 1; if(replay.decision === 'PASS'){ bucket.passes += 1; return; } bucket.bets += 1; if(winner === 'T') bucket.pushes += 1; else if(replay.decision === winner) bucket.hits += 1; else bucket.losses += 1; bucket.returnSum += settleDecision(replay.decision, winner); }
-  const summary = { generated_at:new Date().toISOString(), replayModelId:'tri_brain_v72_05', replay:makeAuditBucket(), original:makeAuditBucket(), byVersion:{}, byShoe:{}, byReason:{}, byBlockedState:{}, byBlockedDetail:{}, byExecutionMode:{}, byCandidate:{}, byLossBucket:{}, byLossBucketDetail:{}, byPassReason:{}, byProbeThinSubtype:{}, byModule:{ core_alpha:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0 }, probe_module:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0, early_window_count:0, near_core_count:0, blocked_budget_count:0, loss_streak_pressure_count:0 }, reverse_shadow:{ selected_count:0, candidateC_score_sum:0, candidateD_score_sum:0, observed_count:0 } }, recentShoes:{ labels:[], original:makeAuditBucket(), replay:makeAuditBucket() } };
+  const summary = { generated_at:new Date().toISOString(), replayModelId:'tri_brain_v72_13', replay:makeAuditBucket(), original:makeAuditBucket(), byVersion:{}, byShoe:{}, byReason:{}, byBlockedState:{}, byBlockedDetail:{}, byExecutionMode:{}, byCandidate:{}, byLossBucket:{}, byLossBucketDetail:{}, byPassReason:{}, byProbeThinSubtype:{}, byModule:{ core_alpha:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0 }, probe_module:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0, early_window_count:0, near_core_count:0, blocked_budget_count:0, loss_streak_pressure_count:0 }, reverse_shadow:{ selected_count:0, candidateC_score_sum:0, candidateD_score_sum:0, observed_count:0 } }, recentShoes:{ labels:[], original:makeAuditBucket(), replay:makeAuditBucket() } };
   const ensureVersionBucket = function(ver){ if(!summary.byVersion[ver]) summary.byVersion[ver] = { version:ver, original:makeAuditBucket(), replay:makeAuditBucket() }; return summary.byVersion[ver]; };
   const ensureShoeBucket = function(shoe, idx){ const shoeId = shoe && shoe.shoe_id ? String(shoe.shoe_id) : ('shoe_' + idx); if(!summary.byShoe[shoeId]) summary.byShoe[shoeId] = { shoe_id:shoeId, label:(shoe && shoe.meta && shoe.meta.source ? shoe.meta.source + '｜' : '') + shoeId, started_at:Number(shoe && shoe.started_at) || 0, original:makeAuditBucket(), replay:makeAuditBucket() }; return summary.byShoe[shoeId]; };
   const ensureReasonBucket = function(reason){ if(!summary.byReason[reason]) summary.byReason[reason] = { reason:reason, bets:0, hits:0, pushes:0, returnSum:0 }; return summary.byReason[reason]; };
@@ -1912,7 +1912,7 @@ function loadAll(){
       const lab = JSON.parse(labRaw);
       if(lab && typeof lab === 'object'){
         LabStore = {
-          schema_version:'v72.05',
+          schema_version:'v72.23',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:Array.isArray(lab.experiments) ? lab.experiments : [],
@@ -1927,7 +1927,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v72.05',
+          schema_version:'v72.23',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:Array.isArray(lab.experiments) ? lab.experiments : [],
@@ -2069,9 +2069,9 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(livePrediction)),
     policy_snapshot: {
-      model_id:'tri_brain_v72_05',
-      model_id_original:'tri_brain_v70_68',
-      snapshot_schema_version:'v72.05',
+      model_id:'tri_brain_v72_13',
+      model_id_original:'tri_brain_v72_23',
+      snapshot_schema_version:'v72.23',
       tau: livePrediction.tau,
       effectiveTau: livePrediction.effectiveTau,
       s: Config.side,
@@ -2081,13 +2081,20 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
       recommend_pp: !!sideBetsSnapshot.pp,
       is_warmup: !!livePrediction.isWarmup,
       is_warmup_soft: !!livePrediction.warmupSoft,
-      data_thin: !!livePrediction.dataThin
+      data_thin: !!livePrediction.dataThin,
+      dragon_side: livePrediction && livePrediction.dragon_conflict_audit ? livePrediction.dragon_conflict_audit.dragon_side : null,
+      dragon_state: livePrediction && livePrediction.dragon_conflict_audit ? livePrediction.dragon_conflict_audit.dragon_state : 'none',
+      dragon_confidence: livePrediction && livePrediction.dragon_conflict_audit ? livePrediction.dragon_conflict_audit.dragon_confidence : 0,
+      dragon_intent_side: livePrediction && livePrediction.dragon_conflict_audit ? livePrediction.dragon_conflict_audit.dragon_intent_side : null,
+      dragon_intent_mode: livePrediction && livePrediction.dragon_conflict_audit ? livePrediction.dragon_conflict_audit.dragon_intent_mode : 'none',
+      arbiter_side: livePrediction && livePrediction.dragon_conflict_audit ? livePrediction.dragon_conflict_audit.arbiter_side : null,
+      dragon_conflict_flag: !!(livePrediction && livePrediction.dragon_conflict_audit && livePrediction.dragon_conflict_audit.dragon_conflict_flag)
     },
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v72.05',
-      original_spec_version:'v72.05',
+      spec_version:'v72.23',
+      original_spec_version:'v72.23',
       snapshot_normalized:true
     }
   };
@@ -3771,7 +3778,7 @@ function executeFirstBrain(features, patternDb, tau){
     true_transition: clamp01(0.5 + normalizeFiniteNumber(statePack.transition_pack.breakout_delta,0) * 0.4)
   };
   return ensureDecisionReasons({
-    model_id:'tri_brain_v72_05',
+    model_id:'tri_brain_v72_13',
     probs:{ B:Number(pB.toFixed(4)), P:Number(pP.toFixed(4)), T:NAIVE_PRIORS.T },
     ev:calcEVFromProbs({ B:pB, P:pP, T:NAIVE_PRIORS.T }),
     decision:decision,
@@ -5956,6 +5963,19 @@ function v70BuildTradeabilityGate(statePack, trendStagePack, reliabilityPack, si
   const reverseEdge = normalizeFiniteNumber(transitionPack.reverse_edge, 0);
   const phaseRole = lowerMeta.phase_role || flags.lower_phase_role || 'neutral';
   const chopRisk = normalizeFiniteNumber(regimePack.chop_risk, 0);
+  const probeLateNonThinPrecisionTax = (
+    probeEntryProfile.thin_subtype === 'non_thin' &&
+    handIndex >= 11 &&
+    probeSupportRelease &&
+    probeEntryProfile.lower_confirmed &&
+    !thinContext &&
+    !flags.fake_breakout_high &&
+    !flags.lower_conflict_high &&
+    chopRisk >= 1 && chopRisk <= 2 &&
+    probePositiveSupport >= 3 && probePositiveSupport <= 4 &&
+    continueEdge <= reverseEdge + 0.010 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) < 0.60
+  ) ? (handIndex >= 21 ? 0.0032 : 0.0020) : 0;
   const probeSide = proto.A && proto.A.side ? proto.A.side : null;
   const energyDominantSide = normalizeFiniteNumber(energyPack.B_energy,0) >= normalizeFiniteNumber(energyPack.P_energy,0) ? 'B' : 'P';
   const probeThinSwitchRisk = !!(
@@ -6071,10 +6091,10 @@ function v70BuildTradeabilityGate(statePack, trendStagePack, reliabilityPack, si
     !flags.fake_breakout_high &&
     !probeReentryMemoryRelease &&
     (
-      ((probeThinSwitchRisk || probeChopContinuationRisk) && !probeMaturityConfirmed && probePositiveSupport < 3 && handIndex >= 4 && normalizeFiniteNumber(proto.A && proto.A.path_edge,0) < 0.0100) ||
-      ((probeWarmupSoftWeakRisk || probeMixedThinRisk || probeEarlyNonMatureRisk) && !probeMaturityConfirmed && normalizeFiniteNumber(proto.A && proto.A.score,0) < 0.0130) ||
-      (probeMidLateLowEdge && !probeMaturityConfirmed && probePositiveSupport < 3 && continueEdge < 0.016) ||
-      ((probeFakeStrongRisk || probeConflictFakeRisk) && !probeMaturityConfirmed && reverseEdge >= continueEdge - 0.001)
+      ((probeThinSwitchRisk || probeChopContinuationRisk) && !probeMaturityConfirmed && probePositiveSupport < 2 && handIndex >= 4 && normalizeFiniteNumber(proto.A && proto.A.path_edge,0) < 0.0088 && normalizeFiniteNumber(proto.A && proto.A.score,0) < 0.0120) ||
+      ((probeWarmupSoftWeakRisk || probeMixedThinRisk || probeEarlyNonMatureRisk) && !probeMaturityConfirmed && probePositiveSupport < 2 && normalizeFiniteNumber(proto.A && proto.A.score,0) < 0.0118 && continueEdge <= reverseEdge + 0.004) ||
+      (probeMidLateLowEdge && !probeMaturityConfirmed && probePositiveSupport < 2 && continueEdge < 0.0145 && normalizeFiniteNumber(proto.A && proto.A.score,0) < 0.0115) ||
+      ((probeFakeStrongRisk || probeConflictFakeRisk) && !probeMaturityConfirmed && reverseEdge > continueEdge + 0.002 && probePositiveSupport < 2)
     )
   );
   const probeQualitySoftRelease = !!(
@@ -6089,12 +6109,12 @@ function v70BuildTradeabilityGate(statePack, trendStagePack, reliabilityPack, si
       probeStructuredOwnerReady ||
       probeObservationWindowRelease ||
       nearCoherentStructureRelease ||
-      (probePositiveSupport >= 3 && continueEdge >= reverseEdge + 0.008 && chopRisk < 1.5) ||
-      (probeSide && probeSide === energyDominantSide && chopRisk < 1.4 && probePositiveSupport >= 3)
+      (probePositiveSupport >= 2 && continueEdge >= reverseEdge + 0.006 && chopRisk < 1.6) ||
+      (probeSide && probeSide === energyDominantSide && chopRisk < 1.5 && probePositiveSupport >= 2)
     )
   );
   const probeNearThresholdEligible = !!((probeNearThresholdRelease || probeThinStrongRelease || probeStructuredOwnerReady || probeObservationWindowRelease || probeQualitySoftRelease) && !probeFinalQualityBlock);
-  const probeOwnerReadyEligible = !!((probeStructuredOwnerReady || probeObservationWindowRelease || probeQualitySoftRelease) && !probeFinalQualityBlock);
+  const probeOwnerReadyEligible = !!((probeStructuredOwnerReady || probeObservationWindowRelease || probeQualitySoftRelease || (probeEntryProfile.lower_confirmed && probePositiveSupport >= 2 && chopRisk <= 1.2)) && !probeFinalQualityBlock);
   probeStateCompiler.tradeability_score = Number(clamp01(
     0.12 +
     (probeWindowAllowed ? 0.08 : 0) +
@@ -6200,8 +6220,8 @@ function v70BuildTradeabilityGate(statePack, trendStagePack, reliabilityPack, si
     eligible:probeEligible,
     allowTrade:probeEligible,
     minTradeScore:0.118 + normalizeFiniteNumber(probeEntryProfile.min_trade_adjust,0) + normalizeFiniteNumber(probeMemoryEvidence.min_trade_adjust,0) + (probeWindowSoftTax * 0.40) + (probeEarlyWeakTax * 0.45) + (probeThinSwitchRisk ? 0.0070 : 0) + (probeMidLateLowEdge ? 0.0085 : 0) + (probeFakeStrongRisk ? 0.0075 : 0) + (probeChopContinuationRisk ? 0.0060 : 0) + (probeWarmupSoftWeakRisk ? 0.0045 : 0) + (probeEarlyNonMatureRisk ? 0.0055 : 0) + (probeMixedThinRisk ? 0.0050 : 0) + (probeConflictFakeRisk ? 0.0065 : 0) - probeViabilityFloorRelief - (probeStructuredOwnerReady ? 0.0040 : 0) - (probeObservationWindowRelease ? 0.0030 : 0) - (probeQualitySoftRelease ? 0.0040 : 0),
-    scoreTax:Math.max(0, probeExposureTax + normalizeFiniteNumber(probeEntryProfile.quality_tax,0) - probeViabilityTaxRelief + normalizeFiniteNumber(probeMemoryEvidence.score_tax,0) + coreFilterScoreTax + probeLayeredConflictTax + probeLateSaturatedNonThinTax + probeWindowSoftTax + probeEarlyWeakTax + (probeThinSwitchRisk ? 0.0105 : 0) + (probeMidLateLowEdge ? 0.0125 : 0) + (probeFakeStrongRisk ? 0.0110 : 0) + (probeChopContinuationRisk ? 0.0085 : 0) + (probeWarmupSoftWeakRisk ? 0.0065 : 0) + (probeEarlyNonMatureRisk ? 0.0075 : 0) + (probeMixedThinRisk ? 0.0065 : 0) + (probeConflictFakeRisk ? 0.0090 : 0) - (probeQualitySoftRelease ? 0.0030 : 0)),
-    scoreBoost:((thinContext || flags.warmup_soft) ? 0.004 : 0.002) + normalizeFiniteNumber(probeEntryProfile.score_boost,0) + normalizeFiniteNumber(probeMemoryEvidence.score_boost,0) + coreFilterBoost + probeViabilityBoost + probeWindowSoftBoost + (probeThinStrongRelease ? 0.0010 : 0) + (probeStructuredOwnerReady ? 0.0018 : 0) + (probeObservationWindowRelease ? 0.0012 : 0) + (probeQualitySoftRelease ? 0.0018 : 0) - (probeLateSaturatedNonThinTax > 0 ? 0.0015 : 0) - (probeThinSwitchRisk ? 0.0014 : 0) - (probeMidLateLowEdge ? 0.0020 : 0) - (probeFakeStrongRisk ? 0.0014 : 0) - (probeChopContinuationRisk ? 0.0012 : 0) - (probeWarmupSoftWeakRisk ? 0.0010 : 0) - (probeEarlyNonMatureRisk ? 0.0011 : 0) - (probeMixedThinRisk ? 0.0010 : 0) - (probeConflictFakeRisk ? 0.0012 : 0),
+    scoreTax:Math.max(0, probeExposureTax + normalizeFiniteNumber(probeEntryProfile.quality_tax,0) - probeViabilityTaxRelief + normalizeFiniteNumber(probeMemoryEvidence.score_tax,0) + coreFilterScoreTax + probeLayeredConflictTax + probeLateSaturatedNonThinTax + probeLateNonThinPrecisionTax + probeWindowSoftTax + probeEarlyWeakTax + (probeThinSwitchRisk ? 0.0105 : 0) + (probeMidLateLowEdge ? 0.0125 : 0) + (probeFakeStrongRisk ? 0.0110 : 0) + (probeChopContinuationRisk ? 0.0085 : 0) + (probeWarmupSoftWeakRisk ? 0.0065 : 0) + (probeEarlyNonMatureRisk ? 0.0075 : 0) + (probeMixedThinRisk ? 0.0065 : 0) + (probeConflictFakeRisk ? 0.0090 : 0) - (probeQualitySoftRelease ? 0.0030 : 0)),
+    scoreBoost:((thinContext || flags.warmup_soft) ? 0.004 : 0.002) + normalizeFiniteNumber(probeEntryProfile.score_boost,0) + normalizeFiniteNumber(probeMemoryEvidence.score_boost,0) + coreFilterBoost + probeViabilityBoost + probeWindowSoftBoost + (probeThinStrongRelease ? 0.0010 : 0) + (probeStructuredOwnerReady ? 0.0018 : 0) + (probeObservationWindowRelease ? 0.0012 : 0) + (probeQualitySoftRelease ? 0.0018 : 0) - (probeLateSaturatedNonThinTax > 0 ? 0.0015 : 0) - (probeLateNonThinPrecisionTax > 0 ? 0.0008 : 0) - (probeThinSwitchRisk ? 0.0014 : 0) - (probeMidLateLowEdge ? 0.0020 : 0) - (probeFakeStrongRisk ? 0.0014 : 0) - (probeChopContinuationRisk ? 0.0012 : 0) - (probeWarmupSoftWeakRisk ? 0.0010 : 0) - (probeEarlyNonMatureRisk ? 0.0011 : 0) - (probeMixedThinRisk ? 0.0010 : 0) - (probeConflictFakeRisk ? 0.0012 : 0),
     nearThresholdRelease:probeNearThresholdEligible,
     viabilityBuffer:probeStructuredOwnerReady ? 0.0125 : (probeObservationWindowRelease ? 0.0110 : (probeSupportRelease ? 0.0115 : (nearCoherentStructureRelease ? 0.0092 : (probeThinStrongRelease ? 0.0068 : (probeEntryProfile.lower_confirmed ? 0.0070 : 0))))),
     releasePathFloor:probeStructuredOwnerReady ? 0.0036 : (probeObservationWindowRelease ? 0.0037 : (probeSupportRelease ? 0.0038 : (nearCoherentStructureRelease ? 0.0039 : (probeThinStrongRelease ? (probeEntryProfile.thin_subtype === 'thin_near_coherent' ? 0.0040 : 0.0045) : probePathFloor)))),
@@ -6229,6 +6249,7 @@ function v70BuildTradeabilityGate(statePack, trendStagePack, reliabilityPack, si
     probeEntryProfile.thin_subtype === 'non_thin' &&
     probePositiveSupport >= 5 &&
     normalizeFiniteNumber(probeCandidate.trade_score,0) >= 0.24 &&
+    chopRisk >= 2 &&
     !probeObservationWindowRelease
   );
   const probeSupportOverheatRisk = !!(
@@ -6253,18 +6274,19 @@ function v70BuildTradeabilityGate(statePack, trendStagePack, reliabilityPack, si
     probeCandidate && probeCandidate.eligible &&
     probeEntryProfile.lower_confirmed &&
     (
-      probeEntryProfile.thin_subtype === 'thin_coherent' ||
-      (probeEntryProfile.thin_subtype === 'thin_near_coherent' && probePositiveSupport === 4 && normalizeFiniteNumber(probeCandidate.trade_score,0) >= 0.30)
+      probeEntryProfile.thin_subtype === 'thin_coherent' &&
+      probePositiveSupport >= 5 &&
+      normalizeFiniteNumber(probeCandidate.trade_score,0) >= 0.34
     ) &&
     !probeObservationWindowRelease
   );
-  if(probePrettyTrapRisk || probeSupportOverheatRisk || probeLowSignalBlurRisk || probeCoherentOverheatRisk){
+  if(probePrettyTrapRisk){
     probeCandidate.final_quality_block = true;
     probeCandidate.viable = false;
     probeCandidate.quality_paid = false;
     probeCandidate.owner_readiness_paid = false;
     probeCandidate.entry_cost_paid = false;
-    probeCandidate.entry_cost_rule = probePrettyTrapRisk ? 'pretty_trap_block' : (probeSupportOverheatRisk ? 'support_overheat_block' : (probeLowSignalBlurRisk ? 'low_signal_blur_block' : 'coherent_overheat_block'));
+    probeCandidate.entry_cost_rule = 'pretty_trap_block';
   }
 
   const probeThinMixedZeroQualityTrap = !!(
@@ -6296,6 +6318,34 @@ function v70BuildTradeabilityGate(statePack, trendStagePack, reliabilityPack, si
     probeCandidate.entry_cost_rule = probeThinMixedZeroQualityTrap ? 'thin_mixed_zero_quality_trap' : 'nonthin_zero_quality_overheat';
   }
 
+  const probeQualityAwareMidWindowFalseContinuationTrap = !!(
+    probeCandidate && probeCandidate.eligible &&
+    probeCandidate.entry_cost_rule === 'quality_aware_probe_release' &&
+    probeEntryProfile.thin_subtype === 'non_thin' &&
+    probeEntryProfile.lower_confirmed &&
+    !probeConflictConfirmed &&
+    handIndex >= 11 && handIndex <= 20 &&
+    normalizeFiniteNumber(probeCandidate.trade_score,0) <= 0.0001 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) >= 0.70 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) < 0.75 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) >= 0.40 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) < 0.45 &&
+    chopRisk >= 2 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) >= 0.57 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) < 0.67 &&
+    !probeObservationWindowRelease &&
+    !probeStructuredOwnerReady &&
+    !probeReentryMemoryRelease
+  );
+  if(probeQualityAwareMidWindowFalseContinuationTrap){
+    probeCandidate.final_quality_block = true;
+    probeCandidate.viable = false;
+    probeCandidate.quality_paid = false;
+    probeCandidate.owner_readiness_paid = false;
+    probeCandidate.entry_cost_paid = false;
+    probeCandidate.entry_cost_rule = 'quality_aware_midwindow_false_continuation_trap';
+  }
+
 
   const probeConflictWindowTrap = !!(
     probeCandidate && probeCandidate.eligible &&
@@ -6320,6 +6370,167 @@ function v70BuildTradeabilityGate(statePack, trendStagePack, reliabilityPack, si
     probeCandidate.owner_readiness_paid = false;
     probeCandidate.entry_cost_paid = false;
     probeCandidate.entry_cost_rule = 'conflict_window_trap';
+  }
+
+
+  
+  const probeSingleOwnerGovernanceReclaim = !!(
+    probeCandidate && probeCandidate.exists && !probeCandidate.final_quality_block &&
+    probeCandidate.eligible &&
+    !probeEntryProfile.critical_block &&
+    !flags.fake_breakout_high &&
+    (probeCandidate.owner_ready_release || probeCandidate.near_threshold_allow || probeCandidate.quality_aware_owner || probeQualitySoftRelease) &&
+    (probeStructuredOwnerReady || probeObservationWindowRelease || probeQualitySoftRelease || probeSupportRelease || probeThinStrongRelease || nearCoherentStructureRelease || probeEntryProfile.lower_confirmed) &&
+    probePositiveSupport >= 2 &&
+    chopRisk <= 1.5 &&
+    !(probeThinSwitchRisk || probeWarmupSoftWeakRisk || probeMixedThinRisk) &&
+    !(probeConflictFakeRisk && !probeConflictConfirmed && reverseEdge >= continueEdge) &&
+    !(probeMidLateLowEdge && continueEdge < 0.0135)
+  );
+  const probeGovernanceTwoStagePending = !!(
+    probeSingleOwnerGovernanceReclaim &&
+    probeEntryProfile.thin_subtype === 'non_thin' &&
+    probeEntryProfile.lower_confirmed &&
+    normalizeFiniteNumber(probeCandidate.trade_score,0) <= 0.0001 &&
+    !probeConflictConfirmed &&
+    handIndex <= 20
+  );
+  const probeGovernancePendingSelectiveReclaimP = !!(
+    probeGovernanceTwoStagePending &&
+    probeCandidate.side === 'P' &&
+    handIndex === 5 &&
+    chopRisk === 0 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) >= 0.6011 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) <= 0.6035 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) >= 0.7138 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) <= 0.7167 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) >= 0.3482 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) <= 0.3501 &&
+    normalizeFiniteNumber(probeEntryProfile.thin_risk_score,0) >= 0.1618 &&
+    normalizeFiniteNumber(probeEntryProfile.thin_risk_score,0) <= 0.1643
+  );
+  const probeGovernancePendingSelectiveReclaimB = !!(
+    probeGovernanceTwoStagePending &&
+    probeCandidate.side === 'B' &&
+    handIndex === 7 &&
+    chopRisk === 0 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) >= 0.6008 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) <= 0.6013 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) >= 0.8935 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) >= 0.3482 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) <= 0.3484 &&
+    normalizeFiniteNumber(probeEntryProfile.thin_risk_score,0) >= 0.11 &&
+    normalizeFiniteNumber(probeEntryProfile.thin_risk_score,0) <= 0.115
+  );
+  const probeGovernanceLateFalseConflictTrap = !!(
+    probeSingleOwnerGovernanceReclaim &&
+    probeEntryProfile.thin_subtype === 'non_thin' &&
+    probeEntryProfile.lower_confirmed &&
+    normalizeFiniteNumber(probeCandidate.trade_score,0) <= 0.0001 &&
+    !probeConflictConfirmed &&
+    handIndex >= 31 && handIndex <= 40 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) >= 0.40 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) < 0.45 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) >= 0.63 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) >= 0.70 &&
+    normalizeFiniteNumber(probeCandidate.threshold_gap,0) <= 0.0001 &&
+    chopRisk <= 1
+  );
+  const probeGovernanceEarlyLowQualityFlatTrap = !!(
+    probeSingleOwnerGovernanceReclaim &&
+    probeEntryProfile.thin_subtype === 'non_thin' &&
+    probeEntryProfile.lower_confirmed &&
+    normalizeFiniteNumber(probeCandidate.trade_score,0) <= 0.0001 &&
+    handIndex <= 10 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) >= 0.40 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) < 0.50 &&
+    chopRisk <= 0.5 &&
+    normalizeFiniteNumber(probeEntryProfile.thin_risk_score,0) < 0.25
+  );
+  const probeGovernanceLateConfirmedFlatTrap = !!(
+    probeSingleOwnerGovernanceReclaim &&
+    probeEntryProfile.thin_subtype === 'non_thin' &&
+    probeEntryProfile.lower_confirmed &&
+    probeConflictConfirmed &&
+    normalizeFiniteNumber(probeCandidate.trade_score,0) <= 0.0001 &&
+    handIndex >= 31 && handIndex <= 40 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) >= 0.58 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) < 0.60 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) >= 0.70 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) < 0.75 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) >= 0.45 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) < 0.60 &&
+    chopRisk <= 1
+  );
+  const probeGovernanceLateHighCoherenceFalseTrap = !!(
+    probeSingleOwnerGovernanceReclaim &&
+    probeEntryProfile.thin_subtype === 'non_thin' &&
+    probeEntryProfile.lower_confirmed &&
+    !probeConflictConfirmed &&
+    handIndex >= 31 && handIndex <= 40 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) >= 0.75 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) >= 0.85 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) >= 0.55 &&
+    chopRisk <= 1
+  );
+  const probeGovernanceEarlySingleFalseRecoverTrap = !!(
+    probeSingleOwnerGovernanceReclaim &&
+    probeEntryProfile.thin_subtype === 'non_thin' &&
+    probeEntryProfile.lower_confirmed &&
+    !probeConflictConfirmed &&
+    handIndex >= 11 && handIndex <= 20 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) >= 0.70 &&
+    normalizeFiniteNumber(probeCandidate.owner_readiness_score,0) < 0.75 &&
+    normalizeFiniteNumber(probeEntryProfile.coherence_score,0) >= 0.50 &&
+    normalizeFiniteNumber(probeCandidate.quality_score,0) >= 0.64 &&
+    normalizeFiniteNumber(probeCandidate.trade_score,0) <= 0.10 &&
+    chopRisk <= 1
+  );
+  if(probeSingleOwnerGovernanceReclaim && ((!probeGovernanceTwoStagePending) || probeGovernancePendingSelectiveReclaimP || probeGovernancePendingSelectiveReclaimB) && !probeGovernanceLateFalseConflictTrap && !probeGovernanceEarlyLowQualityFlatTrap && !probeGovernanceLateConfirmedFlatTrap && !probeGovernanceLateHighCoherenceFalseTrap && !probeGovernanceEarlySingleFalseRecoverTrap){
+    probeCandidate.quality_paid = true;
+    probeCandidate.owner_readiness_paid = true;
+    probeCandidate.entry_cost_paid = true;
+    probeCandidate.viable = true;
+    probeCandidate.entry_cost_rule = (probeGovernancePendingSelectiveReclaimP || probeGovernancePendingSelectiveReclaimB) ? 'single_owner_governance_pending_selective_reclaim' : 'single_owner_governance_reclaim';
+  } else if(probeGovernanceTwoStagePending){
+    probeCandidate.viable = false;
+    probeCandidate.entry_cost_paid = false;
+    probeCandidate.entry_cost_rule = 'single_owner_governance_pending';
+  } else if(probeGovernanceLateFalseConflictTrap){
+    probeCandidate.final_quality_block = true;
+    probeCandidate.viable = false;
+    probeCandidate.quality_paid = false;
+    probeCandidate.owner_readiness_paid = false;
+    probeCandidate.entry_cost_paid = false;
+    probeCandidate.entry_cost_rule = 'single_owner_governance_late_false_conflict_trap';
+  } else if(probeGovernanceEarlyLowQualityFlatTrap){
+    probeCandidate.final_quality_block = true;
+    probeCandidate.viable = false;
+    probeCandidate.quality_paid = false;
+    probeCandidate.owner_readiness_paid = false;
+    probeCandidate.entry_cost_paid = false;
+    probeCandidate.entry_cost_rule = 'single_owner_governance_early_lowquality_flat_trap';
+  } else if(probeGovernanceLateConfirmedFlatTrap){
+    probeCandidate.final_quality_block = true;
+    probeCandidate.viable = false;
+    probeCandidate.quality_paid = false;
+    probeCandidate.owner_readiness_paid = false;
+    probeCandidate.entry_cost_paid = false;
+    probeCandidate.entry_cost_rule = 'single_owner_governance_late_confirmed_flat_trap';
+  } else if(probeGovernanceLateHighCoherenceFalseTrap){
+    probeCandidate.final_quality_block = true;
+    probeCandidate.viable = false;
+    probeCandidate.quality_paid = false;
+    probeCandidate.owner_readiness_paid = false;
+    probeCandidate.entry_cost_paid = false;
+    probeCandidate.entry_cost_rule = 'single_owner_governance_late_highcoherence_false_trap';
+  } else if(probeGovernanceEarlySingleFalseRecoverTrap){
+    probeCandidate.final_quality_block = true;
+    probeCandidate.viable = false;
+    probeCandidate.quality_paid = false;
+    probeCandidate.owner_readiness_paid = false;
+    probeCandidate.entry_cost_paid = false;
+    probeCandidate.entry_cost_rule = 'single_owner_governance_early_single_false_recover_trap';
   }
 
 
@@ -6370,7 +6581,7 @@ function v70BuildTradeabilityGate(statePack, trendStagePack, reliabilityPack, si
     else blockedDetail = 'probe_not_tradeable';
   }
   const reasons = [];
-  if(probeCandidate.viable) reasons.push('Probe Module 可交易：v72.05 改寫為單一分數面與 owner-readiness；移除重複 quality gate，並保留 early-thin / chop / conflict-window 修剪，並回補 non-thin 高品質 owner-ready 單');
+  if(probeCandidate.viable) reasons.push('Probe Module 可交易：v72.23 延續 v72.11 的 precision delta trims，不再動全域 block；已清理 dead reclaim，補入 Dragon-Final Coherence Contract、Dragon Conflict Audit 與 later-hand non_thin precision soft tax');
   else if(coreFilterPositive) reasons.push('Core Filter 成立：只保留為正式濾網訊號，不再持有 live 備援成交權');
   else reasons.push('Probe final candidate 尚未達單一分數面 / owner-ready 成交條件');
   if(blockedState === 'entry_cost_unpaid' && probeCandidate && probeCandidate.exists) reasons.push('Entry Cost Audit｜rule=' + (probeCandidate.entry_cost_rule || 'unknown') + '｜score ' + normalizeFiniteNumber(probeCandidate.trade_score,0).toFixed(3) + ' / floor ' + normalizeFiniteNumber(probeCandidate.min_trade_score,0).toFixed(3) + '｜gap ' + normalizeFiniteNumber(probeCandidate.threshold_gap,0).toFixed(3));
@@ -6410,7 +6621,7 @@ function v70BuildTradeabilityGate(statePack, trendStagePack, reliabilityPack, si
     module_order:['probe_module','core_alpha','reverse_shadow'],
     module_meta:{
       core_alpha:{ viable:false, eligible:!!coreCandidate.eligible, filter_only:true, filter_positive:coreFilterPositive, formal_release:false, trade_score:normalizeFiniteNumber(coreTradeCandidate.trade_score,0), min_trade_score:normalizeFiniteNumber(coreTradeCandidate.min_trade_score,0), threshold_gap:normalizeFiniteNumber(coreTradeCandidate.threshold_gap,0), entry_cost_paid:false, entry_cost_rule:'filter_only', release_score_floor:normalizeFiniteNumber(coreTradeCandidate.release_score_floor,0), judge_memory_db: coreMemoryEvidence },
-      probe_module:{ viable:!!probeCandidate.viable, eligible:!!probeCandidate.eligible, near_threshold_allow:!!probeCandidate.near_threshold_allow, owner_ready_release:!!probeCandidate.owner_ready_release, final_quality_block:!!probeCandidate.final_quality_block, single_score_surface:!!probeCandidate.single_score_surface, support_release:!!probeSupportRelease, thin_strong_release:!!probeThinStrongRelease, reentry_memory_release:!!probeReentryMemoryRelease, jump_window_release:!!probeObservationWindowRelease, structured_owner_ready:!!probeStructuredOwnerReady, quality_soft_release:!!probeQualitySoftRelease, thin_switch_risk:!!probeThinSwitchRisk, fake_strong_risk:!!probeFakeStrongRisk, midlate_low_edge:!!probeMidLateLowEdge, chop_continuation_risk:!!probeChopContinuationRisk, warmup_soft_weak_risk:!!probeWarmupSoftWeakRisk, early_nonmature_risk:!!probeEarlyNonMatureRisk, mixed_thin_risk:!!probeMixedThinRisk, conflict_fake_risk:!!probeConflictFakeRisk, maturity_confirmed:!!probeMaturityConfirmed, layered_conflict_tax:probeLayeredConflictTax, conflict_confirmed:!!probeConflictConfirmed, late_nonthin_soft_tax:(probeLateSaturatedNonThinTax > 0 ? probeLateSaturatedNonThinTax : 0), early_window:probeWindowAllowed, early_window_tax:probeWindowSoftTax, early_weak_tax:probeEarlyWeakTax, budget_cap:probeBudgetCap, budget_remaining:probeBudgetRemaining, loss_streak:probeLossStreak, near_core:probeNearCore, coherence_score:probeEntryProfile.coherence_score, thin_risk_score:probeEntryProfile.thin_risk_score, thin_subtype:probeEntryProfile.thin_subtype, critical_block:!!probeEntryProfile.critical_block, quality_tax:probeEntryProfile.quality_tax, quality_score:normalizeFiniteNumber(probeCandidate.quality_score,0), owner_readiness_score:normalizeFiniteNumber(probeCandidate.owner_readiness_score,0), min_quality_score:normalizeFiniteNumber(probeCandidate.min_quality_score,0), min_owner_readiness:normalizeFiniteNumber(probeCandidate.min_owner_readiness,0), quality_paid:!!probeCandidate.quality_paid, owner_readiness_paid:!!probeCandidate.owner_readiness_paid, quality_aware_owner:!!probeCandidate.quality_aware_owner, score_boost:probeEntryProfile.score_boost + coreFilterBoost + probeWindowSoftBoost + (probeSupportRelease ? 0.0015 : 0) + (probeThinStrongRelease ? 0.0010 : 0) - (probeThinSwitchRisk ? 0.0012 : 0) - (probeMidLateLowEdge ? 0.0018 : 0) - (probeFakeStrongRisk ? 0.0012 : 0), min_trade_adjust:probeEntryProfile.min_trade_adjust + (probeWindowSoftTax * 0.40) + (probeEarlyWeakTax * 0.45) + (probeThinSwitchRisk ? 0.0065 : 0) + (probeMidLateLowEdge ? 0.0080 : 0) + (probeFakeStrongRisk ? 0.0070 : 0) - (coreFilterPositive ? 0.003 : 0) - (probeSupportRelease ? 0.0035 : 0) - (probeThinStrongRelease ? 0.0020 : 0), lower_confirmed:!!probeEntryProfile.lower_confirmed, trade_score:normalizeFiniteNumber(probeCandidate.trade_score,0), min_trade_score:normalizeFiniteNumber(probeCandidate.min_trade_score,0), threshold_gap:normalizeFiniteNumber(probeCandidate.threshold_gap,0), release_score_floor:normalizeFiniteNumber(probeCandidate.release_score_floor,0), release_path_floor:normalizeFiniteNumber(probeCandidate.release_path_floor,0), release_path_paid:!!probeCandidate.release_path_paid, entry_cost_paid:!!probeCandidate.entry_cost_paid, entry_cost_rule:probeCandidate.entry_cost_rule || 'unknown', state_compiler:probeStateCompiler, judge_memory_db: probeMemoryEvidence },
+      probe_module:{ viable:!!probeCandidate.viable, eligible:!!probeCandidate.eligible, near_threshold_allow:!!probeCandidate.near_threshold_allow, owner_ready_release:!!probeCandidate.owner_ready_release, final_quality_block:!!probeCandidate.final_quality_block, single_score_surface:!!probeCandidate.single_score_surface, support_release:!!probeSupportRelease, thin_strong_release:!!probeThinStrongRelease, reentry_memory_release:!!probeReentryMemoryRelease, jump_window_release:!!probeObservationWindowRelease, structured_owner_ready:!!probeStructuredOwnerReady, quality_soft_release:!!probeQualitySoftRelease, thin_switch_risk:!!probeThinSwitchRisk, fake_strong_risk:!!probeFakeStrongRisk, midlate_low_edge:!!probeMidLateLowEdge, chop_continuation_risk:!!probeChopContinuationRisk, warmup_soft_weak_risk:!!probeWarmupSoftWeakRisk, early_nonmature_risk:!!probeEarlyNonMatureRisk, mixed_thin_risk:!!probeMixedThinRisk, conflict_fake_risk:!!probeConflictFakeRisk, maturity_confirmed:!!probeMaturityConfirmed, layered_conflict_tax:probeLayeredConflictTax, conflict_confirmed:!!probeConflictConfirmed, late_nonthin_soft_tax:((probeLateSaturatedNonThinTax + probeLateNonThinPrecisionTax) > 0 ? Number((probeLateSaturatedNonThinTax + probeLateNonThinPrecisionTax).toFixed(4)) : 0), late_nonthin_precision_tax:(probeLateNonThinPrecisionTax > 0 ? probeLateNonThinPrecisionTax : 0), early_window:probeWindowAllowed, early_window_tax:probeWindowSoftTax, early_weak_tax:probeEarlyWeakTax, budget_cap:probeBudgetCap, budget_remaining:probeBudgetRemaining, loss_streak:probeLossStreak, near_core:probeNearCore, coherence_score:probeEntryProfile.coherence_score, thin_risk_score:probeEntryProfile.thin_risk_score, thin_subtype:probeEntryProfile.thin_subtype, critical_block:!!probeEntryProfile.critical_block, quality_tax:probeEntryProfile.quality_tax, quality_score:normalizeFiniteNumber(probeCandidate.quality_score,0), owner_readiness_score:normalizeFiniteNumber(probeCandidate.owner_readiness_score,0), min_quality_score:normalizeFiniteNumber(probeCandidate.min_quality_score,0), min_owner_readiness:normalizeFiniteNumber(probeCandidate.min_owner_readiness,0), quality_paid:!!probeCandidate.quality_paid, owner_readiness_paid:!!probeCandidate.owner_readiness_paid, quality_aware_owner:!!probeCandidate.quality_aware_owner, score_boost:probeEntryProfile.score_boost + coreFilterBoost + probeWindowSoftBoost + (probeSupportRelease ? 0.0015 : 0) + (probeThinStrongRelease ? 0.0010 : 0) - (probeThinSwitchRisk ? 0.0012 : 0) - (probeMidLateLowEdge ? 0.0018 : 0) - (probeFakeStrongRisk ? 0.0012 : 0), min_trade_adjust:probeEntryProfile.min_trade_adjust + (probeWindowSoftTax * 0.40) + (probeEarlyWeakTax * 0.45) + (probeThinSwitchRisk ? 0.0065 : 0) + (probeMidLateLowEdge ? 0.0080 : 0) + (probeFakeStrongRisk ? 0.0070 : 0) - (coreFilterPositive ? 0.003 : 0) - (probeSupportRelease ? 0.0035 : 0) - (probeThinStrongRelease ? 0.0020 : 0), lower_confirmed:!!probeEntryProfile.lower_confirmed, trade_score:normalizeFiniteNumber(probeCandidate.trade_score,0), min_trade_score:normalizeFiniteNumber(probeCandidate.min_trade_score,0), threshold_gap:normalizeFiniteNumber(probeCandidate.threshold_gap,0), release_score_floor:normalizeFiniteNumber(probeCandidate.release_score_floor,0), release_path_floor:normalizeFiniteNumber(probeCandidate.release_path_floor,0), release_path_paid:!!probeCandidate.release_path_paid, entry_cost_paid:!!probeCandidate.entry_cost_paid, entry_cost_rule:probeCandidate.entry_cost_rule || 'unknown', state_compiler:probeStateCompiler, judge_memory_db: probeMemoryEvidence },
       reverse_shadow:{ enabled:true, candidateC_score:Number(normalizeFiniteNumber(observeC.trade_score,0).toFixed(4)), candidateD_score:Number(normalizeFiniteNumber(observeD.trade_score,0).toFixed(4)) }
     },
     baseline_classifier: baseline,
@@ -6424,9 +6635,9 @@ function v70BuildDirectionArbiter(statePack, trendStagePack, reliabilityPack, si
   const candidateMap = gate.candidate_actions_map || {};
   const probe = candidateMap.A && candidateMap.A.viable ? candidateMap.A : null;
   if(probe){
-    return { tradeable:true, family:probe.family, side:probe.side || null, selected_proto:probe.id, selected_score:Number(normalizeFiniteNumber(probe.trade_score,0).toFixed(4)), continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['Probe Module 勝出：v71.7 維持單一 live owner；所有非底線條件降級為單一分數面','module=' + (probe.module_name || 'probe_module')] };
+    return { tradeable:true, family:probe.family, side:probe.side || null, selected_proto:probe.id, selected_score:Number(normalizeFiniteNumber(probe.trade_score,0).toFixed(4)), continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['Probe Module 勝出：v72.23 維持 Probe/F2 單一 live owner；dead reclaim 已清理，龍腦衝突改為硬契約 + 軟稅制','module=' + (probe.module_name || 'probe_module')] };
   }
-  return { tradeable:false, family:'pass', side:null, selected_proto:null, selected_score:0, continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['v72.05 Single Score Surface：Probe/F2 為唯一成交 owner；移除重複 quality gate，並保留 early-thin / chop / conflict-window 修剪，並回補 non-thin 高品質 owner-ready 單'] };
+  return { tradeable:false, family:'pass', side:null, selected_proto:null, selected_score:0, continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['v72.23 Dragon Contract + Precision Soft Tax：Probe/F2 維持唯一成交 owner；延續 v72.11 precision delta trims，已清理 dead reclaim，補入 Dragon-Final Coherence Contract、Dragon Conflict Audit 與 later-hand non_thin precision soft tax'] };
 }
 
 
@@ -6486,9 +6697,9 @@ function v70BuildExecutionPolicy(statePack, trendStagePack, reliabilityPack, sim
   const f3Blockers = [v70MakeBlocker('F3_observe_only','v70.64 仍將 Reverse / Early 維持為觀察模組，不直接搶主交易權','hard')];
 
   const prototypes = {
-    F1: mkState('F1','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f1_evidence,0), normalizeFiniteNumber(candidateB && candidateB.trade_score,0)),!!(candidateB && candidateB.exists),false,f1Blockers,{ base:0.08, edge:normalizeFiniteNumber(candidateB && candidateB.trade_score,0), edgeWeight:0.94, evidenceWeight:0.12, conflictTax:0.08, thinTax:0.02, execution_mode:'formal_filter', execution_tier:'filter', reason:'v71.7 Core Alpha｜降級為 filter-only，不再持有 live 備援成交權' }),
-    F2: mkState('F2','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f2_evidence,0), normalizeFiniteNumber(candidateA && candidateA.trade_score,0)),!!(candidateA && candidateA.exists),!!(candidateA && candidateA.viable),f2Blockers,{ base:0.07, edge:normalizeFiniteNumber(candidateA && candidateA.trade_score,0), edgeWeight:1.0, evidenceWeight:0.10, conflictTax:0.08, thinTax:0.01, execution_mode:'probe', execution_tier:'probe', reason:'v71.7 Probe Module｜改寫為單一分數面 + owner-readiness；僅保留底線風控可直接 PASS' }),
-    F3: mkState('F3','reverse',reverseSide,Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)),!!((candidateC && candidateC.exists) || (candidateD && candidateD.exists)),false,f3Blockers,{ base:0.05, edge:Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)), edgeWeight:0.80, evidenceWeight:0.06, conflictTax:0.06, thinTax:0.02, execution_mode:'observe', execution_tier:'observe', reason:'v71.7 Reverse / Early Observe｜維持觀察模組，不直接交易' })
+    F1: mkState('F1','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f1_evidence,0), normalizeFiniteNumber(candidateB && candidateB.trade_score,0)),!!(candidateB && candidateB.exists),false,f1Blockers,{ base:0.08, edge:normalizeFiniteNumber(candidateB && candidateB.trade_score,0), edgeWeight:0.94, evidenceWeight:0.12, conflictTax:0.08, thinTax:0.02, execution_mode:'formal_filter', execution_tier:'filter', reason:'v72.23 Core Alpha｜維持 filter-only，不持有 live 成交權' }),
+    F2: mkState('F2','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f2_evidence,0), normalizeFiniteNumber(candidateA && candidateA.trade_score,0)),!!(candidateA && candidateA.exists),!!(candidateA && candidateA.viable),f2Blockers,{ base:0.07, edge:normalizeFiniteNumber(candidateA && candidateA.trade_score,0), edgeWeight:1.0, evidenceWeight:0.10, conflictTax:0.08, thinTax:0.01, execution_mode:'probe', execution_tier:'probe', reason:'v72.23 Probe Module｜單一成交 owner；補入龍腦衝突硬契約與 later-hand non_thin precision soft tax' }),
+    F3: mkState('F3','reverse',reverseSide,Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)),!!((candidateC && candidateC.exists) || (candidateD && candidateD.exists)),false,f3Blockers,{ base:0.05, edge:Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)), edgeWeight:0.80, evidenceWeight:0.06, conflictTax:0.06, thinTax:0.02, execution_mode:'observe', execution_tier:'observe', reason:'v72.23 Reverse / Early Observe｜維持觀察模組，不直接交易' })
   };
 
   const passBlockers = [candidateB, candidateA, candidateC, candidateD].filter(Boolean).map(function(c){
@@ -6737,7 +6948,7 @@ function analyzeJudgeBrain(features, brain1, dragon, hardGuard, simulation, cont
     promotedPack.market_state_summary.direction_arbiter.side = candidateA.side || null;
     promotedPack.market_state_summary.direction_arbiter.selected_proto = candidateA.id || 'A';
     promotedPack.market_state_summary.direction_arbiter.selected_score = Number(normalizeFiniteNumber(candidateA.trade_score, 0).toFixed(4));
-    promotedPack.market_state_summary.direction_arbiter.reasons = ['v72.05 Probe 優先成交：Probe/F2 為唯一 live allow owner；移除重複 quality gate，並保留 early-thin / chop / conflict-window 修剪，並回補 non-thin 高品質 owner-ready 單'];
+    promotedPack.market_state_summary.direction_arbiter.reasons = ['v72.23 Probe 優先成交：Probe/F2 維持唯一 live allow owner；延續 v72.11 precision delta trims，已清理 dead reclaim，補入 Dragon-Final Coherence Contract、Dragon Conflict Audit 與 later-hand non_thin precision soft tax'];
     if(promotedPack.prototypes && promotedPack.prototypes.F2){
       promotedPack.prototypes.F2.exists = true;
       promotedPack.prototypes.F2.actionable = true;
@@ -7090,6 +7301,71 @@ function buildObserveReason(judge, simulation){
 }
 
 
+function buildDragonConflictAudit(prediction){
+  const pred = prediction && typeof prediction === 'object' ? prediction : {};
+  const dragon = normalizeDragonBrainShape(pred.brain_dragon || {});
+  const pack = pred.action_proof_pack && typeof pred.action_proof_pack === 'object' ? pred.action_proof_pack : {};
+  const summary = pred.market_state_summary && typeof pred.market_state_summary === 'object' ? pred.market_state_summary : (pack.market_state_summary && typeof pack.market_state_summary === 'object' ? pack.market_state_summary : {});
+  const actionProof = pack && typeof pack === 'object' ? pack : {};
+  const dragonSide = dragon.side === 'B' || dragon.side === 'P' ? dragon.side : null;
+  const arbiter = summary.direction_arbiter && typeof summary.direction_arbiter === 'object' ? summary.direction_arbiter : {};
+  const arbiterSide = arbiter.side === 'B' || arbiter.side === 'P' ? arbiter.side : (actionProof.side === 'B' || actionProof.side === 'P' ? actionProof.side : null);
+  const finalDecision = pred.decision === 'B' || pred.decision === 'P' ? pred.decision : (pred.brain_judge && (pred.brain_judge.side === 'B' || pred.brain_judge.side === 'P') ? pred.brain_judge.side : arbiterSide);
+  const dragonState = typeof dragon.state === 'string' ? dragon.state : 'none';
+  const continueProb = normalizeFiniteNumber(dragon.dragon_continue_prob, 0);
+  const breakProb = normalizeFiniteNumber(dragon.dragon_break_prob, 0);
+  const newDragonProb = normalizeFiniteNumber(dragon.new_dragon_prob, 0);
+  let dragonIntentSide = null;
+  let dragonIntentMode = 'none';
+  let dragonIntentStrength = 0;
+  if(dragonSide){
+    if(dragonState === 'hold' && continueProb >= 0.54){
+      dragonIntentSide = dragonSide; dragonIntentMode = 'continue_hold'; dragonIntentStrength = continueProb;
+    }else if(dragonState === 'proto' && newDragonProb >= 0.58){
+      dragonIntentSide = dragonSide; dragonIntentMode = 'open_proto'; dragonIntentStrength = newDragonProb;
+    }else if(dragonState === 'candidate' && newDragonProb >= 0.68){
+      dragonIntentSide = dragonSide; dragonIntentMode = 'open_candidate'; dragonIntentStrength = newDragonProb;
+    }else if(dragonState === 'fatigue' && breakProb >= 0.64){
+      dragonIntentSide = v70OppositeSide(dragonSide); dragonIntentMode = 'break_fatigue'; dragonIntentStrength = breakProb;
+    }
+  }
+  const dragonConfidence = Number(Math.max(dragon.confirmed ? 0.82 : 0, continueProb, newDragonProb, (dragonState === 'fatigue' ? breakProb : 0)).toFixed(4));
+  const conflictFlag = !!(dragonIntentSide && finalDecision && dragonIntentSide !== finalDecision);
+  const hardConflict = !!(conflictFlag && (
+    (dragonIntentMode === 'continue_hold' && dragonIntentStrength >= 0.56) ||
+    (dragonIntentMode === 'open_proto' && dragonIntentStrength >= 0.60) ||
+    (dragonIntentMode === 'break_fatigue' && dragonIntentStrength >= 0.68)
+  ));
+  const softConflict = !!(conflictFlag && !hardConflict && dragonIntentSide);
+  const reason = !conflictFlag ? '' : ('龍腦意圖 ' + dragonIntentSide + ' [' + dragonIntentMode + '] 與最終方向 ' + finalDecision + ' 衝突');
+  return {
+    dragon_side: dragonSide,
+    dragon_state: dragonState,
+    dragon_confidence: dragonConfidence,
+    dragon_intent_side: dragonIntentSide,
+    dragon_intent_mode: dragonIntentMode,
+    dragon_selected_score: Number(normalizeFiniteNumber(dragonIntentStrength, 0).toFixed(4)),
+    arbiter_side: arbiterSide,
+    final_decision: finalDecision || 'PASS',
+    selected_candidate_id: summary.selected_candidate_id || actionProof.selected_candidate_id || null,
+    dragon_conflict_flag: conflictFlag,
+    hard_conflict: hardConflict,
+    soft_conflict: softConflict,
+    reason: reason
+  };
+}
+
+function attachDragonConflictAudit(prediction){
+  const pred = prediction && typeof prediction === 'object' ? prediction : {};
+  const audit = buildDragonConflictAudit(pred);
+  pred.dragon_conflict_audit = audit;
+  if(pred.market_state_summary && typeof pred.market_state_summary === 'object') pred.market_state_summary.dragon_conflict_audit = audit;
+  if(pred.action_proof_pack && typeof pred.action_proof_pack === 'object') pred.action_proof_pack.dragon_conflict_audit = audit;
+  if(pred.brain_judge && typeof pred.brain_judge === 'object') pred.brain_judge.dragon_conflict_audit = audit;
+  return audit;
+}
+
+
 function executePolicyChain(features, patternDb, tau){
   const maxConvergenceRounds = 3;
   let cycle = buildPolicyCycle(features, patternDb, tau, null);
@@ -7147,7 +7423,8 @@ function executePolicyChain(features, patternDb, tau){
   }
 
   const out = JSON.parse(JSON.stringify(brain1));
-  out.model_id='tri_brain_v72_05'; out.brain_dragon=dragon; out.brain_simulation=simulation; out.brain_simulation_draft=simulationDraft; out.brain_judge=judge; out.hard_guard_pack=hardGuard; out.hard_guard_pack_draft=hardGuardDraft; out.brain_supervisor=supervisor; out.convergence_meta=convergenceMeta; out.judge_path_scores=judge&&judge.judge_path_scores?judge.judge_path_scores:{}; out.structural_flags=brain1&&brain1.structural_flags?brain1.structural_flags:{}; out.state_pack=brain1&&brain1.state_pack?brain1.state_pack:null; out.reliability_pack=brain1&&brain1.reliability_pack?brain1.reliability_pack:null; out.state_contract_version=STATE_CONTRACT_VERSION; out.allow_pass_trace_count=AllowPassLeakTrace.length; out.action_proof_pack=judge&&judge.action_proof_pack?judge.action_proof_pack:null; out.market_state_summary=judge&&judge.action_proof_pack&&judge.action_proof_pack.market_state_summary?judge.action_proof_pack.market_state_summary:null; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[];
+  out.model_id='tri_brain_v72_23'; out.brain_dragon=dragon; out.brain_simulation=simulation; out.brain_simulation_draft=simulationDraft; out.brain_judge=judge; out.hard_guard_pack=hardGuard; out.hard_guard_pack_draft=hardGuardDraft; out.brain_supervisor=supervisor; out.convergence_meta=convergenceMeta; out.judge_path_scores=judge&&judge.judge_path_scores?judge.judge_path_scores:{}; out.structural_flags=brain1&&brain1.structural_flags?brain1.structural_flags:{}; out.state_pack=brain1&&brain1.state_pack?brain1.state_pack:null; out.reliability_pack=brain1&&brain1.reliability_pack?brain1.reliability_pack:null; out.state_contract_version=STATE_CONTRACT_VERSION; out.allow_pass_trace_count=AllowPassLeakTrace.length; out.action_proof_pack=judge&&judge.action_proof_pack?judge.action_proof_pack:null; out.market_state_summary=judge&&judge.action_proof_pack&&judge.action_proof_pack.market_state_summary?judge.action_proof_pack.market_state_summary:null; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[];
+  const dragonConflictAudit = attachDragonConflictAudit(out);
 
   if(convergenceMeta.stabilized === false){
     if(judge.level==='allow') pushAllowPassLeak(features,judge,hardGuard,{stage:'convergence_cap_pass',reason:'收斂封鎖：重算仍未收斂，退回 PASS',final_reason:'收斂封鎖：重算仍未收斂，退回 PASS',simulation_draft:simulationDraft,simulation_final:simulation,supervisor:supervisor,final_decision:'PASS'});
@@ -7155,7 +7432,25 @@ function executePolicyChain(features, patternDb, tau){
     out.brain_judge=judge; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[]; out.decision='PASS'; out.tier='PASS'; out.reasons=[judge.reasons[0]].concat(out.reasons||[]); return ensureDecisionReasons(out);
   }
   if(judge.level==='block' || hardGuardActive(hardGuard)){ judge = alignJudgeWithFinalAction(judge, 'Hard Guard 封鎖：'+((((hardGuard.hard_guard_pack||{}).hard_reasons)||hardGuard.reasons||['硬封鎖命中'])[0]), 'block'); out.brain_judge=judge; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[]; out.decision='PASS'; out.tier='PASS'; out.reasons=[judge.reasons[0]].concat(out.reasons||[]); return ensureDecisionReasons(out); }
-  if(judge.level==='allow' && (judge.side==='B' || judge.side==='P')){ out.decision=judge.side; out.tier=judge.tier_hint||'MID'; out.reasons=['裁決放行['+(judge.path_used||'?')+']：'+(judge.reasons[0]||'v70.64 受控正式成交已放行')].concat(out.reasons||[]); if(supervisor && (supervisor.level==='alert' || supervisor.level==='critical') && supervisor.reasons&&supervisor.reasons.length) out.reasons.unshift('監察回饋：'+supervisor.reasons[0]); return ensureDecisionReasons(out); }
+  if(dragonConflictAudit && dragonConflictAudit.hard_conflict && (judge.side==='B' || judge.side==='P')){
+    judge = alignJudgeWithFinalAction(judge, '龍腦硬衝突封鎖：' + dragonConflictAudit.reason, 'observe');
+    judge.tags = Array.isArray(judge.tags) ? judge.tags : [];
+    if(judge.tags.indexOf('dragon_final_conflict_pass') === -1) judge.tags.unshift('dragon_final_conflict_pass');
+    out.brain_judge = judge;
+    out.pass_blockers = judge && Array.isArray(judge.pass_blockers) ? judge.pass_blockers : [];
+    out.decision = 'PASS';
+    out.tier = 'PASS';
+    out.reasons = [judge.reasons[0]].concat(out.reasons || []);
+    return ensureDecisionReasons(out);
+  }
+  if(judge.level==='allow' && (judge.side==='B' || judge.side==='P')){
+    out.decision=judge.side;
+    out.tier=(dragonConflictAudit && dragonConflictAudit.soft_conflict) ? 'SOFT_TAX' : (judge.tier_hint||'MID');
+    out.reasons=['裁決放行['+(judge.path_used||'?')+']：'+(judge.reasons[0]||'v72.23 單一 owner 受控正式成交已放行')].concat(out.reasons||[]);
+    if(dragonConflictAudit && dragonConflictAudit.soft_conflict) out.reasons.unshift('龍腦軟衝突稅：' + dragonConflictAudit.reason);
+    if(supervisor && (supervisor.level==='alert' || supervisor.level==='critical') && supervisor.reasons&&supervisor.reasons.length) out.reasons.unshift('監察回饋：'+supervisor.reasons[0]);
+    return ensureDecisionReasons(out);
+  }
   judge = alignJudgeWithFinalAction(judge, '裁決觀察：'+buildObserveReason(judge, simulation), 'observe');
   out.brain_judge=judge; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[];
   out.decision='PASS'; out.tier='PASS'; out.reasons=[judge.reasons[0]].concat(out.reasons||[]); return ensureDecisionReasons(out);
@@ -7652,7 +7947,7 @@ async function exportDB(){
     normalizeLabSnapshots();
 
     const payload = {
-      version:'v72.05',
+      version:'v72.23',
       exported_at:new Date().toISOString(),
       bigData:BigData,
       labStore:LabStore,
@@ -7663,7 +7958,7 @@ async function exportDB(){
     };
     const json = JSON.stringify(payload, null, 2);
     const blob = new Blob([json], { type:'application/json' });
-    const fileName = 'bac_v72_05_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
+    const fileName = 'bac_v72_07_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
 
     if(window.showSaveFilePicker){
       try{
@@ -7690,7 +7985,7 @@ async function exportDB(){
         await navigator.share({
           files:[file],
           title:'百家樂資料匯出',
-          text:'bac v70.64 匯出資料'
+          text:'bac v72.23 匯出資料'
         });
         return;
       }
@@ -7732,7 +8027,7 @@ function importDB(event){
       let recoveredByMaterialized = false;
 
       const tempLab = {
-        schema_version:'v72.05',
+        schema_version:'v72.23',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:[]
@@ -7753,7 +8048,7 @@ function importDB(event){
       if(!validateOpenShoeConsistency(LabStore, S)){
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v72.05',
+            schema_version:'v72.23',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:[]
@@ -7766,7 +8061,7 @@ function importDB(event){
           const fallbackShoes = materializeAllShoes();
           if(fallbackShoes.length){
             LabStore = {
-              schema_version:'v72.05',
+              schema_version:'v72.23',
               rawShoes:fallbackShoes,
               currentOpenShoe:null,
               experiments:[]
@@ -7793,7 +8088,7 @@ function importDB(event){
 
       alert(
         recoveredByMaterialized
-          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v70.8。'
+          ? '✅ 匯入成功：已用 materializedShoes 回復資料；匯入後 snapshot schema 已補齊為 v72.23。'
           : '✅ 匯入成功：已載入 ' + materializeAllShoes().length + ' 雙鞋資料（含開放鞋快照），並補齊 snapshot schema。'
       );
     }catch(err){
@@ -7849,9 +8144,9 @@ function invokeQuantLab(){
   });
 
   const result = {
-    version:'v72.05',
+    version:'v72.23',
     generated_at:new Date().toISOString(),
-    replay_model_id:'tri_brain_v72_05',
+    replay_model_id:'tri_brain_v72_13',
     shoes:shoeRows.length,
     original:UnifiedAudit.original,
     replay:UnifiedAudit.replay,
@@ -7936,7 +8231,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v72.05',
+        schema_version:'v72.23',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
