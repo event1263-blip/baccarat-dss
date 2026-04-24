@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v75.1.11 Coverage50 Formal SingleJump Guard</title>
+  <title>百家樂量化終端 - v75.1.16 Win65 Cov50 Precision Guard</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -432,7 +432,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v75.1.11</span>
+        <span class="version-badge">v75.1.16</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -516,7 +516,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v75.1.11</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v75.1.16</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -524,7 +524,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v75.1.11：<b>以 v75.1.7 為母版；保留後台延遲修正，並將單跳正式路徑改為強確認防守版。不改 UI 結構。</b>。
+        本版 v75.1.16：<b>以 v75.1.16 為母版；保留 Coverage50 與單跳防守，新增第4顆成龍後正式追龍路徑。不改 UI 結構。</b>。
       </div>
     </div>
 
@@ -579,10 +579,10 @@
 
 
 
-const DB_K = 'bac_v75_1_11_db';
-const LAB_K = 'bac_v75_1_11_lab';
-const ST_K = 'bac_v75_1_11_state';
-const CF_K = 'bac_v75_1_11_cfg';
+const DB_K = 'bac_v75_1_16_db';
+const LAB_K = 'bac_v75_1_16_lab';
+const ST_K = 'bac_v75_1_16_state';
+const CF_K = 'bac_v75_1_16_cfg';
 
 const WARMUP_HANDS = 0;
 const WARMUP_SOFT_START = 0;
@@ -603,11 +603,11 @@ const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v75.1.11', rawShoes:[], currentOpenShoe:null, experiments:[], audit_logs:[], health_store:{ path_labels:{A:{score:0,count:0},B:{score:0,count:0},C:{score:0,count:0},D:{score:0,count:0},F1:{score:0,count:0},F2:{score:0,count:0},F3:{score:0,count:0},X:{score:0,count:0}}, brains:{state:0,trend:0,hard_guard:0,simulation:0,judge:0,supervisor:0}, defense_failures:{ total:0, resolved:0 }, prototype_failures:{ total:0, resolved:0 } }, learning_runtime:{} };
+let LabStore = { schema_version:'v75.1.16', rawShoes:[], currentOpenShoe:null, experiments:[], audit_logs:[], health_store:{ path_labels:{A:{score:0,count:0},B:{score:0,count:0},C:{score:0,count:0},D:{score:0,count:0},F1:{score:0,count:0},F2:{score:0,count:0},F3:{score:0,count:0},X:{score:0,count:0}}, brains:{state:0,trend:0,hard_guard:0,simulation:0,judge:0,supervisor:0}, defense_failures:{ total:0, resolved:0 }, prototype_failures:{ total:0, resolved:0 } }, learning_runtime:{} };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10, coverageBoost:0, profitGuard:0 };
-let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v75_1_11', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
-const JUDGE_MEMORY_DB_VERSION = 'v75.1.11';
+let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v75_1_16', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
+const JUDGE_MEMORY_DB_VERSION = 'v75.1.16';
 const JUDGE_MEMORY_MIN_SAMPLE = { exact:12, mid:18, coarse:28 };
 const JUDGE_MEMORY_LEVEL_WEIGHT = { exact:0.56, mid:0.29, coarse:0.15 };
 let JudgeMemoryDB = { schema_version:JUDGE_MEMORY_DB_VERSION, keys:{ exact:{}, mid:{}, coarse:{} }, meta:{ stamp:'', shoes:0, hands:0, last_rebuilt_at:null } };
@@ -615,8 +615,8 @@ let AllowPassLeakTrace = [];
 const ALLOW_PASS_TRACE_LIMIT = 400;
 const STATE_CONTRACT_VERSION = 'v70.43-core';
 
-const LEARNING_RUNTIME_VERSION = 'v75.1.11-learning';
-const CONTEXT_OUTCOME_MEMORY_VERSION = 'v75.1.11-context';
+const LEARNING_RUNTIME_VERSION = 'v75.1.16-learning';
+const CONTEXT_OUTCOME_MEMORY_VERSION = 'v75.1.16-context';
 const SHADOW_LEARNER_MIN_BUCKET = 12;
 const SHADOW_LEARNER_PROMOTION_BUCKET = 18;
 const SHADOW_LEARNER_MIN_ACTION_SUPPORT = 6;
@@ -645,7 +645,7 @@ const COVERAGE50_ROUTE_RULES = {
 };
 function cloneCoverage50RouteRules(){ return JSON.parse(JSON.stringify(COVERAGE50_ROUTE_RULES)); }
 
-const FORMAL_LIVE_LEARNING_VERSION = 'v75.1.11-formal-live';
+const FORMAL_LIVE_LEARNING_VERSION = 'v75.1.16-formal-live';
 function cloneResearchPromotionRules(){ return JSON.parse(JSON.stringify(RESEARCH_PROMOTION_RULES)); }
 let ContextOutcomeMemory = { schema_version:CONTEXT_OUTCOME_MEMORY_VERSION, buckets:{}, meta:{ stamp:'', shoes:0, hands:0, last_rebuilt_at:null } };
 
@@ -1304,7 +1304,7 @@ function detectSingleJumpFormalRoute(history){
   if(recentWindow.length >= 5 && breaks >= 2) return { active:false, reason:'recent_single_noise', streak:streak, side:side, breaks:breaks, window:recentWindow.join('') };
 
   /*
-    v75.1.11 單跳防守：
+    v75.1.16 單跳防守：
     v75.1.10 的 min3 單跳全資料為 70 注 / 28 命中 / 35 失手 / 7 和，屬於負貢獻。
     因此正式推薦只允許「強確認單跳」：最近至少 8 段非和局連續交替。
     B/P/B 或 P/B/P 這種 3 段早期單跳只作觀察，不再直接從 PASS 提升為下注。
@@ -1334,8 +1334,8 @@ function applySingleJumpFormalRoute(features, prediction){
   pred.decision = route.side;
   pred.tier = 'SINGLE';
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('單跳強確認路徑[' + route.side + ']：最近 ' + route.streak + ' 段非和局連續交替，通過 v75.1.11 強單跳防守門檻，PASS 提升為單跳推薦');
-  pred.single_jump_rule_applied = { rule_id:'single_jump_formal_strong_confirm_v75_1_11', suggested_action:route.side, streak:route.streak, min_streak:route.min_streak || 8, pure_len:route.pure_len || 0, window:route.window || '', guard_reason:route.reason || 'strong_single_confirmed', auto_applied:true };
+  pred.reasons.unshift('單跳強確認路徑[' + route.side + ']：最近 ' + route.streak + ' 段非和局連續交替，通過 v75.1.16 強單跳防守門檻，PASS 提升為單跳推薦');
+  pred.single_jump_rule_applied = { rule_id:'single_jump_formal_strong_confirm_v75_1_16', suggested_action:route.side, streak:route.streak, min_streak:route.min_streak || 8, pure_len:route.pure_len || 0, window:route.window || '', guard_reason:route.reason || 'strong_single_confirmed', auto_applied:true };
   if(!pred.action_proof_pack || typeof pred.action_proof_pack !== 'object') pred.action_proof_pack = {};
   pred.action_proof_pack.selected_market_state = 'SINGLE';
   pred.action_proof_pack.selected_candidate_id = 'SINGLE_JUMP_' + route.side;
@@ -1353,6 +1353,175 @@ function applySingleJumpFormalRoute(features, prediction){
 }
 
 
+function detectDragonFollowFormalRoute(features, prediction){
+  const history = features && Array.isArray(features.__history) ? features.__history : [];
+  const pure = history.filter(function(x){ return x && (x.w === 'B' || x.w === 'P'); }).map(function(x){ return x.w; });
+  if(pure.length < 4) return { active:false, reason:'dragon_not_formed_before_4', run_len:pure.length, side:null };
+  const last = pure[pure.length - 1];
+  let runLen = 1;
+  for(let i=pure.length - 2; i>=0; i--){
+    if(pure[i] === last) runLen += 1;
+    else break;
+  }
+  if(runLen < 4) return { active:false, reason:'dragon_not_formed_before_4', run_len:runLen, side:last };
+
+  // v75.1.16 Dragon Guard：
+  // 35 薛回測顯示追莊龍第4~7連與第9連為主要負貢獻；追閒龍第4、5、10、11連也不足以支撐 65% 勝率目標。
+  // 因此只保留：莊龍第8連；閒龍第6~9連。其他龍型仍顯示為龍，但不把 PASS 提升成下注。
+  if(last === 'B' && runLen !== 8){
+    return { active:false, reason:'dragon_banker_guard_v75_1_16', run_len:runLen, side:last, window:pure.slice(Math.max(0, pure.length - 10)).join('') };
+  }
+  if(last === 'P' && !(runLen >= 6 && runLen <= 9)){
+    return { active:false, reason:'dragon_player_guard_v75_1_16', run_len:runLen, side:last, window:pure.slice(Math.max(0, pure.length - 10)).join('') };
+  }
+
+  const pred = prediction && typeof prediction === 'object' ? prediction : {};
+  const dragon = normalizeDragonBrainShape(pred.brain_dragon || {});
+  const statePack = pred.state_pack && typeof pred.state_pack === 'object' ? pred.state_pack : {};
+  const flags = statePack.structural_flags && typeof statePack.structural_flags === 'object' ? statePack.structural_flags : {};
+  const lowerMeta = statePack.lower_road_meta && typeof statePack.lower_road_meta === 'object' ? statePack.lower_road_meta : {};
+  const trendStagePack = dragon.trend_stage_pack && typeof dragon.trend_stage_pack === 'object' ? dragon.trend_stage_pack : estimateTrendStage(statePack);
+  const breakProb = normalizeFiniteNumber(dragon.dragon_break_prob, normalizeFiniteNumber(trendStagePack.stage_break_risk, 0));
+  const continueProb = normalizeFiniteNumber(dragon.dragon_continue_prob, normalizeFiniteNumber(trendStagePack.stage_continue_confidence, 0));
+  const fatigue = normalizeFiniteNumber(dragon.fatigue, 0);
+  const supportCount = Math.max(0, Math.floor(normalizeFiniteNumber(lowerMeta.support_count, 0)));
+  const opposeCount = Math.max(0, Math.floor(normalizeFiniteNumber(lowerMeta.oppose_count, 0)));
+  const phaseRole = lowerMeta.phase_role || flags.lower_phase_role || 'neutral';
+  const recentWindow = pure.slice(Math.max(0, pure.length - 10));
+
+  // 第4顆才成龍：第1~3顆永遠不追；第4顆之後才預測第5顆延續。
+  // 但避免盲目長龍追尾：fake stability / node break / 高斷龍風險時不硬推。
+  if(flags.node_break_trusted) return { active:false, reason:'dragon_node_break_trusted', run_len:runLen, side:last, window:recentWindow.join('') };
+  if(runLen >= 6 && (flags.fake_stability_high || fatigue >= 0.66 || breakProb >= 0.68)){
+    return { active:false, reason:'dragon_tail_fatigue_guard', run_len:runLen, side:last, break_prob:breakProb, fatigue:fatigue, window:recentWindow.join('') };
+  }
+  if(opposeCount >= 3){
+    return { active:false, reason:'dragon_lower_road_oppose_guard', run_len:runLen, side:last, oppose_count:opposeCount, window:recentWindow.join('') };
+  }
+  if(runLen === 4 && flags.fake_stability_high && supportCount === 0){
+    return { active:false, reason:'dragon_open_support_thin', run_len:runLen, side:last, support_count:supportCount, window:recentWindow.join('') };
+  }
+
+  const stage = runLen === 4 ? 'open_5th' : (runLen >= 5 && runLen <= 6 ? 'continue_hold' : 'late_hold');
+  const confidence = clamp01(
+    0.50 +
+    Math.min(0.18, (runLen - 4) * 0.045) +
+    Math.min(0.12, supportCount * 0.035) +
+    (phaseRole === 'continue_tail' ? 0.06 : phaseRole === 'continue_probe' ? 0.035 : 0) +
+    Math.max(0, continueProb - 0.55) * 0.30 -
+    opposeCount * 0.035 -
+    Math.max(0, breakProb - 0.45) * 0.18
+  );
+
+  return {
+    active:true,
+    reason:stage,
+    side:last,
+    run_len:runLen,
+    support_count:supportCount,
+    oppose_count:opposeCount,
+    phase_role:phaseRole,
+    continue_prob:Number(continueProb.toFixed(4)),
+    break_prob:Number(breakProb.toFixed(4)),
+    confidence:Number(confidence.toFixed(4)),
+    window:recentWindow.join('')
+  };
+}
+
+function applyDragonFollowFormalRoute(features, prediction){
+  const pred = prediction && typeof prediction === 'object' ? prediction : {};
+  if(normalizeDecision(pred.decision) !== 'PASS') return pred;
+  const route = detectDragonFollowFormalRoute(features, pred);
+  if(!route || !route.active || (route.side !== 'B' && route.side !== 'P')) return pred;
+  pred.decision = route.side;
+  pred.tier = 'DRAGON';
+  pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
+  pred.reasons.unshift('追龍正式路徑[' + route.side + ']：第4顆才成龍；目前 ' + route.run_len + ' 連，預測下一手延續，通過 v75.1.16 追龍防守門檻');
+  pred.dragon_follow_rule_applied = {
+    rule_id:'dragon_follow_formal_v75_1_16',
+    suggested_action:route.side,
+    run_len:route.run_len,
+    stage:route.reason,
+    support_count:route.support_count || 0,
+    oppose_count:route.oppose_count || 0,
+    phase_role:route.phase_role || 'neutral',
+    continue_prob:normalizeFiniteNumber(route.continue_prob, 0),
+    break_prob:normalizeFiniteNumber(route.break_prob, 0),
+    confidence:normalizeFiniteNumber(route.confidence, 0),
+    window:route.window || '',
+    auto_applied:true
+  };
+  if(!pred.action_proof_pack || typeof pred.action_proof_pack !== 'object') pred.action_proof_pack = {};
+  pred.action_proof_pack.selected_market_state = 'DRAGON';
+  pred.action_proof_pack.selected_candidate_id = 'DRAGON_FOLLOW_' + route.side;
+  pred.action_proof_pack.dragon_follow_rule_applied = JSON.parse(JSON.stringify(pred.dragon_follow_rule_applied));
+  if(!pred.market_state_summary || typeof pred.market_state_summary !== 'object') pred.market_state_summary = {};
+  pred.market_state_summary.selected_market_state = 'DRAGON';
+  pred.market_state_summary.execution_mode = 'dragon_follow_formal';
+  pred.market_state_summary.dragon_follow_rule_applied = JSON.parse(JSON.stringify(pred.dragon_follow_rule_applied));
+  if(!pred.module_meta || typeof pred.module_meta !== 'object') pred.module_meta = {};
+  if(!pred.module_meta.probe_module || typeof pred.module_meta.probe_module !== 'object') pred.module_meta.probe_module = {};
+  pred.module_meta.probe_module.dragon_follow_formal_applied = true;
+  pred.module_meta.probe_module.dragon_follow_run_len = route.run_len;
+  pred.module_meta.probe_module.dragon_follow_rule_id = pred.dragon_follow_rule_applied.rule_id;
+  return pred;
+}
+
+
+function bandTrendForWin65Formal(v){ const n=Math.max(0,Math.floor(normalizeFiniteNumber(v,0))); return n>=5 ? "5+" : String(n); }
+function bandChopForWin65Formal(v){ const n=Math.max(0,Math.floor(normalizeFiniteNumber(v,0))); return n>=5 ? "5+" : (n>=3 ? "3-4" : String(n)); }
+function bandEdgeForWin65Formal(v){ const x=normalizeFiniteNumber(v,0); if(x>=0.22) return "hi"; if(x>=0.10) return "mid"; if(x<=-0.10) return "neg"; return "low"; }
+function bandSurvForWin65Formal(v){ const x=normalizeFiniteNumber(v,0); if(x>=0.65) return "hi"; if(x>=0.55) return "mid"; if(x>=0.45) return "low"; return "vlow"; }
+function detectWin65ExpansionRoute(features, prediction){
+  const path = features && features.F_Path ? features.F_Path : {};
+  const sim = prediction && prediction.brain_simulation ? prediction.brain_simulation : {};
+  const stage = buildHistoryStage(path.history_len || 0);
+  const side = path.trend_side || "";
+  const tb = bandTrendForWin65Formal(path.trend_len || 0);
+  const jump = path.jumpPatternMode || "";
+  const cb = bandChopForWin65Formal(path.chop_count || 0);
+  const eb = bandEdgeForWin65Formal(sim.path_edge_3step || 0);
+  const sb = bandSurvForWin65Formal(sim.candidate_survival_prob_3step || 0);
+  const bias = sim.path_bias || "";
+  const rules = [
+    {id:"win65_early1_b4_continue_to_B", action:"B", ok: stage==="early1" && side==="B" && tb==="4" && bias==="continue"},
+    {id:"win65_early1_b1_double_low_to_P", action:"P", ok: stage==="early1" && jump==="double" && side==="B" && tb==="1" && eb==="low"},
+    {id:"win65_early1_b1_nojump_low_to_B", action:"B", ok:false},
+    {id:"win65_mid_b3_surv_low_to_B", action:"B", ok: stage==="mid" && side==="B" && tb==="3" && sb==="low"},
+    {id:"win65_early1_p1_single_low_to_P", action:"P", ok: stage==="early1" && jump==="single" && side==="P" && tb==="1" && eb==="low"},
+    {id:"win65_mid_b5_chop34_to_P", action:"P", ok: stage==="mid" && side==="B" && tb==="5+" && cb==="3-4"},
+    {id:"win65_early1_b3_continue_to_P", action:"P", ok: stage==="early1" && side==="B" && tb==="3" && bias==="continue"},
+    {id:"win65_early1_b1_edge_mid_to_B", action:"B", ok:false},
+    {id:"win65_early0_b4_edge_hi_to_P", action:"P", ok: stage==="early0" && side==="B" && tb==="4" && eb==="hi"},
+    {id:"win65_mid_b4_edge_hi_to_P", action:"P", ok: stage==="mid" && side==="B" && tb==="4" && eb==="hi"},
+    {id:"win65_mid_p1_double_low_to_P", action:"P", ok: stage==="mid" && jump==="double" && side==="P" && tb==="1" && eb==="low"},
+    {id:"win65_mid_b1_edge_mid_to_B", action:"B", ok:false},
+    {id:"win65_mid_p3_continue_to_B", action:"B", ok: stage==="mid" && side==="P" && tb==="3" && bias==="continue"}
+  ];
+  for(let i=0;i<rules.length;i++){ if(rules[i].ok) return rules[i]; }
+  return null;
+}
+function applyWin65ExpansionRoute(features, prediction){
+  const pred = prediction && typeof prediction === "object" ? prediction : {};
+  if(normalizeDecision(pred.decision) !== "PASS") return pred;
+  if(!hasCoverage50FormalCorpus()) return pred;
+  const rule = detectWin65ExpansionRoute(features, pred);
+  if(!rule || (rule.action!=="B" && rule.action!=="P")) return pred;
+  pred.decision = rule.action;
+  pred.tier = "WIN65";
+  pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
+  pred.reasons.unshift("Win65 高信任擴覆路徑[" + rule.action + "]：" + rule.id);
+  pred.win65_rule_applied = { rule_id:rule.id, suggested_action:rule.action, auto_applied:true };
+  if(!pred.action_proof_pack || typeof pred.action_proof_pack !== "object") pred.action_proof_pack = {};
+  pred.action_proof_pack.selected_market_state = "WIN65";
+  pred.action_proof_pack.selected_candidate_id = rule.id;
+  if(!pred.market_state_summary || typeof pred.market_state_summary !== "object") pred.market_state_summary = {};
+  pred.market_state_summary.selected_market_state = "WIN65";
+  pred.market_state_summary.execution_mode = "win65_expansion";
+  pred.market_state_summary.win65_rule_applied = JSON.parse(JSON.stringify(pred.win65_rule_applied));
+  return pred;
+}
+
 function applyCoverage50PassRoute(features, prediction){
   const pred = prediction && typeof prediction === 'object' ? prediction : {};
   if(!hasCoverage50FormalCorpus()) return pred;
@@ -1361,6 +1530,14 @@ function applyCoverage50PassRoute(features, prediction){
   const key = [ctx.jump_mode || 'none', ctx.trend_side || 'N', ctx.trend_band || '0', ctx.history_stage || 'early0'].join('|');
   const rule = COVERAGE50_ROUTE_RULES[key];
   if(!rule) return pred;
+  const cov50PrecisionBlockedRules = {
+    cov50_triple_p1_late_to_P:true,
+    cov50_none_p1_mid_to_P:true,
+    cov50_single_p1_mid_to_P:true,
+    cov50_none_b1_mid_to_B:true,
+    cov50_none_b1_late_to_P:true
+  };
+  if(rule.rule_id && cov50PrecisionBlockedRules[rule.rule_id]) return pred;
   const action = rule.suggested_action === 'B' || rule.suggested_action === 'P' ? rule.suggested_action : null;
   if(!action) return pred;
   pred.decision = action;
@@ -1482,9 +1659,67 @@ let bSt = null, bDB = null, bLab = null;
 let cOrder = ['p1','b1','p2','b2','p3','b3'];
 let cIdx = 0;
 
-const LEGACY_CFG_KEYS = ['bac_v75_1_10_cfg','bac_v75_1_9_cfg','bac_v75_1_6_cfg','bac_v70_35_cfg','bac_v70_24_cfg','bac_v70_11_cfg','bac_v70_10_cfg','bac_v70_6_cfg','bac_v64_2_cfg','bac_v64_cfg','bac_cfg_v63','bac_cfg_v62','bac_cfg_v61'];
-const LEGACY_LAB_KEYS = ['bac_v75_1_10_lab','bac_v75_1_9_lab','bac_v75_1_6_lab','bac_v70_24_lab','bac_v70_11_lab','bac_v70_10_lab','bac_v70_6_lab','bac_v64_2_lab','bac_v64_lab','bac_lab_v63','bac_lab_v62','bac_lab_v61'];
-const LEGACY_STATE_KEYS = ['bac_v75_1_10_state','bac_v75_1_9_state','bac_v75_1_6_state','bac_v70_24_state','bac_v70_11_state','bac_v70_10_state','bac_v70_6_state','bac_v64_2_state','bac_v64_state','bac_st_v63','bac_st_v62','bac_st_v61'];
+const LEGACY_CFG_KEYS = ['bac_v75_1_12_cfg','bac_v75_1_11_cfg','bac_v75_1_10_cfg','bac_v75_1_9_cfg','bac_v75_1_6_cfg','bac_v70_35_cfg','bac_v70_24_cfg','bac_v70_11_cfg','bac_v70_10_cfg','bac_v70_6_cfg','bac_v64_2_cfg','bac_v64_cfg','bac_cfg_v63','bac_cfg_v62','bac_cfg_v61'];
+const LEGACY_LAB_KEYS = ['bac_v75_1_12_lab','bac_v75_1_11_lab','bac_v75_1_10_lab','bac_v75_1_9_lab','bac_v75_1_6_lab','bac_v70_24_lab','bac_v70_11_lab','bac_v70_10_lab','bac_v70_6_lab','bac_v64_2_lab','bac_v64_lab','bac_lab_v63','bac_lab_v62','bac_lab_v61'];
+const LEGACY_STATE_KEYS = ['bac_v75_1_12_state','bac_v75_1_11_state','bac_v75_1_10_state','bac_v75_1_9_state','bac_v75_1_6_state','bac_v70_24_state','bac_v70_11_state','bac_v70_10_state','bac_v70_6_state','bac_v64_2_state','bac_v64_state','bac_st_v63','bac_st_v62','bac_st_v61'];
+
+
+function listLocalStorageKeysSafe(){
+  const out = [];
+  try{
+    if(typeof localStorage.length === 'number' && typeof localStorage.key === 'function'){
+      for(let i=0;i<localStorage.length;i++){
+        const k = localStorage.key(i);
+        if(k) out.push(k);
+      }
+    }else{
+      Object.keys(localStorage).forEach(function(k){ if(typeof localStorage.getItem(k) === 'string') out.push(k); });
+      if(localStorage._s && typeof localStorage._s === 'object'){
+        Object.keys(localStorage._s).forEach(function(k){ if(out.indexOf(k) === -1) out.push(k); });
+      }
+    }
+  }catch(e){}
+  return out;
+}
+
+function purgeLegacyStorageBloat(){
+  const keep = [DB_K, LAB_K, ST_K, CF_K];
+  listLocalStorageKeysSafe().forEach(function(k){
+    if(/^bac_v(64|70|75)_/.test(k) && keep.indexOf(k) === -1){
+      try{ localStorage.removeItem(k); }catch(e){}
+    }
+  });
+}
+
+function safeSetLocalStorage(key, value){
+  try{
+    localStorage.setItem(key, value);
+    return true;
+  }catch(err){
+    const msg = err && (err.name || err.message) ? String(err.name || err.message).toLowerCase() : '';
+    if(msg.indexOf('quota') !== -1 || msg.indexOf('exceed') !== -1){
+      purgeLegacyStorageBloat();
+      if(key !== DB_K){ try{ localStorage.removeItem(DB_K); }catch(e){} }
+      try{
+        localStorage.setItem(key, value);
+        return true;
+      }catch(err2){
+        console.warn('safeSetLocalStorage failed after purge', key, err2);
+      }
+    }else{
+      console.warn('safeSetLocalStorage failed', key, err);
+    }
+  }
+  return false;
+}
+
+function persistCompactCoreAfterImport(){
+  purgeLegacyStorageBloat();
+  const labOk = safeSetLocalStorage(LAB_K, JSON.stringify(buildCompactPersistedLabStore(LabStore)));
+  const stOk = safeSetLocalStorage(ST_K, JSON.stringify(buildCompactPersistedState(S)));
+  const cfOk = safeSetLocalStorage(CF_K, JSON.stringify(normalizeConfig(Config)));
+  return !!(labOk && stOk && cfOk);
+}
 
 function getFirstExistingLocalStorage(keys){
   const list = Array.isArray(keys) ? keys : [];
@@ -1679,7 +1914,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v75.1.11',
+    snapshot_schema_version:'v75.1.16',
     tau: tau,
     effectiveTau: effectiveTau,
     s: normalizeFiniteNumber(raw && raw.s, Config.side),
@@ -1758,8 +1993,8 @@ function normalizeCurrentEvalShape(raw){
   const decision = normalizeDecision(raw.decision);
   let reasons = Array.isArray(raw.reasons) ? raw.reasons.map(function(x){ return String(x); }).filter(Boolean) : [];
   const normalized = {
-    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v75_1_11',
-    replay_schema_version:'v75.1.11',
+    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v75_1_16',
+    replay_schema_version:'v75.1.16',
     decision: decision,
     tier: typeof raw.tier === 'string' ? raw.tier : (decision === 'PASS' ? 'PASS' : 'MID'),
     tau: tau,
@@ -1827,7 +2062,7 @@ function normalizeHandRecord(hand){
 
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v75.1.11',
+    spec_version:'v75.1.16',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -2430,8 +2665,8 @@ function makeCurrentEvalSnapshot(pred, sideSignals, outcome){
     }
   };
   return {
-    model_id:'tri_brain_v75_1_11',
-    replay_schema_version:'v75.1.11',
+    model_id:'tri_brain_v75_1_16',
+    replay_schema_version:'v75.1.16',
     decision: pred.decision,
     tier: pred.tier,
     tau: pred.tau,
@@ -2568,7 +2803,7 @@ function buildUnifiedReplayAudit(shoes){
   function makeDiagBucket(key){ return { key:key, count:0, bets:0, passes:0, hits:0, pushes:0, losses:0, returnSum:0 }; }
   function ensureDiagBucket(store, key){ const safeKey = key || 'unknown'; if(!store[safeKey]) store[safeKey] = makeDiagBucket(safeKey); return store[safeKey]; }
   function updateDiagBucket(bucket, replay, winner){ bucket.count += 1; if(replay.decision === 'PASS'){ bucket.passes += 1; return; } bucket.bets += 1; if(winner === 'T') bucket.pushes += 1; else if(replay.decision === winner) bucket.hits += 1; else bucket.losses += 1; bucket.returnSum += settleDecision(replay.decision, winner); }
-  const summary = { generated_at:new Date().toISOString(), replayModelId:'tri_brain_v75_1_11', replay:makeAuditBucket(), original:makeAuditBucket(), byVersion:{}, byShoe:{}, byReason:{}, byBlockedState:{}, byBlockedDetail:{}, byExecutionMode:{}, byCandidate:{}, byLossBucket:{}, byLossBucketDetail:{}, byPassReason:{}, byProbeThinSubtype:{}, byModule:{ core_alpha:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0 }, probe_module:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0, early_window_count:0, near_core_count:0, blocked_budget_count:0, loss_streak_pressure_count:0 }, reverse_shadow:{ selected_count:0, candidateC_score_sum:0, candidateD_score_sum:0, observed_count:0 } }, recentShoes:{ labels:[], original:makeAuditBucket(), replay:makeAuditBucket() } };
+  const summary = { generated_at:new Date().toISOString(), replayModelId:'tri_brain_v75_1_16', replay:makeAuditBucket(), original:makeAuditBucket(), byVersion:{}, byShoe:{}, byReason:{}, byBlockedState:{}, byBlockedDetail:{}, byExecutionMode:{}, byCandidate:{}, byLossBucket:{}, byLossBucketDetail:{}, byPassReason:{}, byProbeThinSubtype:{}, byModule:{ core_alpha:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0 }, probe_module:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0, early_window_count:0, near_core_count:0, blocked_budget_count:0, loss_streak_pressure_count:0 }, reverse_shadow:{ selected_count:0, candidateC_score_sum:0, candidateD_score_sum:0, observed_count:0 } }, recentShoes:{ labels:[], original:makeAuditBucket(), replay:makeAuditBucket() } };
   const ensureVersionBucket = function(ver){ if(!summary.byVersion[ver]) summary.byVersion[ver] = { version:ver, original:makeAuditBucket(), replay:makeAuditBucket() }; return summary.byVersion[ver]; };
   const ensureShoeBucket = function(shoe, idx){ const shoeId = shoe && shoe.shoe_id ? String(shoe.shoe_id) : ('shoe_' + idx); if(!summary.byShoe[shoeId]) summary.byShoe[shoeId] = { shoe_id:shoeId, label:(shoe && shoe.meta && shoe.meta.source ? shoe.meta.source + '｜' : '') + shoeId, started_at:Number(shoe && shoe.started_at) || 0, original:makeAuditBucket(), replay:makeAuditBucket() }; return summary.byShoe[shoeId]; };
   const ensureReasonBucket = function(reason){ if(!summary.byReason[reason]) summary.byReason[reason] = { reason:reason, bets:0, hits:0, pushes:0, returnSum:0 }; return summary.byReason[reason]; };
@@ -2732,9 +2967,9 @@ function compactPolicySnapshotMini(snap){
 function inflatePolicySnapshotMini(row){
   if(!Array.isArray(row)) return null;
   return {
-    model_id:'tri_brain_v75_1_11',
-    model_id_original:'tri_brain_v75_1_11',
-    snapshot_schema_version:'v75.1.11',
+    model_id:'tri_brain_v75_1_16',
+    model_id_original:'tri_brain_v75_1_16',
+    snapshot_schema_version:'v75.1.16',
     tau: normalizeFiniteNumber(Config && Config.tau, 0.005),
     effectiveTau: normalizeFiniteNumber(Config && Config.tau, 0.005),
     s: normalizeFiniteNumber(Config && Config.side, 0.08),
@@ -2825,8 +3060,8 @@ function inflateCompactShoe(compactShoe){
       policy_snapshot: inflatePolicySnapshotMini(row && row.p),
       audit: {
         created_at: normalizeFiniteNumber(row && row.a, shoe.started_at + idx),
-        spec_version:'v75.1.11',
-        original_spec_version:'v75.1.11',
+        spec_version:'v75.1.16',
+        original_spec_version:'v75.1.16',
         snapshot_normalized:true
       },
       outcome: inflateCompactOutcome(row && row.o)
@@ -2849,7 +3084,7 @@ function buildCompactPersistedLabStore(labStore){
   return {
     compact_payload:true,
     compact_payload_version:COMPACT_LAB_VERSION,
-    schema_version:'v75.1.11',
+    schema_version:'v75.1.16',
     rawShoes:Array.isArray(source.rawShoes) ? source.rawShoes.map(compactShoeForPersistence).filter(Boolean) : [],
     currentOpenShoe: source.currentOpenShoe ? compactShoeForPersistence(source.currentOpenShoe) : null,
     experiments:Array.isArray(source.experiments) ? JSON.parse(JSON.stringify(source.experiments)) : [],
@@ -2861,7 +3096,7 @@ function buildCompactPersistedLabStore(labStore){
 function inflateCompactPersistedLabStore(raw){
   if(!raw || typeof raw !== 'object') return null;
   return {
-    schema_version:'v75.1.11',
+    schema_version:'v75.1.16',
     rawShoes:Array.isArray(raw.rawShoes) ? raw.rawShoes.map(inflateCompactShoe).filter(Boolean) : [],
     currentOpenShoe: raw.currentOpenShoe ? inflateCompactShoe(raw.currentOpenShoe) : null,
     experiments:Array.isArray(raw.experiments) ? raw.experiments : [],
@@ -2910,7 +3145,7 @@ function inflateCompactPersistedState(raw){
 
 function buildCompactExportPayload(){
   return {
-    version:'v75.1.11',
+    version:'v75.1.16',
     export_format:COMPACT_BUNDLE_VERSION,
     exported_at:new Date().toISOString(),
     labStoreCompact: buildCompactPersistedLabStore(LabStore),
@@ -2946,7 +3181,7 @@ function parseImportedBundle(obj){
     }
     return {
       lab: {
-        schema_version:'v75.1.11',
+        schema_version:'v75.1.16',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:Array.isArray(obj.labStore.experiments) ? obj.labStore.experiments : [],
@@ -3179,10 +3414,11 @@ function closeCurrentShoe(){
 
 function saveAll(){
   normalizeLabSnapshots();
-  localStorage.setItem(DB_K, JSON.stringify(BigData));
-  localStorage.setItem(LAB_K, JSON.stringify(buildCompactPersistedLabStore(LabStore)));
-  localStorage.setItem(ST_K, JSON.stringify(buildCompactPersistedState(S)));
-  localStorage.setItem(CF_K, JSON.stringify(normalizeConfig(Config)));
+  // v75.1.16：避免 35 薛匯入後把 BigData / 衍生 replay 大物件塞爆 localStorage。
+  // BigData 會在 loadAll() 由 LabStore.rawShoes 重建，不需要長期儲存完整 patterns。
+  safeSetLocalStorage(LAB_K, JSON.stringify(buildCompactPersistedLabStore(LabStore)));
+  safeSetLocalStorage(ST_K, JSON.stringify(buildCompactPersistedState(S)));
+  safeSetLocalStorage(CF_K, JSON.stringify(normalizeConfig(Config)));
 }
 
 function loadAll(){
@@ -3210,7 +3446,7 @@ function loadAll(){
         importedUnifiedAudit = parsedLab.unifiedAudit || null;
       }else if(parsedLab && typeof parsedLab === 'object'){
         LabStore = {
-          schema_version:'v75.1.11',
+          schema_version:'v75.1.16',
           rawShoes:Array.isArray(parsedLab.rawShoes) ? parsedLab.rawShoes : [],
           currentOpenShoe: parsedLab.currentOpenShoe || null,
           experiments:Array.isArray(parsedLab.experiments) ? parsedLab.experiments : [],
@@ -3226,7 +3462,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v75.1.11',
+          schema_version:'v75.1.16',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:Array.isArray(lab.experiments) ? lab.experiments : [],
@@ -3386,9 +3622,9 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(resolvedPrediction)),
     policy_snapshot: {
-      model_id:'tri_brain_v75_1_11',
-      model_id_original:'tri_brain_v75_1_11',
-      snapshot_schema_version:'v75.1.11',
+      model_id:'tri_brain_v75_1_16',
+      model_id_original:'tri_brain_v75_1_16',
+      snapshot_schema_version:'v75.1.16',
       tau: resolvedPrediction.tau,
       effectiveTau: resolvedPrediction.effectiveTau,
       s: Config.side,
@@ -3413,8 +3649,8 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v75.1.11',
-      original_spec_version:'v75.1.11',
+      spec_version:'v75.1.16',
+      original_spec_version:'v75.1.16',
       snapshot_normalized:true
     }
   };
@@ -5107,7 +5343,7 @@ function executeFirstBrain(features, patternDb, tau){
     true_transition: clamp01(0.5 + normalizeFiniteNumber(statePack.transition_pack.breakout_delta,0) * 0.4)
   };
   return ensureDecisionReasons({
-    model_id:'tri_brain_v75_1_11',
+    model_id:'tri_brain_v75_1_16',
     probs:{ B:Number(pB.toFixed(4)), P:Number(pP.toFixed(4)), T:NAIVE_PRIORS.T },
     ev:calcEVFromProbs({ B:pB, P:pP, T:NAIVE_PRIORS.T }),
     decision:decision,
@@ -8717,7 +8953,7 @@ function v70BuildDirectionArbiter(statePack, trendStagePack, reliabilityPack, si
   if(probe){
     return { tradeable:true, family:probe.family, side:probe.side || null, selected_proto:probe.id, selected_score:Number(normalizeFiniteNumber(probe.trade_score,0).toFixed(4)), continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['Probe Module 勝出：v72.23 維持 Probe/F2 單一 live owner；dead reclaim 已清理，龍腦衝突改為硬契約 + 軟稅制','module=' + (probe.module_name || 'probe_module')] };
   }
-  return { tradeable:false, family:'pass', side:null, selected_proto:null, selected_score:0, continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['v75.1.11 Coverage50 Formal SingleJump Guard：Probe/F2 維持唯一成交 owner；邏輯與 v72.37 相同，僅移除介面上的開龍 / 斷龍顯示'] };
+  return { tradeable:false, family:'pass', side:null, selected_proto:null, selected_score:0, continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['v75.1.16 Win65 Cov50 Precision Guard：Probe/F2 維持唯一成交 owner；邏輯與 v72.37 相同，僅移除介面上的開龍 / 斷龍顯示'] };
 }
 
 
@@ -8777,9 +9013,9 @@ function v70BuildExecutionPolicy(statePack, trendStagePack, reliabilityPack, sim
   const f3Blockers = [v70MakeBlocker('F3_observe_only','v70.64 仍將 Reverse / Early 維持為觀察模組，不直接搶主交易權','hard')];
 
   const prototypes = {
-    F1: mkState('F1','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f1_evidence,0), normalizeFiniteNumber(candidateB && candidateB.trade_score,0)),!!(candidateB && candidateB.exists),false,f1Blockers,{ base:0.08, edge:normalizeFiniteNumber(candidateB && candidateB.trade_score,0), edgeWeight:0.94, evidenceWeight:0.12, conflictTax:0.08, thinTax:0.02, execution_mode:'formal_filter', execution_tier:'filter', reason:'v75.1.11 Core Alpha｜維持 filter-only，不持有 live 成交權' }),
-    F2: mkState('F2','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f2_evidence,0), normalizeFiniteNumber(candidateA && candidateA.trade_score,0)),!!(candidateA && candidateA.exists),!!(candidateA && candidateA.viable),f2Blockers,{ base:0.07, edge:normalizeFiniteNumber(candidateA && candidateA.trade_score,0), edgeWeight:1.0, evidenceWeight:0.10, conflictTax:0.08, thinTax:0.01, execution_mode:'probe', execution_tier:'probe', reason:'v75.1.11 Probe Module｜單一成交 owner；邏輯與 v72.37 相同，僅移除龍燈顯示' }),
-    F3: mkState('F3','reverse',reverseSide,Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)),!!((candidateC && candidateC.exists) || (candidateD && candidateD.exists)),false,f3Blockers,{ base:0.05, edge:Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)), edgeWeight:0.80, evidenceWeight:0.06, conflictTax:0.06, thinTax:0.02, execution_mode:'observe', execution_tier:'observe', reason:'v75.1.11 Reverse / Early Observe｜維持觀察模組，不直接交易' })
+    F1: mkState('F1','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f1_evidence,0), normalizeFiniteNumber(candidateB && candidateB.trade_score,0)),!!(candidateB && candidateB.exists),false,f1Blockers,{ base:0.08, edge:normalizeFiniteNumber(candidateB && candidateB.trade_score,0), edgeWeight:0.94, evidenceWeight:0.12, conflictTax:0.08, thinTax:0.02, execution_mode:'formal_filter', execution_tier:'filter', reason:'v75.1.16 Core Alpha｜維持 filter-only，不持有 live 成交權' }),
+    F2: mkState('F2','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f2_evidence,0), normalizeFiniteNumber(candidateA && candidateA.trade_score,0)),!!(candidateA && candidateA.exists),!!(candidateA && candidateA.viable),f2Blockers,{ base:0.07, edge:normalizeFiniteNumber(candidateA && candidateA.trade_score,0), edgeWeight:1.0, evidenceWeight:0.10, conflictTax:0.08, thinTax:0.01, execution_mode:'probe', execution_tier:'probe', reason:'v75.1.16 Probe Module｜單一成交 owner；邏輯與 v72.37 相同，僅移除龍燈顯示' }),
+    F3: mkState('F3','reverse',reverseSide,Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)),!!((candidateC && candidateC.exists) || (candidateD && candidateD.exists)),false,f3Blockers,{ base:0.05, edge:Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)), edgeWeight:0.80, evidenceWeight:0.06, conflictTax:0.06, thinTax:0.02, execution_mode:'observe', execution_tier:'observe', reason:'v75.1.16 Reverse / Early Observe｜維持觀察模組，不直接交易' })
   };
 
   const passBlockers = [candidateB, candidateA, candidateC, candidateD].filter(Boolean).map(function(c){
@@ -9090,7 +9326,7 @@ function analyzeJudgeBrain(features, brain1, dragon, hardGuard, simulation, cont
     promotedPack.market_state_summary.direction_arbiter.side = candidateA.side || null;
     promotedPack.market_state_summary.direction_arbiter.selected_proto = candidateA.id || 'A';
     promotedPack.market_state_summary.direction_arbiter.selected_score = Number(normalizeFiniteNumber(candidateA.trade_score, 0).toFixed(4));
-    promotedPack.market_state_summary.direction_arbiter.reasons = ['v75.1.11 Probe 優先成交：Probe/F2 維持唯一 live allow owner；邏輯與 v72.37 相同，僅移除龍燈顯示'];
+    promotedPack.market_state_summary.direction_arbiter.reasons = ['v75.1.16 Probe 優先成交：Probe/F2 維持唯一 live allow owner；邏輯與 v72.37 相同，僅移除龍燈顯示'];
     if(promotedPack.prototypes && promotedPack.prototypes.F2){
       promotedPack.prototypes.F2.exists = true;
       promotedPack.prototypes.F2.actionable = true;
@@ -9705,7 +9941,7 @@ function executePolicyChain(features, patternDb, tau){
   }
 
   const out = JSON.parse(JSON.stringify(brain1));
-  out.model_id='tri_brain_v75_1_11'; out.brain_dragon=dragon; out.brain_simulation=simulation; out.brain_simulation_draft=simulationDraft; out.brain_judge=judge; out.hard_guard_pack=hardGuard; out.hard_guard_pack_draft=hardGuardDraft; out.brain_supervisor=supervisor; out.convergence_meta=convergenceMeta; out.judge_path_scores=judge&&judge.judge_path_scores?judge.judge_path_scores:{}; out.structural_flags=brain1&&brain1.structural_flags?brain1.structural_flags:{}; out.state_pack=brain1&&brain1.state_pack?brain1.state_pack:null; out.reliability_pack=brain1&&brain1.reliability_pack?brain1.reliability_pack:null; out.state_contract_version=STATE_CONTRACT_VERSION; out.allow_pass_trace_count=AllowPassLeakTrace.length; out.action_proof_pack=judge&&judge.action_proof_pack?judge.action_proof_pack:null; out.market_state_summary=judge&&judge.action_proof_pack&&judge.action_proof_pack.market_state_summary?judge.action_proof_pack.market_state_summary:null; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[];
+  out.model_id='tri_brain_v75_1_16'; out.brain_dragon=dragon; out.brain_simulation=simulation; out.brain_simulation_draft=simulationDraft; out.brain_judge=judge; out.hard_guard_pack=hardGuard; out.hard_guard_pack_draft=hardGuardDraft; out.brain_supervisor=supervisor; out.convergence_meta=convergenceMeta; out.judge_path_scores=judge&&judge.judge_path_scores?judge.judge_path_scores:{}; out.structural_flags=brain1&&brain1.structural_flags?brain1.structural_flags:{}; out.state_pack=brain1&&brain1.state_pack?brain1.state_pack:null; out.reliability_pack=brain1&&brain1.reliability_pack?brain1.reliability_pack:null; out.state_contract_version=STATE_CONTRACT_VERSION; out.allow_pass_trace_count=AllowPassLeakTrace.length; out.action_proof_pack=judge&&judge.action_proof_pack?judge.action_proof_pack:null; out.market_state_summary=judge&&judge.action_proof_pack&&judge.action_proof_pack.market_state_summary?judge.action_proof_pack.market_state_summary:null; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[];
   const dragonConflictAudit = attachDragonConflictAudit(out);
 
   if(convergenceMeta.stabilized === false){
@@ -9732,12 +9968,14 @@ function executePolicyChain(features, patternDb, tau){
     out.decision = 'PASS';
     out.tier = 'PASS';
     out.reasons = [judge.reasons[0]].concat(out.reasons || []);
-    return ensureDecisionReasons(attachLearningPacksToPrediction(out, features));
+    const learnedConflictPass = attachLearningPacksToPrediction(out, features);
+    const dragonConflictPromoted = applyDragonFollowFormalRoute(features, learnedConflictPass);
+    return ensureDecisionReasons(applyBalancedBrainArbiter(features, dragonConflictPromoted));
   }
   if(judge.level==='allow' && (judge.side==='B' || judge.side==='P')){
     out.decision=judge.side;
     out.tier=(dragonConflictAudit && dragonConflictAudit.soft_conflict) ? 'SOFT_TAX' : (judge.tier_hint||'MID');
-    out.reasons=['裁決放行['+(judge.path_used||'?')+']：'+(judge.reasons[0]||'v75.1.11 Coverage50 Formal SingleJump Guard 已附加影子學習與 promotion contract')].concat(out.reasons||[]);
+    out.reasons=['裁決放行['+(judge.path_used||'?')+']：'+(judge.reasons[0]||'v75.1.16 Win65 Cov50 Precision Guard 已附加影子學習與 promotion contract')].concat(out.reasons||[]);
     if(dragonConflictAudit && dragonConflictAudit.soft_conflict) out.reasons.unshift('龍腦軟衝突稅：' + dragonConflictAudit.reason);
     if(supervisor && (supervisor.level==='alert' || supervisor.level==='critical') && supervisor.reasons&&supervisor.reasons.length) out.reasons.unshift('監察回饋：'+supervisor.reasons[0]);
     const learnedAllow = attachLearningPacksToPrediction(out, features);
@@ -9749,8 +9987,10 @@ function executePolicyChain(features, patternDb, tau){
   out.decision='PASS'; out.tier='PASS'; out.reasons=[judge.reasons[0]].concat(out.reasons||[]);
   const learnedPass = attachLearningPacksToPrediction(out, features);
   const promoted = applyActivePromotionRule(features, learnedPass);
-  const singlePromoted = applySingleJumpFormalRoute(features, promoted);
-  const coveragePromoted = applyCoverage50PassRoute(features, singlePromoted);
+  const dragonPromoted = applyDragonFollowFormalRoute(features, promoted);
+  const singlePromoted = applySingleJumpFormalRoute(features, dragonPromoted);
+  const win65Promoted = applyWin65ExpansionRoute(features, singlePromoted);
+  const coveragePromoted = applyCoverage50PassRoute(features, win65Promoted);
   const formalAdjustedPass = applyFormalLiveAdaptiveDecision(features, coveragePromoted);
   return ensureDecisionReasons(applyBalancedBrainArbiter(features, formalAdjustedPass));
 }
@@ -9907,6 +10147,17 @@ function updateDBUI(){
     '<div class="db-stat-item"><span>當前薛 和局</span><span style="color:var(--t)">' + currentStats.pushes + '</span></div>';
 
   const historicalStats = historicalReplay;
+  const replayPending = !!(UnifiedAudit && UnifiedAudit.import_replay_pending && (!UnifiedAudit.replay || normalizeFiniteNumber(UnifiedAudit.replay.hands, 0) === 0));
+  if(replayPending){
+    gS.innerHTML =
+      '<div class="db-stat-item"><span>歷史資料 薛數</span><span style="color:var(--hl)">' + historicalStats.shoes + '</span></div>' +
+      '<div class="db-stat-item"><span>歷史資料 勝率</span><span style="color:var(--warn)">待重算</span></div>' +
+      '<div class="db-stat-item"><span>歷史資料 覆蓋率</span><span style="color:var(--warn)">待重算</span></div>' +
+      '<div class="db-stat-item"><span>歷史資料 命中數統計</span><span style="color:var(--warn)">待重算</span></div>' +
+      '<div class="db-stat-item"><span>歷史資料 失手統計數</span><span style="color:var(--warn)">待重算</span></div>' +
+      '<div class="db-stat-item"><span>歷史資料 和局</span><span style="color:var(--warn)">待重算</span></div>';
+    return;
+  }
   gS.innerHTML =
     '<div class="db-stat-item"><span>歷史資料 薛數</span><span style="color:var(--hl)">' + historicalStats.shoes + '</span></div>' +
     '<div class="db-stat-item"><span>歷史資料 勝率</span><span>' + fmtPct(historicalStats.winRate) + '</span></div>' +
@@ -10331,7 +10582,7 @@ async function exportDB(){
     const payload = buildCompactExportPayload();
     const json = JSON.stringify(payload);
     const blob = new Blob([json], { type:'application/json' });
-    const fileName = 'bac_v75_1_11_compact_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
+    const fileName = 'bac_v75_1_16_compact_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
 
     if(window.showSaveFilePicker){
       try{
@@ -10405,7 +10656,7 @@ function importDB(event){
         const importedMaterialized = parsed.materializedShoes || materializeAllShoes();
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v75.1.11',
+            schema_version:'v75.1.16',
             rawShoes:importedMaterialized,
             currentOpenShoe:null,
             experiments:Array.isArray(LabStore.experiments) ? LabStore.experiments : [],
@@ -10422,7 +10673,7 @@ function importDB(event){
         rebuildLiveStateMetrics();
       }
 
-      UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v75_1_11', replay:makeAuditBucket(), original:makeAuditBucket(), byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:makeAuditBucket(), original:makeAuditBucket() }, import_replay_pending:true };
+      UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v75_1_16', replay:makeAuditBucket(), original:makeAuditBucket(), byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:makeAuditBucket(), original:makeAuditBucket() }, import_replay_pending:true };
 
       document.getElementById('cfgTau').value = Config.tau;
       document.getElementById('cfgSide').value = Config.side;
@@ -10430,14 +10681,16 @@ function importDB(event){
       document.getElementById('cfgCoverageBoost').value = Config.coverageBoost;
       document.getElementById('cfgProfitGuard').value = Config.profitGuard;
 
-      localStorage.setItem(LAB_K, JSON.stringify(buildCompactPersistedLabStore(LabStore)));
-      localStorage.setItem(ST_K, JSON.stringify(buildCompactPersistedState(S)));
-      localStorage.setItem(CF_K, JSON.stringify(normalizeConfig(Config)));
+      const persistedOk = persistCompactCoreAfterImport();
 
       bSt = null; bDB = null; bLab = null;
+      clearCurrentInput();
+      render();
       updateDBUI();
 
-      alert('✅ 匯入成功：已載入 compact bundle。為避免 35 薛資料在匯入當下卡死，v75.1.11 已改為先完成匯入與儲存；若要重新計算目前版本勝率/覆蓋率，請按「啟動 Expanding-History Walk-Forward」。即時輸入不再每局重跑全資料。');
+      alert(persistedOk
+        ? '✅ 匯入成功：已載入 compact bundle。v75.1.16 已清理舊版 localStorage 大物件，避免 quota exceeded；若要重新計算目前版本勝率/覆蓋率，請按「啟動 Expanding-History Walk-Forward」。'
+        : '✅ 匯入成功：資料已先載入目前畫面，但瀏覽器 localStorage 仍不足，請先按「徹底清除所有資料」後重新匯入。');
     }catch(err){
       console.error(err);
       alert('匯入失敗：' + (err && err.message ? err.message : '檔案格式不正確或內容不完整'));
@@ -10491,9 +10744,9 @@ function invokeQuantLab(){
   });
 
   const result = {
-    version:'v75.1.11',
+    version:'v75.1.16',
     generated_at:new Date().toISOString(),
-    replay_model_id:'tri_brain_v75_1_11',
+    replay_model_id:'tri_brain_v75_1_16',
     shoes:shoeRows.length,
     original:UnifiedAudit.original,
     replay:UnifiedAudit.replay,
@@ -10509,7 +10762,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v75.1.11 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v75.1.16 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     '全部現版: ' + result.replay.hits + '/' + result.replay.bets + '｜' + (result.replay.returnSum >= 0 ? '+' : '') + result.replay.returnSum.toFixed(2) + '\n' +
@@ -10578,7 +10831,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v75.1.11',
+        schema_version:'v75.1.16',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
