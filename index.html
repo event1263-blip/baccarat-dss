@@ -577,6 +577,7 @@
 <script>
 
 
+
 const DB_K = 'bac_v75_0_0_db';
 const LAB_K = 'bac_v75_0_0_lab';
 const ST_K = 'bac_v75_0_0_state';
@@ -631,23 +632,15 @@ const COVERAGE50_ROUTE_RULES = {
   'none|P|1|early0': { rule_id:'cov50_none_p1_early0_to_B', suggested_action:'B', support_n:45, avg_return:0.044444, ex_push_win_rate:0.540541, note:'Coverage50 Route：early0 / trend P1 / no-jump PASS 提升成 B' },
   'none|B|1|mid': { rule_id:'cov50_none_b1_mid_to_B', suggested_action:'B', support_n:35, avg_return:0.005714, ex_push_win_rate:0.516129, note:'Coverage50 Route：mid / trend B1 / no-jump PASS 提升成 B' },
   'none|B|1|early0': { rule_id:'cov50_none_b1_early0_to_B', suggested_action:'B', support_n:32, avg_return:0.039062, ex_push_win_rate:0.535714, note:'Coverage50 Route：early0 / trend B1 / no-jump PASS 提升成 B' },
-  'none|P|1|mid': { rule_id:'cov50_none_p1_mid_to_P', suggested_action:'P', support_n:31, avg_return:-0.032258, ex_push_win_rate:0.48, note:'Coverage50 Route：mid / trend P1 / no-jump PASS 提升成 P' },
-  'none|B|1|late': { rule_id:'cov50_none_b1_late_to_P', suggested_action:'P', support_n:28, avg_return:0.219643, ex_push_win_rate:0.62963, note:'Coverage50 Route：late / trend B1 / no-jump PASS 提升成 P' },
+  'none|P|1|mid': { rule_id:'cov50_none_p1_mid_to_P', suggested_action:'P', support_n:31, avg_return:-0.032258, ex_push_win_rate:0.480000, note:'Coverage50 Route：mid / trend P1 / no-jump PASS 提升成 P' },
+  'none|B|1|late': { rule_id:'cov50_none_b1_late_to_P', suggested_action:'P', support_n:28, avg_return:0.219643, ex_push_win_rate:0.629630, note:'Coverage50 Route：late / trend B1 / no-jump PASS 提升成 P' },
   'none|P|2|late': { rule_id:'cov50_none_p2_late_to_B', suggested_action:'B', support_n:15, avg_return:0.066667, ex_push_win_rate:0.533333, note:'Coverage50 Route：late / trend P2 / no-jump PASS 提升成 B' },
-  'none|B|3|mid': { rule_id:'cov50_none_b3_mid_to_P', suggested_action:'P', support_n:13, avg_return:0.130769, ex_push_win_rate:0.6, note:'Coverage50 Route：mid / trend B3 / no-jump PASS 提升成 P' },
-  'none|B|2|mid': { rule_id:'cov50_none_b2_mid_to_B', suggested_action:'B', support_n:11, avg_return:-0.113636, ex_push_win_rate:0.454545, note:'Coverage50 Route：mid / trend B2 / no-jump PASS 提升成 B' },
-  'single|P|1|mid': { rule_id:'cov50_single_p1_mid_to_P', suggested_action:'P', support_n:10, avg_return:0.1, ex_push_win_rate:0.571429, note:'Coverage50 Route：mid / single / trend P1 PASS 提升成 P' },
-  'triple|P|1|mid': { rule_id:'cov50_triple_p1_mid_to_B', suggested_action:'B', support_n:8, avg_return:0.5, ex_push_win_rate:0.833333, note:'Coverage50 Route：mid / triple / trend P1 PASS 提升成 B' },
-  'none|B|2|early1': { rule_id:'cov50_none_b2_early1_to_P', suggested_action:'P', support_n:8, avg_return:0.4625, ex_push_win_rate:0.75, note:'Coverage50 Route：early1 / trend B2 / no-jump PASS 提升成 P' },
-  'none|P|4|mid': { rule_id:'cov50_none_p4_mid_to_B', suggested_action:'B', support_n:8, avg_return:0.375, ex_push_win_rate:0.714286, note:'Coverage50 Route：mid / trend P4 / no-jump PASS 提升成 B' },
-  'triple|P|1|late': { rule_id:'cov50_triple_p1_late_to_P', suggested_action:'P', support_n:8, avg_return:0.25, ex_push_win_rate:0.666667, note:'Coverage50 Route：late / triple / trend P1 PASS 提升成 P' },
-  'none|P|2|early0': { rule_id:'cov50_none_p2_early0_to_B', suggested_action:'B', support_n:7, avg_return:0.142857, ex_push_win_rate:0.571429, note:'Coverage50 Route：early0 / trend P2 / no-jump PASS 提升成 B' },
-  'none|B|2|late': { rule_id:'cov50_none_b2_late_to_P', suggested_action:'P', support_n:6, avg_return:0.791667, ex_push_win_rate:1.0, note:'Coverage50 Route：late / trend B2 / no-jump PASS 提升成 P' },
-  'none|P|5+|mid': { rule_id:'cov50_none_p5_mid_to_B', suggested_action:'B', support_n:6, avg_return:0.5, ex_push_win_rate:0.8, note:'Coverage50 Route：mid / trend P5+ / no-jump PASS 提升成 B' },
-  'none|B|1|early1': { rule_id:'cov50_none_b1_early1_to_P', suggested_action:'P', support_n:6, avg_return:-0.35, ex_push_win_rate:0.333333, note:'Coverage50 Route：early1 / trend B1 / no-jump PASS 提升成 P' },
-  'none|P|3|mid': { rule_id:'cov50_none_p3_mid_to_B', suggested_action:'B', support_n:5, avg_return:-0.2, ex_push_win_rate:0.4, note:'Coverage50 Route：mid / trend P3 / no-jump PASS 提升成 B' },
-  'none|P|2|early0': { rule_id:'cov50_none_p2_early0_to_P', suggested_action:'P', support_n:4, avg_return:0.75, ex_push_win_rate:1.0, note:'Coverage50 Route：early0 / trend P2 / no-jump PASS 提升成 P' },
-  'none|P|5+|early1': { rule_id:'cov50_none_p5_early1_to_P', suggested_action:'P', support_n:4, avg_return:0.5, ex_push_win_rate:0.75, note:'Coverage50 Route：early1 / trend P5+ / no-jump PASS 提升成 P' }
+  'single|P|1|mid': { rule_id:'cov50_single_p1_mid_to_P', suggested_action:'P', support_n:10, avg_return:0.100000, ex_push_win_rate:0.571429, note:'Coverage50 Route：mid / single / trend P1 PASS 提升成 P' },
+  'triple|P|1|late': { rule_id:'cov50_triple_p1_late_to_P', suggested_action:'P', support_n:8, avg_return:0.250000, ex_push_win_rate:0.666667, note:'Coverage50 Route：late / triple / trend P1 PASS 提升成 P' },
+  'none|B|2|late': { rule_id:'cov50_none_b2_late_to_P', suggested_action:'P', support_n:6, avg_return:0.791667, ex_push_win_rate:1.000000, note:'Coverage50 Route：late / trend B2 / no-jump PASS 提升成 P' },
+  'none|P|3|mid': { rule_id:'cov50_none_p3_mid_to_B', suggested_action:'B', support_n:5, avg_return:-0.200000, ex_push_win_rate:0.400000, note:'Coverage50 Route：mid / trend P3 / no-jump PASS 提升成 B' },
+  'none|P|2|early0': { rule_id:'cov50_none_p2_early0_to_P', suggested_action:'P', support_n:4, avg_return:0.750000, ex_push_win_rate:1.000000, note:'Coverage50 Route：early0 / trend P2 / no-jump PASS 提升成 P' },
+  'none|P|5+|early1': { rule_id:'cov50_none_p5_early1_to_P', suggested_action:'P', support_n:4, avg_return:0.500000, ex_push_win_rate:0.750000, note:'Coverage50 Route：early1 / trend P5+ / no-jump PASS 提升成 P' },
 };
 function cloneCoverage50RouteRules(){ return JSON.parse(JSON.stringify(COVERAGE50_ROUTE_RULES)); }
 
@@ -10158,6 +10151,7 @@ function init(){
 }
 
 init();
+
 
 
 
