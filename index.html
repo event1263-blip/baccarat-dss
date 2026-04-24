@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v75.1.17 Win65 Cov50 Precision Guard</title>
+  <title>百家樂量化終端 - v75.1.18 Win65 Cov50 Precision Guard</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -432,7 +432,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v75.1.17</span>
+        <span class="version-badge">v75.1.18</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -516,7 +516,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v75.1.17</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v75.1.18</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -524,7 +524,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v75.1.17：<b>以 v75.1.17 為母版；保留 Coverage50 與單跳防守，新增第4顆成龍後正式追龍路徑。不改 UI 結構。</b>。
+        本版 v75.1.18：<b>以 v75.1.18 為母版；保留 Coverage50 與單跳防守，新增第4顆成龍後正式追龍路徑。不改 UI 結構。</b>。
       </div>
     </div>
 
@@ -563,7 +563,7 @@
 
     <div class="db-section">
       <h3 style="margin:0 0 10px;">📈 歷史資料</h3>
-      <div style="font-size:11px;color:#888;line-height:1.45;margin:0 0 10px;">歷史資料以 compact 檔案摘要或目前版本重算結果顯示；匯出再匯入需保持薛數、勝率、覆蓋率、命中、失手、和局一致。</div>
+      <div style="font-size:11px;color:#888;line-height:1.45;margin:0 0 10px;">歷史資料以 compact 檔案摘要或目前版本重算結果顯示；匯出再匯入需保持薛數、勝率、覆蓋率、命中、失手、和局一致。v75.1.18 起一律排除 40 局以下鞋靴。</div>
       <div class="db-stat-grid" id="globalStats"></div>
     </div>
 
@@ -579,10 +579,10 @@
 
 
 
-const DB_K = 'bac_v75_1_17_db';
-const LAB_K = 'bac_v75_1_17_lab';
-const ST_K = 'bac_v75_1_17_state';
-const CF_K = 'bac_v75_1_17_cfg';
+const DB_K = 'bac_v75_1_18_db';
+const LAB_K = 'bac_v75_1_18_lab';
+const ST_K = 'bac_v75_1_18_state';
+const CF_K = 'bac_v75_1_18_cfg';
 
 const WARMUP_HANDS = 0;
 const WARMUP_SOFT_START = 0;
@@ -603,11 +603,11 @@ const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v75.1.17', rawShoes:[], currentOpenShoe:null, experiments:[], audit_logs:[], health_store:{ path_labels:{A:{score:0,count:0},B:{score:0,count:0},C:{score:0,count:0},D:{score:0,count:0},F1:{score:0,count:0},F2:{score:0,count:0},F3:{score:0,count:0},X:{score:0,count:0}}, brains:{state:0,trend:0,hard_guard:0,simulation:0,judge:0,supervisor:0}, defense_failures:{ total:0, resolved:0 }, prototype_failures:{ total:0, resolved:0 } }, learning_runtime:{} };
+let LabStore = { schema_version:'v75.1.18', rawShoes:[], currentOpenShoe:null, experiments:[], audit_logs:[], health_store:{ path_labels:{A:{score:0,count:0},B:{score:0,count:0},C:{score:0,count:0},D:{score:0,count:0},F1:{score:0,count:0},F2:{score:0,count:0},F3:{score:0,count:0},X:{score:0,count:0}}, brains:{state:0,trend:0,hard_guard:0,simulation:0,judge:0,supervisor:0}, defense_failures:{ total:0, resolved:0 }, prototype_failures:{ total:0, resolved:0 } }, learning_runtime:{} };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10, coverageBoost:0, profitGuard:0 };
-let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v75_1_17', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
-const JUDGE_MEMORY_DB_VERSION = 'v75.1.17';
+let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v75_1_18', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
+const JUDGE_MEMORY_DB_VERSION = 'v75.1.18';
 const JUDGE_MEMORY_MIN_SAMPLE = { exact:12, mid:18, coarse:28 };
 const JUDGE_MEMORY_LEVEL_WEIGHT = { exact:0.56, mid:0.29, coarse:0.15 };
 let JudgeMemoryDB = { schema_version:JUDGE_MEMORY_DB_VERSION, keys:{ exact:{}, mid:{}, coarse:{} }, meta:{ stamp:'', shoes:0, hands:0, last_rebuilt_at:null } };
@@ -615,8 +615,8 @@ let AllowPassLeakTrace = [];
 const ALLOW_PASS_TRACE_LIMIT = 400;
 const STATE_CONTRACT_VERSION = 'v70.43-core';
 
-const LEARNING_RUNTIME_VERSION = 'v75.1.17-learning';
-const CONTEXT_OUTCOME_MEMORY_VERSION = 'v75.1.17-context';
+const LEARNING_RUNTIME_VERSION = 'v75.1.18-learning';
+const CONTEXT_OUTCOME_MEMORY_VERSION = 'v75.1.18-context';
 const SHADOW_LEARNER_MIN_BUCKET = 12;
 const SHADOW_LEARNER_PROMOTION_BUCKET = 18;
 const SHADOW_LEARNER_MIN_ACTION_SUPPORT = 6;
@@ -645,7 +645,7 @@ const COVERAGE50_ROUTE_RULES = {
 };
 function cloneCoverage50RouteRules(){ return JSON.parse(JSON.stringify(COVERAGE50_ROUTE_RULES)); }
 
-const FORMAL_LIVE_LEARNING_VERSION = 'v75.1.17-formal-live';
+const FORMAL_LIVE_LEARNING_VERSION = 'v75.1.18-formal-live';
 function cloneResearchPromotionRules(){ return JSON.parse(JSON.stringify(RESEARCH_PROMOTION_RULES)); }
 let ContextOutcomeMemory = { schema_version:CONTEXT_OUTCOME_MEMORY_VERSION, buckets:{}, meta:{ stamp:'', shoes:0, hands:0, last_rebuilt_at:null } };
 
@@ -1304,7 +1304,7 @@ function detectSingleJumpFormalRoute(history){
   if(recentWindow.length >= 5 && breaks >= 2) return { active:false, reason:'recent_single_noise', streak:streak, side:side, breaks:breaks, window:recentWindow.join('') };
 
   /*
-    v75.1.17 單跳防守：
+    v75.1.18 單跳防守：
     v75.1.10 的 min3 單跳全資料為 70 注 / 28 命中 / 35 失手 / 7 和，屬於負貢獻。
     因此正式推薦只允許「強確認單跳」：最近至少 8 段非和局連續交替。
     B/P/B 或 P/B/P 這種 3 段早期單跳只作觀察，不再直接從 PASS 提升為下注。
@@ -1334,8 +1334,8 @@ function applySingleJumpFormalRoute(features, prediction){
   pred.decision = route.side;
   pred.tier = 'SINGLE';
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('單跳強確認路徑[' + route.side + ']：最近 ' + route.streak + ' 段非和局連續交替，通過 v75.1.17 強單跳防守門檻，PASS 提升為單跳推薦');
-  pred.single_jump_rule_applied = { rule_id:'single_jump_formal_strong_confirm_v75_1_17', suggested_action:route.side, streak:route.streak, min_streak:route.min_streak || 8, pure_len:route.pure_len || 0, window:route.window || '', guard_reason:route.reason || 'strong_single_confirmed', auto_applied:true };
+  pred.reasons.unshift('單跳強確認路徑[' + route.side + ']：最近 ' + route.streak + ' 段非和局連續交替，通過 v75.1.18 強單跳防守門檻，PASS 提升為單跳推薦');
+  pred.single_jump_rule_applied = { rule_id:'single_jump_formal_strong_confirm_v75_1_18', suggested_action:route.side, streak:route.streak, min_streak:route.min_streak || 8, pure_len:route.pure_len || 0, window:route.window || '', guard_reason:route.reason || 'strong_single_confirmed', auto_applied:true };
   if(!pred.action_proof_pack || typeof pred.action_proof_pack !== 'object') pred.action_proof_pack = {};
   pred.action_proof_pack.selected_market_state = 'SINGLE';
   pred.action_proof_pack.selected_candidate_id = 'SINGLE_JUMP_' + route.side;
@@ -1365,14 +1365,14 @@ function detectDragonFollowFormalRoute(features, prediction){
   }
   if(runLen < 4) return { active:false, reason:'dragon_not_formed_before_4', run_len:runLen, side:last };
 
-  // v75.1.17 Dragon Guard：
+  // v75.1.18 Dragon Guard：
   // 35 薛回測顯示追莊龍第4~7連與第9連為主要負貢獻；追閒龍第4、5、10、11連也不足以支撐 65% 勝率目標。
   // 因此只保留：莊龍第8連；閒龍第6~9連。其他龍型仍顯示為龍，但不把 PASS 提升成下注。
   if(last === 'B' && runLen !== 8){
-    return { active:false, reason:'dragon_banker_guard_v75_1_17', run_len:runLen, side:last, window:pure.slice(Math.max(0, pure.length - 10)).join('') };
+    return { active:false, reason:'dragon_banker_guard_v75_1_18', run_len:runLen, side:last, window:pure.slice(Math.max(0, pure.length - 10)).join('') };
   }
   if(last === 'P' && !(runLen >= 6 && runLen <= 9)){
-    return { active:false, reason:'dragon_player_guard_v75_1_17', run_len:runLen, side:last, window:pure.slice(Math.max(0, pure.length - 10)).join('') };
+    return { active:false, reason:'dragon_player_guard_v75_1_18', run_len:runLen, side:last, window:pure.slice(Math.max(0, pure.length - 10)).join('') };
   }
 
   const pred = prediction && typeof prediction === 'object' ? prediction : {};
@@ -1436,9 +1436,9 @@ function applyDragonFollowFormalRoute(features, prediction){
   pred.decision = route.side;
   pred.tier = 'DRAGON';
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('追龍正式路徑[' + route.side + ']：第4顆才成龍；目前 ' + route.run_len + ' 連，預測下一手延續，通過 v75.1.17 追龍防守門檻');
+  pred.reasons.unshift('追龍正式路徑[' + route.side + ']：第4顆才成龍；目前 ' + route.run_len + ' 連，預測下一手延續，通過 v75.1.18 追龍防守門檻');
   pred.dragon_follow_rule_applied = {
-    rule_id:'dragon_follow_formal_v75_1_17',
+    rule_id:'dragon_follow_formal_v75_1_18',
     suggested_action:route.side,
     run_len:route.run_len,
     stage:route.reason,
@@ -1659,9 +1659,9 @@ let bSt = null, bDB = null, bLab = null;
 let cOrder = ['p1','b1','p2','b2','p3','b3'];
 let cIdx = 0;
 
-const LEGACY_CFG_KEYS = ['bac_v75_1_16_cfg','bac_v75_1_12_cfg','bac_v75_1_11_cfg','bac_v75_1_10_cfg','bac_v75_1_9_cfg','bac_v75_1_6_cfg','bac_v70_35_cfg','bac_v70_24_cfg','bac_v70_11_cfg','bac_v70_10_cfg','bac_v70_6_cfg','bac_v64_2_cfg','bac_v64_cfg','bac_cfg_v63','bac_cfg_v62','bac_cfg_v61'];
-const LEGACY_LAB_KEYS = ['bac_v75_1_16_lab','bac_v75_1_12_lab','bac_v75_1_11_lab','bac_v75_1_10_lab','bac_v75_1_9_lab','bac_v75_1_6_lab','bac_v70_24_lab','bac_v70_11_lab','bac_v70_10_lab','bac_v70_6_lab','bac_v64_2_lab','bac_v64_lab','bac_lab_v63','bac_lab_v62','bac_lab_v61'];
-const LEGACY_STATE_KEYS = ['bac_v75_1_16_state','bac_v75_1_12_state','bac_v75_1_11_state','bac_v75_1_10_state','bac_v75_1_9_state','bac_v75_1_6_state','bac_v70_24_state','bac_v70_11_state','bac_v70_10_state','bac_v70_6_state','bac_v64_2_state','bac_v64_state','bac_st_v63','bac_st_v62','bac_st_v61'];
+const LEGACY_CFG_KEYS = ['bac_v75_1_17_cfg','bac_v75_1_16_cfg','bac_v75_1_12_cfg','bac_v75_1_11_cfg','bac_v75_1_10_cfg','bac_v75_1_9_cfg','bac_v75_1_6_cfg','bac_v70_35_cfg','bac_v70_24_cfg','bac_v70_11_cfg','bac_v70_10_cfg','bac_v70_6_cfg','bac_v64_2_cfg','bac_v64_cfg','bac_cfg_v63','bac_cfg_v62','bac_cfg_v61'];
+const LEGACY_LAB_KEYS = ['bac_v75_1_17_lab','bac_v75_1_16_lab','bac_v75_1_12_lab','bac_v75_1_11_lab','bac_v75_1_10_lab','bac_v75_1_9_lab','bac_v75_1_6_lab','bac_v70_24_lab','bac_v70_11_lab','bac_v70_10_lab','bac_v70_6_lab','bac_v64_2_lab','bac_v64_lab','bac_lab_v63','bac_lab_v62','bac_lab_v61'];
+const LEGACY_STATE_KEYS = ['bac_v75_1_17_state','bac_v75_1_16_state','bac_v75_1_12_state','bac_v75_1_11_state','bac_v75_1_10_state','bac_v75_1_9_state','bac_v75_1_6_state','bac_v70_24_state','bac_v70_11_state','bac_v70_10_state','bac_v70_6_state','bac_v64_2_state','bac_v64_state','bac_st_v63','bac_st_v62','bac_st_v61'];
 
 
 function listLocalStorageKeysSafe(){
@@ -1744,8 +1744,8 @@ function syncViewportLayout(){
 }
 
 function materializeAllShoes(){
-  const shoes = Array.isArray(LabStore.rawShoes) ? JSON.parse(JSON.stringify(LabStore.rawShoes)) : [];
-  if(LabStore.currentOpenShoe && Array.isArray(LabStore.currentOpenShoe.hands) && LabStore.currentOpenShoe.hands.length > 0){
+  const shoes = filterHistoricalShoes(Array.isArray(LabStore.rawShoes) ? JSON.parse(JSON.stringify(LabStore.rawShoes)) : []);
+  if(LabStore.currentOpenShoe && Array.isArray(LabStore.currentOpenShoe.hands) && LabStore.currentOpenShoe.hands.length >= MIN_HISTORY_SHOE_HANDS){
     const snap = JSON.parse(JSON.stringify(LabStore.currentOpenShoe));
     snap.status = 'closed_snapshot';
     snap.ended_at = snap.ended_at || Date.now();
@@ -1914,7 +1914,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v75.1.17',
+    snapshot_schema_version:'v75.1.18',
     tau: tau,
     effectiveTau: effectiveTau,
     s: normalizeFiniteNumber(raw && raw.s, Config.side),
@@ -1993,8 +1993,8 @@ function normalizeCurrentEvalShape(raw){
   const decision = normalizeDecision(raw.decision);
   let reasons = Array.isArray(raw.reasons) ? raw.reasons.map(function(x){ return String(x); }).filter(Boolean) : [];
   const normalized = {
-    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v75_1_17',
-    replay_schema_version:'v75.1.17',
+    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v75_1_18',
+    replay_schema_version:'v75.1.18',
     decision: decision,
     tier: typeof raw.tier === 'string' ? raw.tier : (decision === 'PASS' ? 'PASS' : 'MID'),
     tau: tau,
@@ -2062,7 +2062,7 @@ function normalizeHandRecord(hand){
 
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v75.1.17',
+    spec_version:'v75.1.18',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -2091,7 +2091,7 @@ function normalizeLabSnapshots(){
   };
 
   LabStore.rawShoes = Array.isArray(LabStore.rawShoes)
-    ? LabStore.rawShoes.map(function(shoe){ return normalizeShoe(shoe); })
+    ? filterHistoricalShoes(LabStore.rawShoes.map(function(shoe){ return normalizeShoe(shoe); }))
     : [];
 
   if(LabStore.currentOpenShoe){
@@ -2665,8 +2665,8 @@ function makeCurrentEvalSnapshot(pred, sideSignals, outcome){
     }
   };
   return {
-    model_id:'tri_brain_v75_1_17',
-    replay_schema_version:'v75.1.17',
+    model_id:'tri_brain_v75_1_18',
+    replay_schema_version:'v75.1.18',
     decision: pred.decision,
     tier: pred.tier,
     tau: pred.tau,
@@ -2803,7 +2803,7 @@ function buildUnifiedReplayAudit(shoes){
   function makeDiagBucket(key){ return { key:key, count:0, bets:0, passes:0, hits:0, pushes:0, losses:0, returnSum:0 }; }
   function ensureDiagBucket(store, key){ const safeKey = key || 'unknown'; if(!store[safeKey]) store[safeKey] = makeDiagBucket(safeKey); return store[safeKey]; }
   function updateDiagBucket(bucket, replay, winner){ bucket.count += 1; if(replay.decision === 'PASS'){ bucket.passes += 1; return; } bucket.bets += 1; if(winner === 'T') bucket.pushes += 1; else if(replay.decision === winner) bucket.hits += 1; else bucket.losses += 1; bucket.returnSum += settleDecision(replay.decision, winner); }
-  const summary = { generated_at:new Date().toISOString(), replayModelId:'tri_brain_v75_1_17', replay:makeAuditBucket(), original:makeAuditBucket(), byVersion:{}, byShoe:{}, byReason:{}, byBlockedState:{}, byBlockedDetail:{}, byExecutionMode:{}, byCandidate:{}, byLossBucket:{}, byLossBucketDetail:{}, byPassReason:{}, byProbeThinSubtype:{}, byModule:{ core_alpha:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0 }, probe_module:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0, early_window_count:0, near_core_count:0, blocked_budget_count:0, loss_streak_pressure_count:0 }, reverse_shadow:{ selected_count:0, candidateC_score_sum:0, candidateD_score_sum:0, observed_count:0 } }, recentShoes:{ labels:[], original:makeAuditBucket(), replay:makeAuditBucket() } };
+  const summary = { generated_at:new Date().toISOString(), replayModelId:'tri_brain_v75_1_18', replay:makeAuditBucket(), original:makeAuditBucket(), byVersion:{}, byShoe:{}, byReason:{}, byBlockedState:{}, byBlockedDetail:{}, byExecutionMode:{}, byCandidate:{}, byLossBucket:{}, byLossBucketDetail:{}, byPassReason:{}, byProbeThinSubtype:{}, byModule:{ core_alpha:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0 }, probe_module:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0, early_window_count:0, near_core_count:0, blocked_budget_count:0, loss_streak_pressure_count:0 }, reverse_shadow:{ selected_count:0, candidateC_score_sum:0, candidateD_score_sum:0, observed_count:0 } }, recentShoes:{ labels:[], original:makeAuditBucket(), replay:makeAuditBucket() } };
   const ensureVersionBucket = function(ver){ if(!summary.byVersion[ver]) summary.byVersion[ver] = { version:ver, original:makeAuditBucket(), replay:makeAuditBucket() }; return summary.byVersion[ver]; };
   const ensureShoeBucket = function(shoe, idx){ const shoeId = shoe && shoe.shoe_id ? String(shoe.shoe_id) : ('shoe_' + idx); if(!summary.byShoe[shoeId]) summary.byShoe[shoeId] = { shoe_id:shoeId, label:(shoe && shoe.meta && shoe.meta.source ? shoe.meta.source + '｜' : '') + shoeId, started_at:Number(shoe && shoe.started_at) || 0, original:makeAuditBucket(), replay:makeAuditBucket() }; return summary.byShoe[shoeId]; };
   const ensureReasonBucket = function(reason){ if(!summary.byReason[reason]) summary.byReason[reason] = { reason:reason, bets:0, hits:0, pushes:0, returnSum:0 }; return summary.byReason[reason]; };
@@ -2901,6 +2901,68 @@ const COMPACT_LAB_VERSION = 'bac_compact_lab_v1';
 const COMPACT_STATE_VERSION = 'bac_compact_state_v1';
 const CARD_SLOT_KEYS = ['p1','p2','p3','b1','b2','b3'];
 
+const MIN_HISTORY_SHOE_HANDS = 41; // v75.1.18：歷史資料一律排除 40 局以下（含 40 局）的鞋靴。
+
+function getShoeHandCount(shoe){
+  if(!shoe || typeof shoe !== 'object') return 0;
+  if(Array.isArray(shoe.hands)) return shoe.hands.length;
+  if(Array.isArray(shoe.h)) return shoe.h.length;
+  return 0;
+}
+
+function isQualifiedHistoricalShoe(shoe){
+  return getShoeHandCount(shoe) >= MIN_HISTORY_SHOE_HANDS;
+}
+
+function summarizeShoeList(shoes){
+  const list = Array.isArray(shoes) ? shoes : [];
+  return list.reduce(function(acc, shoe){
+    const n = getShoeHandCount(shoe);
+    acc.shoes += n > 0 ? 1 : 0;
+    acc.hands += n;
+    if(n > 0 && n < MIN_HISTORY_SHOE_HANDS){
+      acc.droppedShoes += 1;
+      acc.droppedHands += n;
+    }
+    return acc;
+  }, { shoes:0, hands:0, droppedShoes:0, droppedHands:0 });
+}
+
+function summarizeImportedBundleRawShoes(obj){
+  if(!obj || typeof obj !== 'object') return { shoes:0, hands:0, droppedShoes:0, droppedHands:0 };
+  let raw = [];
+  if(obj.export_format === COMPACT_BUNDLE_VERSION && obj.labStoreCompact && Array.isArray(obj.labStoreCompact.rawShoes)){
+    raw = obj.labStoreCompact.rawShoes;
+  }else if(obj.labStore && Array.isArray(obj.labStore.rawShoes)){
+    raw = obj.labStore.rawShoes;
+  }else if(Array.isArray(obj.rawShoes)){
+    raw = obj.rawShoes;
+  }else if(Array.isArray(obj.materializedShoes)){
+    raw = obj.materializedShoes;
+  }
+  return summarizeShoeList(raw);
+}
+
+function filterHistoricalShoes(shoes){
+  return (Array.isArray(shoes) ? shoes : []).filter(function(shoe){
+    return isQualifiedHistoricalShoe(shoe);
+  });
+}
+
+function enforceHistoricalShoeFloor(){
+  if(!LabStore || typeof LabStore !== 'object') return { before:{shoes:0,hands:0,droppedShoes:0,droppedHands:0}, after:{shoes:0,hands:0,droppedShoes:0,droppedHands:0}, removedShoes:0, removedHands:0 };
+  const before = summarizeShoeList(LabStore.rawShoes);
+  LabStore.rawShoes = filterHistoricalShoes(LabStore.rawShoes);
+  const after = summarizeShoeList(LabStore.rawShoes);
+  return {
+    before: before,
+    after: after,
+    removedShoes: before.shoes - after.shoes,
+    removedHands: before.hands - after.hands
+  };
+}
+
+
 function compactDeckArray(deck){
   const out = [];
   for(let i=1;i<=13;i++) out.push(Math.max(0, Math.min(32, Math.floor(normalizeFiniteNumber(deck && deck[i], 32)))));
@@ -2988,9 +3050,9 @@ function compactPolicySnapshotMini(snap){
 function inflatePolicySnapshotMini(row){
   if(!Array.isArray(row)) return null;
   return {
-    model_id:'tri_brain_v75_1_17',
-    model_id_original:'tri_brain_v75_1_17',
-    snapshot_schema_version:'v75.1.17',
+    model_id:'tri_brain_v75_1_18',
+    model_id_original:'tri_brain_v75_1_18',
+    snapshot_schema_version:'v75.1.18',
     tau: normalizeFiniteNumber(Config && Config.tau, 0.005),
     effectiveTau: normalizeFiniteNumber(Config && Config.tau, 0.005),
     s: normalizeFiniteNumber(Config && Config.side, 0.08),
@@ -3065,9 +3127,8 @@ function compactHandForPersistence(hand){
     p: compactPolicySnapshotMini(hand.policy_snapshot),
     a: normalizeFiniteNumber(hand.audit && hand.audit.created_at, 0)
   };
-  const meaningfulEval = hand.current_eval || ((hand.live_prediction && normalizeDecision(hand.live_prediction.decision) !== 'PASS') ? hand.live_prediction : null);
-  const ev = compactCurrentEvalMini(meaningfulEval);
-  if(ev) out.e = ev;
+  // v75.1.18：匯出檔以 policy snapshot 作為決策一致性來源；不再匯出逐手 current_eval，
+  // 避免重新匯入時膨脹大量衍生 eval 物件造成延遲或容量風險。
   return out;
 }
 
@@ -3132,8 +3193,8 @@ function inflateCompactShoe(compactShoe){
       current_eval: inflateCurrentEvalMini(row && row.e),
       audit: {
         created_at: normalizeFiniteNumber(row && row.a, shoe.started_at + idx),
-        spec_version:'v75.1.17',
-        original_spec_version:'v75.1.17',
+        spec_version:'v75.1.18',
+        original_spec_version:'v75.1.18',
         snapshot_normalized:true
       },
       outcome: inflateCompactOutcome(row && row.o)
@@ -3151,16 +3212,24 @@ function inflateCompactShoe(compactShoe){
   return shoe;
 }
 
-function buildCompactPersistedLabStore(labStore){
+function buildCompactPersistedLabStore(labStore, prebuiltSummary){
   const source = labStore && typeof labStore === 'object' ? labStore : {};
+  // 先建立摘要，再壓縮逐手資料；避免壓縮過程影響 summary 的 materialize/replay 口徑。
+  const dataSummary = prebuiltSummary || buildCompactDataSummary();
+  const compactShoes = filterHistoricalShoes(Array.isArray(source.rawShoes) ? source.rawShoes : [])
+    .map(compactShoeForPersistence)
+    .filter(Boolean);
+  const compactOpenShoe = source.currentOpenShoe && getShoeHandCount(source.currentOpenShoe) >= MIN_HISTORY_SHOE_HANDS
+    ? compactShoeForPersistence(source.currentOpenShoe)
+    : null;
   return {
     compact_payload:true,
     compact_payload_version:COMPACT_LAB_VERSION,
-    schema_version:'v75.1.17',
-    rawShoes:Array.isArray(source.rawShoes) ? source.rawShoes.map(compactShoeForPersistence).filter(Boolean) : [],
-    currentOpenShoe: source.currentOpenShoe ? compactShoeForPersistence(source.currentOpenShoe) : null,
-    dataSummary: buildCompactDataSummary(),
-    // v75.1.17：匯出/儲存只保留可還原決策統計的 compact hand record；大型衍生 audit/log/experiment 不再寫入，避免 quota exceeded。
+    schema_version:'v75.1.18',
+    rawShoes:compactShoes,
+    currentOpenShoe:compactOpenShoe,
+    dataSummary:dataSummary,
+    // v75.1.18：匯出/儲存只保留可還原決策統計的 compact hand record；大型衍生 audit/log/experiment 不再寫入，避免 quota exceeded；40 局以下鞋靴一律排除。
     experiments:[],
     audit_logs:[],
     health_store: null
@@ -3170,9 +3239,9 @@ function buildCompactPersistedLabStore(labStore){
 function inflateCompactPersistedLabStore(raw){
   if(!raw || typeof raw !== 'object') return null;
   return {
-    schema_version:'v75.1.17',
-    rawShoes:Array.isArray(raw.rawShoes) ? raw.rawShoes.map(inflateCompactShoe).filter(Boolean) : [],
-    currentOpenShoe: raw.currentOpenShoe ? inflateCompactShoe(raw.currentOpenShoe) : null,
+    schema_version:'v75.1.18',
+    rawShoes:filterHistoricalShoes(Array.isArray(raw.rawShoes) ? raw.rawShoes.map(inflateCompactShoe).filter(Boolean) : []),
+    currentOpenShoe: raw.currentOpenShoe && getShoeHandCount(raw.currentOpenShoe) >= MIN_HISTORY_SHOE_HANDS ? inflateCompactShoe(raw.currentOpenShoe) : null,
     experiments:Array.isArray(raw.experiments) ? raw.experiments : [],
     audit_logs:Array.isArray(raw.audit_logs) ? raw.audit_logs : [],
     health_store: raw.health_store || { path_labels:{A:{score:0,count:0},B:{score:0,count:0},C:{score:0,count:0},D:{score:0,count:0},F1:{score:0,count:0},F2:{score:0,count:0},F3:{score:0,count:0},X:{score:0,count:0}}, brains:{state:0,trend:0,hard_guard:0,simulation:0,judge:0,supervisor:0}, defense_failures:{ total:0, resolved:0 }, prototype_failures:{ total:0, resolved:0 } },
@@ -3221,7 +3290,11 @@ function inflateCompactPersistedState(raw){
 
 function countCompactShoesForSummary(){
   const list = materializeAllShoes();
-  return (Array.isArray(list) ? list : []).filter(function(shoe){ return shoe && Array.isArray(shoe.hands) && shoe.hands.length > 0; }).length;
+  let count = 0;
+  for(let i=0;i<(Array.isArray(list) ? list.length : 0);i++){
+    if(list[i] && Array.isArray(list[i].hands) && list[i].hands.length >= MIN_HISTORY_SHOE_HANDS) count += 1;
+  }
+  return count;
 }
 
 function auditBucketFromDecisionStats(stats){
@@ -3246,10 +3319,12 @@ function buildCompactDataSummary(){
   finalizeAuditBucket(replayBucket);
   finalizeAuditBucket(originalBucket);
   return {
-    schema_version:'v75.1.17-summary-v1',
+    schema_version:'v75.1.18-summary-v1',
     generated_at:new Date().toISOString(),
-    replayModelId:'tri_brain_v75_1_17',
+    replayModelId:'tri_brain_v75_1_18',
     shoes:shoes,
+    min_history_shoe_hands:MIN_HISTORY_SHOE_HANDS,
+    short_shoe_filter:'drop_hands_lte_40',
     replay:replayBucket,
     original:originalBucket
   };
@@ -3263,7 +3338,7 @@ function unifiedAuditFromCompactSummary(summary){
   finalizeAuditBucket(original);
   return {
     generated_at: summary.generated_at || null,
-    replayModelId: summary.replayModelId || 'tri_brain_v75_1_17',
+    replayModelId: summary.replayModelId || 'tri_brain_v75_1_18',
     replay: replay,
     original: original,
     byVersion:{},
@@ -3277,12 +3352,12 @@ function unifiedAuditFromCompactSummary(summary){
 function buildCompactExportPayload(){
   const summary = buildCompactDataSummary();
   return {
-    version:'v75.1.17',
+    version:'v75.1.18',
     export_format:COMPACT_BUNDLE_VERSION,
     exported_at:new Date().toISOString(),
-    compact_policy:'records_only_no_derived_audit_v2',
+    compact_policy:'records_only_no_derived_audit_v3_drop_lte40',
     dataSummary: summary,
-    labStoreCompact: buildCompactPersistedLabStore(LabStore),
+    labStoreCompact: buildCompactPersistedLabStore(LabStore, summary),
     stateCompact: buildCompactPersistedState(S),
     config: normalizeConfig(Config)
   };
@@ -3317,7 +3392,7 @@ function parseImportedBundle(obj){
     }
     return {
       lab: {
-        schema_version:'v75.1.17',
+        schema_version:'v75.1.18',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:Array.isArray(obj.labStore.experiments) ? obj.labStore.experiments : [],
@@ -3551,7 +3626,7 @@ function closeCurrentShoe(){
 
 function saveAll(){
   normalizeLabSnapshots();
-  // v75.1.17：避免 35 薛匯入後把 BigData / 衍生 replay 大物件塞爆 localStorage。
+  // v75.1.18：避免 35 薛匯入後把 BigData / 衍生 replay 大物件塞爆 localStorage。
   // BigData 會在 loadAll() 由 LabStore.rawShoes 重建，不需要長期儲存完整 patterns。
   safeSetLocalStorage(LAB_K, JSON.stringify(buildCompactPersistedLabStore(LabStore)));
   safeSetLocalStorage(ST_K, JSON.stringify(buildCompactPersistedState(S)));
@@ -3583,7 +3658,7 @@ function loadAll(){
         importedUnifiedAudit = parsedLab.unifiedAudit || null;
       }else if(parsedLab && typeof parsedLab === 'object'){
         LabStore = {
-          schema_version:'v75.1.17',
+          schema_version:'v75.1.18',
           rawShoes:Array.isArray(parsedLab.rawShoes) ? parsedLab.rawShoes : [],
           currentOpenShoe: parsedLab.currentOpenShoe || null,
           experiments:Array.isArray(parsedLab.experiments) ? parsedLab.experiments : [],
@@ -3599,7 +3674,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v75.1.17',
+          schema_version:'v75.1.18',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:Array.isArray(lab.experiments) ? lab.experiments : [],
@@ -3759,9 +3834,9 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(resolvedPrediction)),
     policy_snapshot: {
-      model_id:'tri_brain_v75_1_17',
-      model_id_original:'tri_brain_v75_1_17',
-      snapshot_schema_version:'v75.1.17',
+      model_id:'tri_brain_v75_1_18',
+      model_id_original:'tri_brain_v75_1_18',
+      snapshot_schema_version:'v75.1.18',
       tau: resolvedPrediction.tau,
       effectiveTau: resolvedPrediction.effectiveTau,
       s: Config.side,
@@ -3786,8 +3861,8 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v75.1.17',
-      original_spec_version:'v75.1.17',
+      spec_version:'v75.1.18',
+      original_spec_version:'v75.1.18',
       snapshot_normalized:true
     }
   };
@@ -5480,7 +5555,7 @@ function executeFirstBrain(features, patternDb, tau){
     true_transition: clamp01(0.5 + normalizeFiniteNumber(statePack.transition_pack.breakout_delta,0) * 0.4)
   };
   return ensureDecisionReasons({
-    model_id:'tri_brain_v75_1_17',
+    model_id:'tri_brain_v75_1_18',
     probs:{ B:Number(pB.toFixed(4)), P:Number(pP.toFixed(4)), T:NAIVE_PRIORS.T },
     ev:calcEVFromProbs({ B:pB, P:pP, T:NAIVE_PRIORS.T }),
     decision:decision,
@@ -9090,7 +9165,7 @@ function v70BuildDirectionArbiter(statePack, trendStagePack, reliabilityPack, si
   if(probe){
     return { tradeable:true, family:probe.family, side:probe.side || null, selected_proto:probe.id, selected_score:Number(normalizeFiniteNumber(probe.trade_score,0).toFixed(4)), continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['Probe Module 勝出：v72.23 維持 Probe/F2 單一 live owner；dead reclaim 已清理，龍腦衝突改為硬契約 + 軟稅制','module=' + (probe.module_name || 'probe_module')] };
   }
-  return { tradeable:false, family:'pass', side:null, selected_proto:null, selected_score:0, continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['v75.1.17 Win65 Cov50 Precision Guard：Probe/F2 維持唯一成交 owner；邏輯與 v72.37 相同，僅移除介面上的開龍 / 斷龍顯示'] };
+  return { tradeable:false, family:'pass', side:null, selected_proto:null, selected_score:0, continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['v75.1.18 Win65 Cov50 Precision Guard：Probe/F2 維持唯一成交 owner；邏輯與 v72.37 相同，僅移除介面上的開龍 / 斷龍顯示'] };
 }
 
 
@@ -9150,9 +9225,9 @@ function v70BuildExecutionPolicy(statePack, trendStagePack, reliabilityPack, sim
   const f3Blockers = [v70MakeBlocker('F3_observe_only','v70.64 仍將 Reverse / Early 維持為觀察模組，不直接搶主交易權','hard')];
 
   const prototypes = {
-    F1: mkState('F1','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f1_evidence,0), normalizeFiniteNumber(candidateB && candidateB.trade_score,0)),!!(candidateB && candidateB.exists),false,f1Blockers,{ base:0.08, edge:normalizeFiniteNumber(candidateB && candidateB.trade_score,0), edgeWeight:0.94, evidenceWeight:0.12, conflictTax:0.08, thinTax:0.02, execution_mode:'formal_filter', execution_tier:'filter', reason:'v75.1.17 Core Alpha｜維持 filter-only，不持有 live 成交權' }),
-    F2: mkState('F2','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f2_evidence,0), normalizeFiniteNumber(candidateA && candidateA.trade_score,0)),!!(candidateA && candidateA.exists),!!(candidateA && candidateA.viable),f2Blockers,{ base:0.07, edge:normalizeFiniteNumber(candidateA && candidateA.trade_score,0), edgeWeight:1.0, evidenceWeight:0.10, conflictTax:0.08, thinTax:0.01, execution_mode:'probe', execution_tier:'probe', reason:'v75.1.17 Probe Module｜單一成交 owner；邏輯與 v72.37 相同，僅移除龍燈顯示' }),
-    F3: mkState('F3','reverse',reverseSide,Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)),!!((candidateC && candidateC.exists) || (candidateD && candidateD.exists)),false,f3Blockers,{ base:0.05, edge:Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)), edgeWeight:0.80, evidenceWeight:0.06, conflictTax:0.06, thinTax:0.02, execution_mode:'observe', execution_tier:'observe', reason:'v75.1.17 Reverse / Early Observe｜維持觀察模組，不直接交易' })
+    F1: mkState('F1','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f1_evidence,0), normalizeFiniteNumber(candidateB && candidateB.trade_score,0)),!!(candidateB && candidateB.exists),false,f1Blockers,{ base:0.08, edge:normalizeFiniteNumber(candidateB && candidateB.trade_score,0), edgeWeight:0.94, evidenceWeight:0.12, conflictTax:0.08, thinTax:0.02, execution_mode:'formal_filter', execution_tier:'filter', reason:'v75.1.18 Core Alpha｜維持 filter-only，不持有 live 成交權' }),
+    F2: mkState('F2','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f2_evidence,0), normalizeFiniteNumber(candidateA && candidateA.trade_score,0)),!!(candidateA && candidateA.exists),!!(candidateA && candidateA.viable),f2Blockers,{ base:0.07, edge:normalizeFiniteNumber(candidateA && candidateA.trade_score,0), edgeWeight:1.0, evidenceWeight:0.10, conflictTax:0.08, thinTax:0.01, execution_mode:'probe', execution_tier:'probe', reason:'v75.1.18 Probe Module｜單一成交 owner；邏輯與 v72.37 相同，僅移除龍燈顯示' }),
+    F3: mkState('F3','reverse',reverseSide,Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)),!!((candidateC && candidateC.exists) || (candidateD && candidateD.exists)),false,f3Blockers,{ base:0.05, edge:Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)), edgeWeight:0.80, evidenceWeight:0.06, conflictTax:0.06, thinTax:0.02, execution_mode:'observe', execution_tier:'observe', reason:'v75.1.18 Reverse / Early Observe｜維持觀察模組，不直接交易' })
   };
 
   const passBlockers = [candidateB, candidateA, candidateC, candidateD].filter(Boolean).map(function(c){
@@ -9463,7 +9538,7 @@ function analyzeJudgeBrain(features, brain1, dragon, hardGuard, simulation, cont
     promotedPack.market_state_summary.direction_arbiter.side = candidateA.side || null;
     promotedPack.market_state_summary.direction_arbiter.selected_proto = candidateA.id || 'A';
     promotedPack.market_state_summary.direction_arbiter.selected_score = Number(normalizeFiniteNumber(candidateA.trade_score, 0).toFixed(4));
-    promotedPack.market_state_summary.direction_arbiter.reasons = ['v75.1.17 Probe 優先成交：Probe/F2 維持唯一 live allow owner；邏輯與 v72.37 相同，僅移除龍燈顯示'];
+    promotedPack.market_state_summary.direction_arbiter.reasons = ['v75.1.18 Probe 優先成交：Probe/F2 維持唯一 live allow owner；邏輯與 v72.37 相同，僅移除龍燈顯示'];
     if(promotedPack.prototypes && promotedPack.prototypes.F2){
       promotedPack.prototypes.F2.exists = true;
       promotedPack.prototypes.F2.actionable = true;
@@ -10078,7 +10153,7 @@ function executePolicyChain(features, patternDb, tau){
   }
 
   const out = JSON.parse(JSON.stringify(brain1));
-  out.model_id='tri_brain_v75_1_17'; out.brain_dragon=dragon; out.brain_simulation=simulation; out.brain_simulation_draft=simulationDraft; out.brain_judge=judge; out.hard_guard_pack=hardGuard; out.hard_guard_pack_draft=hardGuardDraft; out.brain_supervisor=supervisor; out.convergence_meta=convergenceMeta; out.judge_path_scores=judge&&judge.judge_path_scores?judge.judge_path_scores:{}; out.structural_flags=brain1&&brain1.structural_flags?brain1.structural_flags:{}; out.state_pack=brain1&&brain1.state_pack?brain1.state_pack:null; out.reliability_pack=brain1&&brain1.reliability_pack?brain1.reliability_pack:null; out.state_contract_version=STATE_CONTRACT_VERSION; out.allow_pass_trace_count=AllowPassLeakTrace.length; out.action_proof_pack=judge&&judge.action_proof_pack?judge.action_proof_pack:null; out.market_state_summary=judge&&judge.action_proof_pack&&judge.action_proof_pack.market_state_summary?judge.action_proof_pack.market_state_summary:null; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[];
+  out.model_id='tri_brain_v75_1_18'; out.brain_dragon=dragon; out.brain_simulation=simulation; out.brain_simulation_draft=simulationDraft; out.brain_judge=judge; out.hard_guard_pack=hardGuard; out.hard_guard_pack_draft=hardGuardDraft; out.brain_supervisor=supervisor; out.convergence_meta=convergenceMeta; out.judge_path_scores=judge&&judge.judge_path_scores?judge.judge_path_scores:{}; out.structural_flags=brain1&&brain1.structural_flags?brain1.structural_flags:{}; out.state_pack=brain1&&brain1.state_pack?brain1.state_pack:null; out.reliability_pack=brain1&&brain1.reliability_pack?brain1.reliability_pack:null; out.state_contract_version=STATE_CONTRACT_VERSION; out.allow_pass_trace_count=AllowPassLeakTrace.length; out.action_proof_pack=judge&&judge.action_proof_pack?judge.action_proof_pack:null; out.market_state_summary=judge&&judge.action_proof_pack&&judge.action_proof_pack.market_state_summary?judge.action_proof_pack.market_state_summary:null; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[];
   const dragonConflictAudit = attachDragonConflictAudit(out);
 
   if(convergenceMeta.stabilized === false){
@@ -10112,7 +10187,7 @@ function executePolicyChain(features, patternDb, tau){
   if(judge.level==='allow' && (judge.side==='B' || judge.side==='P')){
     out.decision=judge.side;
     out.tier=(dragonConflictAudit && dragonConflictAudit.soft_conflict) ? 'SOFT_TAX' : (judge.tier_hint||'MID');
-    out.reasons=['裁決放行['+(judge.path_used||'?')+']：'+(judge.reasons[0]||'v75.1.17 Win65 Cov50 Precision Guard 已附加影子學習與 promotion contract')].concat(out.reasons||[]);
+    out.reasons=['裁決放行['+(judge.path_used||'?')+']：'+(judge.reasons[0]||'v75.1.18 Win65 Cov50 Precision Guard 已附加影子學習與 promotion contract')].concat(out.reasons||[]);
     if(dragonConflictAudit && dragonConflictAudit.soft_conflict) out.reasons.unshift('龍腦軟衝突稅：' + dragonConflictAudit.reason);
     if(supervisor && (supervisor.level==='alert' || supervisor.level==='critical') && supervisor.reasons&&supervisor.reasons.length) out.reasons.unshift('監察回饋：'+supervisor.reasons[0]);
     const learnedAllow = attachLearningPacksToPrediction(out, features);
@@ -10226,7 +10301,7 @@ function calcDecisionStatsFromHands(hands){
 
 function calcDecisionStatsFromShoes(shoes){
   const out = { shoes:0, hands:0, bets:0, hits:0, losses:0, pushes:0, returnSum:0, coverage:0, winRate:0 };
-  (Array.isArray(shoes) ? shoes : []).forEach(function(shoe){
+  filterHistoricalShoes(Array.isArray(shoes) ? shoes : []).forEach(function(shoe){
     if(!shoe || !Array.isArray(shoe.hands) || shoe.hands.length <= 0) return;
     out.shoes += 1;
     const one = calcDecisionStatsFromHands(shoe.hands);
@@ -10264,9 +10339,7 @@ function calcDecisionStatsFromAuditBucket(bucket, shoeCount){
 }
 
 function buildHistoryStatsSuite(){
-  const shoeCount = (Array.isArray(LabStore.rawShoes) ? LabStore.rawShoes : []).filter(function(shoe){
-    return shoe && Array.isArray(shoe.hands) && shoe.hands.length > 0;
-  }).length;
+  const shoeCount = filterHistoricalShoes(Array.isArray(LabStore.rawShoes) ? LabStore.rawShoes : []).length;
   const originalStats = UnifiedAudit && UnifiedAudit.original && normalizeFiniteNumber(UnifiedAudit.original.hands, 0) > 0
     ? calcDecisionStatsFromAuditBucket(UnifiedAudit.original, shoeCount)
     : calcDecisionStatsFromShoes(LabStore.rawShoes || []);
@@ -10717,7 +10790,7 @@ async function exportDB(){
     const payload = buildCompactExportPayload();
     const json = JSON.stringify(payload);
     const blob = new Blob([json], { type:'application/json' });
-    const fileName = 'bac_v75_1_17_compact_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
+    const fileName = 'bac_v75_1_18_compact_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
 
     if(window.showSaveFilePicker){
       try{
@@ -10763,6 +10836,7 @@ function importDB(event){
     try{
       const text = String(ev.target.result || '').replace(/^﻿/, '');
       const obj = JSON.parse(text);
+      const importRawSummary = summarizeImportedBundleRawShoes(obj);
       const parsed = parseImportedBundle(obj);
       if(!parsed || !parsed.lab || !parsed.state) throw new Error('missing-fields');
 
@@ -10770,7 +10844,12 @@ function importDB(event){
       S = parsed.state;
       Config = parsed.config || normalizeConfig({});
 
+      const importBeforeFilter = importRawSummary.shoes > 0 ? importRawSummary : summarizeShoeList(LabStore && LabStore.rawShoes ? LabStore.rawShoes : []);
       normalizeLabSnapshots();
+      const importAfterFilter = summarizeShoeList(LabStore && LabStore.rawShoes ? LabStore.rawShoes : []);
+      const importFilterRemovedShoes = Math.max(0, importBeforeFilter.shoes - importAfterFilter.shoes);
+      const importFilterRemovedHands = Math.max(0, importBeforeFilter.hands - importAfterFilter.hands);
+      const compactSummaryStillCompatible = !(importFilterRemovedShoes > 0 || importFilterRemovedHands > 0);
       BigData = rebuildBigDataFromAllShoes(materializeAllShoes());
 
       if(parsed.judgeMemoryDB && parsed.judgeMemoryDB.keys){
@@ -10791,8 +10870,8 @@ function importDB(event){
         const importedMaterialized = parsed.materializedShoes || materializeAllShoes();
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v75.1.17',
-            rawShoes:importedMaterialized,
+            schema_version:'v75.1.18',
+            rawShoes:filterHistoricalShoes(importedMaterialized),
             currentOpenShoe:null,
             experiments:Array.isArray(LabStore.experiments) ? LabStore.experiments : [],
             audit_logs:Array.isArray(LabStore.audit_logs) ? LabStore.audit_logs : [],
@@ -10808,7 +10887,8 @@ function importDB(event){
         rebuildLiveStateMetrics();
       }
 
-      UnifiedAudit = unifiedAuditFromCompactSummary(parsed.dataSummary) || { generated_at:null, replayModelId:'tri_brain_v75_1_17', replay:auditBucketFromDecisionStats(calcDecisionStatsFromShoes(LabStore.rawShoes || [])), original:auditBucketFromDecisionStats(calcDecisionStatsFromShoes(LabStore.rawShoes || [])), byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:makeAuditBucket(), original:makeAuditBucket() }, imported_compact_summary:false };
+      const filteredDecisionBucket = auditBucketFromDecisionStats(calcDecisionStatsFromShoes(LabStore.rawShoes || []));
+      UnifiedAudit = (compactSummaryStillCompatible ? unifiedAuditFromCompactSummary(parsed.dataSummary) : null) || { generated_at:null, replayModelId:'tri_brain_v75_1_18', replay:filteredDecisionBucket, original:JSON.parse(JSON.stringify(filteredDecisionBucket)), byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:makeAuditBucket(), original:makeAuditBucket() }, imported_compact_summary:false, filtered_short_shoes:true };
 
       document.getElementById('cfgTau').value = Config.tau;
       document.getElementById('cfgSide').value = Config.side;
@@ -10823,9 +10903,12 @@ function importDB(event){
       render();
       updateDBUI();
 
+      const filterMsg = importFilterRemovedShoes > 0
+        ? '\n已依規則排除 40 局以下鞋靴：' + importFilterRemovedShoes + ' 薛 / ' + importFilterRemovedHands + ' 局。'
+        : '\n未發現 40 局以下需排除的鞋靴。';
       alert(persistedOk
-        ? '✅ 匯入成功：已載入 compact bundle。v75.1.17 會保留檔案內 compact 統計摘要；若檔案沒有摘要，會以檔案內保存決策先顯示，不再出現待重算。需要用目前版本重新 replay 時，請按「啟動 Expanding-History Walk-Forward」。'
-        : '✅ 匯入成功：資料已先載入目前畫面，但瀏覽器 localStorage 仍不足，請先按「徹底清除所有資料」後重新匯入。');
+        ? '✅ 匯入成功：已載入 compact bundle。v75.1.18 會自動排除 40 局以下鞋靴，並以過濾後資料顯示統計。' + filterMsg + '\n需要用目前版本重新 replay 時，請按「啟動 Expanding-History Walk-Forward」。'
+        : '✅ 匯入成功：資料已先載入目前畫面，但瀏覽器 localStorage 仍不足，請先按「徹底清除所有資料」後重新匯入。' + filterMsg);
     }catch(err){
       console.error(err);
       alert('匯入失敗：' + (err && err.message ? err.message : '檔案格式不正確或內容不完整'));
@@ -10879,9 +10962,9 @@ function invokeQuantLab(){
   });
 
   const result = {
-    version:'v75.1.17',
+    version:'v75.1.18',
     generated_at:new Date().toISOString(),
-    replay_model_id:'tri_brain_v75_1_17',
+    replay_model_id:'tri_brain_v75_1_18',
     shoes:shoeRows.length,
     original:UnifiedAudit.original,
     replay:UnifiedAudit.replay,
@@ -10897,7 +10980,7 @@ function invokeQuantLab(){
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v75.1.17 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v75.1.18 Quant Lab:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     '全部現版: ' + result.replay.hits + '/' + result.replay.bets + '｜' + (result.replay.returnSum >= 0 ? '+' : '') + result.replay.returnSum.toFixed(2) + '\n' +
@@ -10966,7 +11049,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v75.1.17',
+        schema_version:'v75.1.18',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
