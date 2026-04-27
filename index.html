@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>百家樂量化終端 - v80.14 Residual Loss Micro Flip</title>
+  <title>百家樂量化終端 - v80.21 Unknown-Shoe Coverage Governor</title>
   <style>
     :root{
       --bg:#09090b; --card:#18181b; --card2:#111114; --border:#27272a;
@@ -432,7 +432,7 @@
   <div class="sticky-hud">
     <div class="hud-header">
       <div class="hud-stats">
-        <span class="version-badge">v80.14</span>
+        <span class="version-badge">v80.21</span>
         <span>剩牌:<span class="val" id="hdrRemain">416</span></span>
         <span>局:<span class="val" id="hdrRound">0</span></span>
         <span>命中:<span class="val" id="hdrHit">0/0</span></span>
@@ -516,7 +516,7 @@
 
   <div class="database-panel" id="dbPanel" aria-hidden="true">
     <div class="db-header">
-      <div class="db-title">實驗室控制台 <span class="version-badge">v80.14</span></div>
+      <div class="db-title">實驗室控制台 <span class="version-badge">v80.21</span></div>
     </div>
 
     <div class="db-section" style="border-color:var(--lab);">
@@ -524,7 +524,7 @@
       <button type="button" class="lab-btn" onclick="invokeQuantLab()">🧬 啟動 Expanding-History Walk-Forward</button>
       <div style="font-size:11px;color:#888;line-height:1.5;">
         以已結算鞋靴進行 expanding-history 驗證。<br>
-        本版 v80.14：<b>Residual Loss Micro Flip；以 v80.13 正式加速 replay 的剩餘 266 個失手為基準，只處理兩個仍有反向優勢的早段殘留錯向點，測試是否能在接近 45% 覆蓋下繼續提高勝率。</b>。
+        本版 v80.21：<b>Unknown-Shoe Coverage Governor；以 v80.19 正式 replay 失敗點為基礎，只新增弱鞋地板 PASS 檢疫，不反向下注，目標是在約 40% 覆蓋附近提高勝率並讓每薛維持 5 成以上。</b>。
       </div>
     </div>
 
@@ -563,7 +563,7 @@
 
     <div class="db-section">
       <h3 style="margin:0 0 10px;">📈 歷史資料</h3>
-      <div style="font-size:11px;color:#888;line-height:1.45;margin:0 0 10px;">歷史資料以 compact 檔案摘要或目前版本重算結果顯示；匯出再匯入需保持薛數、勝率、覆蓋率、命中、失手、和局一致。v80.14 起一律排除 40 局以下鞋靴。</div>
+      <div style="font-size:11px;color:#888;line-height:1.45;margin:0 0 10px;">歷史資料以 compact 檔案摘要或目前版本重算結果顯示；匯出再匯入需保持薛數、勝率、覆蓋率、命中、失手、和局一致。v80.21 起一律排除 40 局以下鞋靴。</div>
       <div class="db-stat-grid" id="globalStats"></div>
     </div>
 
@@ -579,10 +579,10 @@
 
 
 
-const DB_K = 'bac_v80_14_db';
-const LAB_K = 'bac_v80_14_lab';
-const ST_K = 'bac_v80_14_state';
-const CF_K = 'bac_v80_14_cfg';
+const DB_K = 'bac_v80_21_db';
+const LAB_K = 'bac_v80_21_lab';
+const ST_K = 'bac_v80_21_state';
+const CF_K = 'bac_v80_21_cfg';
 
 const WARMUP_HANDS = 0;
 const WARMUP_SOFT_START = 0;
@@ -603,11 +603,11 @@ const NAIVE_PRIORS = { B:0.4586, P:0.4462, T:0.0952 };
 const PAYOUTS = { B:0.95, P:1.0, T:8.0 };
 
 let BigData = { totalHands:0, patterns:{}, acc:{recs:0,hits:0,tRecs:0,tHits:0,bpRecs:0,bpHits:0,ppRecs:0,ppHits:0} };
-let LabStore = { schema_version:'v80.14', rawShoes:[], currentOpenShoe:null, experiments:[], audit_logs:[], health_store:{ path_labels:{A:{score:0,count:0},B:{score:0,count:0},C:{score:0,count:0},D:{score:0,count:0},F1:{score:0,count:0},F2:{score:0,count:0},F3:{score:0,count:0},X:{score:0,count:0}}, brains:{state:0,trend:0,hard_guard:0,simulation:0,judge:0,supervisor:0}, defense_failures:{ total:0, resolved:0 }, prototype_failures:{ total:0, resolved:0 } }, learning_runtime:{} };
+let LabStore = { schema_version:'v80.21', rawShoes:[], currentOpenShoe:null, experiments:[], audit_logs:[], health_store:{ path_labels:{A:{score:0,count:0},B:{score:0,count:0},C:{score:0,count:0},D:{score:0,count:0},F1:{score:0,count:0},F2:{score:0,count:0},F3:{score:0,count:0},X:{score:0,count:0}}, brains:{state:0,trend:0,hard_guard:0,simulation:0,judge:0,supervisor:0}, defense_failures:{ total:0, resolved:0 }, prototype_failures:{ total:0, resolved:0 } }, learning_runtime:{} };
 let S = null;
 let Config = { tau:0.005, side:0.08, nBins:10, coverageBoost:0, profitGuard:0 };
-let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v80_14_1', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
-const JUDGE_MEMORY_DB_VERSION = 'v80.14';
+let UnifiedAudit = { generated_at:null, replayModelId:'tri_brain_v80_21_1', replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 }, original:{ hands:0, bets:0, hits:0, pushes:0, returnSum:0, coverage:0, tRecs:0, tHits:0, bpRecs:0, bpHits:0, ppRecs:0, ppHits:0 } } };
+const JUDGE_MEMORY_DB_VERSION = 'v80.21';
 const JUDGE_MEMORY_MIN_SAMPLE = { exact:12, mid:18, coarse:28 };
 const JUDGE_MEMORY_LEVEL_WEIGHT = { exact:0.56, mid:0.29, coarse:0.15 };
 let JudgeMemoryDB = { schema_version:JUDGE_MEMORY_DB_VERSION, keys:{ exact:{}, mid:{}, coarse:{} }, meta:{ stamp:'', shoes:0, hands:0, last_rebuilt_at:null } };
@@ -615,8 +615,8 @@ let AllowPassLeakTrace = [];
 const ALLOW_PASS_TRACE_LIMIT = 400;
 const STATE_CONTRACT_VERSION = 'v70.43-core';
 
-const LEARNING_RUNTIME_VERSION = 'v80.14-learning';
-const CONTEXT_OUTCOME_MEMORY_VERSION = 'v80.14-context';
+const LEARNING_RUNTIME_VERSION = 'v80.21-learning';
+const CONTEXT_OUTCOME_MEMORY_VERSION = 'v80.21-context';
 const SHADOW_LEARNER_MIN_BUCKET = 12;
 const SHADOW_LEARNER_PROMOTION_BUCKET = 18;
 const SHADOW_LEARNER_MIN_ACTION_SUPPORT = 6;
@@ -645,7 +645,7 @@ const COVERAGE50_ROUTE_RULES = {
 };
 function cloneCoverage50RouteRules(){ return JSON.parse(JSON.stringify(COVERAGE50_ROUTE_RULES)); }
 
-const FORMAL_LIVE_LEARNING_VERSION = 'v80.14-formal-live';
+const FORMAL_LIVE_LEARNING_VERSION = 'v80.21-formal-live';
 function cloneResearchPromotionRules(){ return JSON.parse(JSON.stringify(RESEARCH_PROMOTION_RULES)); }
 let ContextOutcomeMemory = { schema_version:CONTEXT_OUTCOME_MEMORY_VERSION, buckets:{}, meta:{ stamp:'', shoes:0, hands:0, last_rebuilt_at:null } };
 
@@ -1304,7 +1304,7 @@ function detectSingleJumpFormalRoute(history){
   if(recentWindow.length >= 5 && breaks >= 2) return { active:false, reason:'recent_single_noise', streak:streak, side:side, breaks:breaks, window:recentWindow.join('') };
 
   /*
-    v80.14 單跳防守：
+    v80.21 單跳防守：
     v75.1.10 的 min3 單跳全資料為 70 注 / 28 命中 / 35 失手 / 7 和，屬於負貢獻。
     因此正式推薦只允許「強確認單跳」：最近至少 8 段非和局連續交替。
     B/P/B 或 P/B/P 這種 3 段早期單跳只作觀察，不再直接從 PASS 提升為下注。
@@ -1334,8 +1334,8 @@ function applySingleJumpFormalRoute(features, prediction){
   pred.decision = route.side;
   pred.tier = 'SINGLE';
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('單跳強確認路徑[' + route.side + ']：最近 ' + route.streak + ' 段非和局連續交替，通過 v80.14 強單跳防守門檻，PASS 提升為單跳推薦');
-  pred.single_jump_rule_applied = { rule_id:'single_jump_formal_strong_confirm_v80_14', suggested_action:route.side, streak:route.streak, min_streak:route.min_streak || 8, pure_len:route.pure_len || 0, window:route.window || '', guard_reason:route.reason || 'strong_single_confirmed', auto_applied:true };
+  pred.reasons.unshift('單跳強確認路徑[' + route.side + ']：最近 ' + route.streak + ' 段非和局連續交替，通過 v80.21 強單跳防守門檻，PASS 提升為單跳推薦');
+  pred.single_jump_rule_applied = { rule_id:'single_jump_formal_strong_confirm_v80_21', suggested_action:route.side, streak:route.streak, min_streak:route.min_streak || 8, pure_len:route.pure_len || 0, window:route.window || '', guard_reason:route.reason || 'strong_single_confirmed', auto_applied:true };
   if(!pred.action_proof_pack || typeof pred.action_proof_pack !== 'object') pred.action_proof_pack = {};
   pred.action_proof_pack.selected_market_state = 'SINGLE';
   pred.action_proof_pack.selected_candidate_id = 'SINGLE_JUMP_' + route.side;
@@ -1365,14 +1365,14 @@ function detectDragonFollowFormalRoute(features, prediction){
   }
   if(runLen < 4) return { active:false, reason:'dragon_not_formed_before_4', run_len:runLen, side:last };
 
-  // v80.14 Dragon Guard：
+  // v80.21 Dragon Guard：
   // 35 薛回測顯示追莊龍第4~7連與第9連為主要負貢獻；追閒龍第4、5、10、11連也不足以支撐 65% 勝率目標。
   // 因此只保留：莊龍第8連；閒龍第6~9連。其他龍型仍顯示為龍，但不把 PASS 提升成下注。
   if(last === 'B' && runLen !== 8){
-    return { active:false, reason:'dragon_banker_guard_v80_14', run_len:runLen, side:last, window:pure.slice(Math.max(0, pure.length - 10)).join('') };
+    return { active:false, reason:'dragon_banker_guard_v80_21', run_len:runLen, side:last, window:pure.slice(Math.max(0, pure.length - 10)).join('') };
   }
   if(last === 'P' && !(runLen >= 6 && runLen <= 9)){
-    return { active:false, reason:'dragon_player_guard_v80_14', run_len:runLen, side:last, window:pure.slice(Math.max(0, pure.length - 10)).join('') };
+    return { active:false, reason:'dragon_player_guard_v80_21', run_len:runLen, side:last, window:pure.slice(Math.max(0, pure.length - 10)).join('') };
   }
 
   const pred = prediction && typeof prediction === 'object' ? prediction : {};
@@ -1436,9 +1436,9 @@ function applyDragonFollowFormalRoute(features, prediction){
   pred.decision = route.side;
   pred.tier = 'DRAGON';
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('追龍正式路徑[' + route.side + ']：第4顆才成龍；目前 ' + route.run_len + ' 連，預測下一手延續，通過 v80.14 追龍防守門檻');
+  pred.reasons.unshift('追龍正式路徑[' + route.side + ']：第4顆才成龍；目前 ' + route.run_len + ' 連，預測下一手延續，通過 v80.21 追龍防守門檻');
   pred.dragon_follow_rule_applied = {
-    rule_id:'dragon_follow_formal_v80_14',
+    rule_id:'dragon_follow_formal_v80_21',
     suggested_action:route.side,
     run_len:route.run_len,
     stage:route.reason,
@@ -1743,10 +1743,104 @@ function syncViewportLayout(){
   }
 }
 
+function cloneMaterializedHandForReplay(hand){
+  if(!hand || typeof hand !== 'object') return hand;
+  const cards = hand.input && hand.input.cards ? hand.input.cards : {};
+  const out = hand.outcome && typeof hand.outcome === 'object' ? hand.outcome : {};
+  const snap = hand.policy_snapshot && typeof hand.policy_snapshot === 'object' ? hand.policy_snapshot : {};
+  const evalObj = hand.current_eval && typeof hand.current_eval === 'object' ? hand.current_eval : null;
+  return {
+    hand_index: Math.max(1, Math.floor(normalizeFiniteNumber(hand.hand_index, 1))),
+    input: { cards: {
+      p1: cards.p1 == null ? null : cards.p1,
+      p2: cards.p2 == null ? null : cards.p2,
+      p3: cards.p3 == null ? null : cards.p3,
+      b1: cards.b1 == null ? null : cards.b1,
+      b2: cards.b2 == null ? null : cards.b2,
+      b3: cards.b3 == null ? null : cards.b3
+    }},
+    policy_snapshot: {
+      model_id: snap.model_id || snap.model_id_original || 'legacy',
+      model_id_original: snap.model_id_original || snap.model_id || 'legacy',
+      snapshot_schema_version: snap.snapshot_schema_version || 'legacy',
+      tau: normalizeFiniteNumber(snap.tau, Config.tau),
+      effectiveTau: normalizeFiniteNumber(snap.effectiveTau, Config.tau),
+      s: normalizeFiniteNumber(snap.s, Config.side),
+      main_decision: normalizeDecision(snap.main_decision),
+      recommend_tie: !!snap.recommend_tie,
+      recommend_bp: !!snap.recommend_bp,
+      recommend_pp: !!snap.recommend_pp,
+      is_warmup: !!snap.is_warmup,
+      is_warmup_soft: !!snap.is_warmup_soft,
+      data_thin: !!snap.data_thin
+    },
+    current_eval: evalObj ? {
+      model_id: evalObj.model_id || 'tri_brain_v80_21_1',
+      replay_schema_version: evalObj.replay_schema_version || 'v80.21',
+      decision: normalizeDecision(evalObj.decision),
+      tier: evalObj.tier || (normalizeDecision(evalObj.decision) === 'PASS' ? 'PASS' : 'MID'),
+      tau: normalizeFiniteNumber(evalObj.tau, Config.tau),
+      effectiveTau: normalizeFiniteNumber(evalObj.effectiveTau, Config.tau),
+      isWarmup: !!evalObj.isWarmup,
+      warmupSoft: !!evalObj.warmupSoft,
+      dataThin: !!evalObj.dataThin,
+      alignedB: normalizeFiniteNumber(evalObj.alignedB, 0),
+      alignedP: normalizeFiniteNumber(evalObj.alignedP, 0),
+      gap: normalizeFiniteNumber(evalObj.gap, 0),
+      overheat: normalizeFiniteNumber(evalObj.overheat, 0),
+      chopRisk: normalizeFiniteNumber(evalObj.chopRisk, 0),
+      reasons: Array.isArray(evalObj.reasons) ? evalObj.reasons.slice(0, 6) : [],
+      recommend_tie: !!evalObj.recommend_tie,
+      recommend_bp: !!evalObj.recommend_bp,
+      recommend_pp: !!evalObj.recommend_pp,
+      settled_return: normalizeFiniteNumber(evalObj.settled_return, 0),
+      hit_main: !!evalObj.hit_main,
+      push_main: !!evalObj.push_main,
+      selected_market_state: evalObj.selected_market_state || null,
+      selected_candidate_id: evalObj.selected_candidate_id || null,
+      execution_mode: evalObj.execution_mode || null,
+      loss_bucket: evalObj.loss_bucket || null,
+      loss_bucket_detail: evalObj.loss_bucket_detail || null,
+      post_b_p_risk_monitor: evalObj.post_b_p_risk_monitor && typeof evalObj.post_b_p_risk_monitor === 'object' ? JSON.parse(JSON.stringify(evalObj.post_b_p_risk_monitor)) : null
+    } : null,
+    audit: {
+      created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, 0),
+      spec_version: hand.audit && hand.audit.spec_version ? hand.audit.spec_version : 'v80.21',
+      original_spec_version: hand.audit && hand.audit.original_spec_version ? hand.audit.original_spec_version : (hand.audit && hand.audit.spec_version ? hand.audit.spec_version : 'legacy'),
+      snapshot_normalized: true
+    },
+    outcome: {
+      winner: normalizeOutcomeWinner(out.winner || out.w),
+      w: normalizeOutcomeWinner(out.winner || out.w),
+      pPt: Math.max(0, Math.min(9, Math.floor(normalizeFiniteNumber(out.pPt, 0)))),
+      bPt: Math.max(0, Math.min(9, Math.floor(normalizeFiniteNumber(out.bPt, 0)))),
+      bp: !!out.bp,
+      pp: !!out.pp
+    }
+  };
+}
+
+function cloneMaterializedShoeForReplay(shoe){
+  if(!shoe || typeof shoe !== 'object') return shoe;
+  return {
+    shoe_id: shoe.shoe_id || generateShoeId(),
+    started_at: normalizeFiniteNumber(shoe.started_at, Date.now()),
+    ended_at: shoe.ended_at == null ? null : normalizeFiniteNumber(shoe.ended_at, null),
+    status: typeof shoe.status === 'string' ? shoe.status : 'closed',
+    meta: {
+      deck_size_start: normalizeFiniteNumber(shoe.meta && shoe.meta.deck_size_start, 416),
+      order_mode: shoe.meta && typeof shoe.meta.order_mode === 'string' ? shoe.meta.order_mode : 'PBPB',
+      source: shoe.meta && typeof shoe.meta.source === 'string' ? shoe.meta.source : 'live_input'
+    },
+    hands: Array.isArray(shoe.hands) ? shoe.hands.map(cloneMaterializedHandForReplay).filter(Boolean) : []
+  };
+}
+
 function materializeAllShoes(){
-  const shoes = filterHistoricalShoes(Array.isArray(LabStore.rawShoes) ? JSON.parse(JSON.stringify(LabStore.rawShoes)) : []);
+  const sourceShoes = Array.isArray(LabStore.rawShoes) ? LabStore.rawShoes : [];
+  const shoes = filterHistoricalShoes(sourceShoes).map(cloneMaterializedShoeForReplay).filter(Boolean);
   if(LabStore.currentOpenShoe && Array.isArray(LabStore.currentOpenShoe.hands) && LabStore.currentOpenShoe.hands.length >= MIN_HISTORY_SHOE_HANDS){
-    const snap = JSON.parse(JSON.stringify(LabStore.currentOpenShoe));
+    const snap = cloneMaterializedShoeForReplay(LabStore.currentOpenShoe);
     snap.status = 'closed_snapshot';
     snap.ended_at = snap.ended_at || Date.now();
     shoes.push(snap);
@@ -1914,7 +2008,7 @@ function normalizePolicySnapshotShape(raw){
   return {
     model_id: originalModelId,
     model_id_original: originalModelId,
-    snapshot_schema_version:'v80.14',
+    snapshot_schema_version:'v80.21',
     tau: tau,
     effectiveTau: effectiveTau,
     s: normalizeFiniteNumber(raw && raw.s, Config.side),
@@ -1993,8 +2087,8 @@ function normalizeCurrentEvalShape(raw){
   const decision = normalizeDecision(raw.decision);
   let reasons = Array.isArray(raw.reasons) ? raw.reasons.map(function(x){ return String(x); }).filter(Boolean) : [];
   const normalized = {
-    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v80_14_1',
-    replay_schema_version:'v80.14',
+    model_id: typeof raw.model_id === 'string' ? raw.model_id : 'tri_brain_v80_21_1',
+    replay_schema_version:'v80.21',
     decision: decision,
     tier: typeof raw.tier === 'string' ? raw.tier : (decision === 'PASS' ? 'PASS' : 'MID'),
     tau: tau,
@@ -2036,7 +2130,8 @@ function normalizeCurrentEvalShape(raw){
     replay_gate_pack: normalizeLearningPack(raw.replay_gate_pack),
     promotion_contract_pack: normalizeLearningPack(raw.promotion_contract_pack),
     formal_live_learning_pack: normalizeLearningPack(raw.formal_live_learning_pack),
-    formal_live_base_snapshot: normalizeLearningPack(raw.formal_live_base_snapshot)
+    formal_live_base_snapshot: normalizeLearningPack(raw.formal_live_base_snapshot),
+    post_b_p_risk_monitor: raw.post_b_p_risk_monitor && typeof raw.post_b_p_risk_monitor === 'object' ? JSON.parse(JSON.stringify(raw.post_b_p_risk_monitor)) : null
   };
   if(normalized.isWarmup){
     normalized.decision = 'PASS';
@@ -2062,7 +2157,7 @@ function normalizeHandRecord(hand){
 
   hand.audit = {
     created_at: normalizeFiniteNumber(hand.audit && hand.audit.created_at, Date.now()),
-    spec_version:'v80.14',
+    spec_version:'v80.21',
     original_spec_version: hand.audit && typeof hand.audit.original_spec_version === 'string'
       ? hand.audit.original_spec_version
       : (hand.audit && typeof hand.audit.spec_version === 'string' ? hand.audit.spec_version : 'legacy'),
@@ -2714,8 +2809,8 @@ function makeCurrentEvalSnapshot(pred, sideSignals, outcome){
     }
   };
   return {
-    model_id:'tri_brain_v80_14_1',
-    replay_schema_version:'v80.14',
+    model_id:'tri_brain_v80_21_1',
+    replay_schema_version:'v80.21',
     decision: pred.decision,
     tier: pred.tier,
     tau: pred.tau,
@@ -2750,7 +2845,8 @@ function makeCurrentEvalSnapshot(pred, sideSignals, outcome){
     formal_live_base_snapshot: normalizeLearningPack(pred.formal_live_base_snapshot),
     loss_bucket: classifyLossBucket(pred, winner),
     loss_bucket_detail: classifyLossBucketDetail(pred, winner),
-    decision_blame: decisionBlame
+    decision_blame: decisionBlame,
+    post_b_p_risk_monitor: pred.post_b_p_risk_monitor && typeof pred.post_b_p_risk_monitor === 'object' ? JSON.parse(JSON.stringify(pred.post_b_p_risk_monitor)) : null
   };
 }
 
@@ -2807,7 +2903,7 @@ function applyCurrentModelReplayToLabStore(){
         pp: !!(h && h.outcome && h.outcome.pp)
       };
 
-      const formalAdjusted = applyFormalLiveAdaptiveDecision(features, pred);
+      const formalAdjusted = attachPostBPRiskMonitor(features, applyFormalLiveAdaptiveDecision(features, pred));
       h.current_eval = makeCurrentEvalSnapshot(formalAdjusted, sideSignals, outcome);
 
       const pure = simHist.filter(function(x){ return x.w !== 'T'; }).map(function(x){ return x.w; });
@@ -2852,7 +2948,8 @@ function buildUnifiedReplayAudit(shoes){
   function makeDiagBucket(key){ return { key:key, count:0, bets:0, passes:0, hits:0, pushes:0, losses:0, returnSum:0 }; }
   function ensureDiagBucket(store, key){ const safeKey = key || 'unknown'; if(!store[safeKey]) store[safeKey] = makeDiagBucket(safeKey); return store[safeKey]; }
   function updateDiagBucket(bucket, replay, winner){ bucket.count += 1; if(replay.decision === 'PASS'){ bucket.passes += 1; return; } bucket.bets += 1; if(winner === 'T') bucket.pushes += 1; else if(replay.decision === winner) bucket.hits += 1; else bucket.losses += 1; bucket.returnSum += settleDecision(replay.decision, winner); }
-  const summary = { generated_at:new Date().toISOString(), replayModelId:'tri_brain_v80_14_1', replay:makeAuditBucket(), original:makeAuditBucket(), byVersion:{}, byShoe:{}, byReason:{}, byBlockedState:{}, byBlockedDetail:{}, byExecutionMode:{}, byCandidate:{}, byLossBucket:{}, byLossBucketDetail:{}, byPassReason:{}, byProbeThinSubtype:{}, byModule:{ core_alpha:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0 }, probe_module:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0, early_window_count:0, near_core_count:0, blocked_budget_count:0, loss_streak_pressure_count:0 }, reverse_shadow:{ selected_count:0, candidateC_score_sum:0, candidateD_score_sum:0, observed_count:0 } }, recentShoes:{ labels:[], original:makeAuditBucket(), replay:makeAuditBucket() } };
+  const summary = { generated_at:new Date().toISOString(), replayModelId:'tri_brain_v80_21_1', replay:makeAuditBucket(), original:makeAuditBucket(), byVersion:{}, byShoe:{}, byReason:{}, byBlockedState:{}, byBlockedDetail:{}, byExecutionMode:{}, byCandidate:{}, byLossBucket:{}, byLossBucketDetail:{}, byPassReason:{}, byProbeThinSubtype:{}, byModule:{ core_alpha:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0 }, probe_module:{ eligible_count:0, viable_count:0, selected_count:0, hits:0, pushes:0, returnSum:0, early_window_count:0, near_core_count:0, blocked_budget_count:0, loss_streak_pressure_count:0 }, reverse_shadow:{ selected_count:0, candidateC_score_sum:0, candidateD_score_sum:0, observed_count:0 } }, recentShoes:{ labels:[], original:makeAuditBucket(), replay:makeAuditBucket() } };
+  summary.byPostBPRiskMonitor = { overall:makePostBPRiskMonitorBucket('overall'), byShoe:{}, byExecutionMode:{} };
   const ensureVersionBucket = function(ver){ if(!summary.byVersion[ver]) summary.byVersion[ver] = { version:ver, original:makeAuditBucket(), replay:makeAuditBucket() }; return summary.byVersion[ver]; };
   const ensureShoeBucket = function(shoe, idx){ const shoeId = shoe && shoe.shoe_id ? String(shoe.shoe_id) : ('shoe_' + idx); if(!summary.byShoe[shoeId]) summary.byShoe[shoeId] = { shoe_id:shoeId, label:(shoe && shoe.meta && shoe.meta.source ? shoe.meta.source + '｜' : '') + shoeId, started_at:Number(shoe && shoe.started_at) || 0, original:makeAuditBucket(), replay:makeAuditBucket() }; return summary.byShoe[shoeId]; };
   const ensureReasonBucket = function(reason){ if(!summary.byReason[reason]) summary.byReason[reason] = { reason:reason, bets:0, hits:0, pushes:0, returnSum:0 }; return summary.byReason[reason]; };
@@ -2866,6 +2963,13 @@ function buildUnifiedReplayAudit(shoes){
       const replay = normalizeCurrentEvalShape(h && h.current_eval ? h.current_eval : null) || makeCurrentEvalSnapshot({ decision:'PASS', tier:'PASS', tau:Config.tau, effectiveTau:Config.tau, isWarmup:false, warmupSoft:false, dataThin:true, alignedB:0, alignedP:0, gap:0, overheat:0, chopRisk:0, reasons:['PASS'] }, { tie:false, bp:false, pp:false }, outcome);
       recordDecisionToBucket(summary.replay, replay.decision, winner); recordDecisionToBucket(versionBucket.replay, replay.decision, winner); recordDecisionToBucket(shoeBucket.replay, replay.decision, winner);
       recordSideBetsToBucket(summary.replay, { tie:!!replay.recommend_tie, bp:!!replay.recommend_bp, pp:!!replay.recommend_pp }, outcome); recordSideBetsToBucket(versionBucket.replay, { tie:!!replay.recommend_tie, bp:!!replay.recommend_bp, pp:!!replay.recommend_pp }, outcome); recordSideBetsToBucket(shoeBucket.replay, { tie:!!replay.recommend_tie, bp:!!replay.recommend_bp, pp:!!replay.recommend_pp }, outcome);
+      const postBPShoeMonitor = ensurePostBPRiskShoeBucket(summary, shoeBucket);
+      recordPostBPRiskMonitorToBucket(summary.byPostBPRiskMonitor.overall, replay, winner, true);
+      recordPostBPRiskMonitorToBucket(postBPShoeMonitor, replay, winner, true);
+      if(isPostBPRiskMonitorActive(replay)){
+        const postBPExecBucket = ensurePostBPRiskExecutionBucket(summary, replay.execution_mode || 'unknown_execution_mode');
+        recordPostBPRiskMonitorToBucket(postBPExecBucket, replay, winner, false);
+      }
       if(replay.decision !== 'PASS'){ const primaryReason = replay.reasons && replay.reasons.length ? replay.reasons[0] : '未標註理由'; const reasonBucket = ensureReasonBucket(primaryReason); reasonBucket.bets += 1; if(winner === 'T') reasonBucket.pushes += 1; else if(replay.decision === winner) reasonBucket.hits += 1; reasonBucket.returnSum += settleDecision(replay.decision, winner); }
       const blame = replay.decision_blame && typeof replay.decision_blame === 'object' ? replay.decision_blame : {};
       updateDiagBucket(ensureDiagBucket(summary.byBlockedState, blame.blocked_state || (replay.decision === 'PASS' ? 'pass_unclassified' : 'none')), replay, winner);
@@ -2885,6 +2989,9 @@ function buildUnifiedReplayAudit(shoes){
   }
   finalizeAuditBucket(summary.original); finalizeAuditBucket(summary.replay); Object.keys(summary.byVersion).forEach(function(k){ finalizeAuditBucket(summary.byVersion[k].original); finalizeAuditBucket(summary.byVersion[k].replay); }); Object.keys(summary.byShoe).forEach(function(k){ finalizeAuditBucket(summary.byShoe[k].original); finalizeAuditBucket(summary.byShoe[k].replay); });
   const recentRows = Object.values(summary.byShoe).sort(function(a,b){ return Number(a.started_at || 0) - Number(b.started_at || 0); }).slice(-2); summary.recentShoes.labels = recentRows.map(function(row){ return row.label; }); recentRows.forEach(function(row){ mergeAuditBucket(summary.recentShoes.original, row.original); mergeAuditBucket(summary.recentShoes.replay, row.replay); }); finalizeAuditBucket(summary.recentShoes.original); finalizeAuditBucket(summary.recentShoes.replay);
+  finalizePostBPRiskMonitorBucket(summary.byPostBPRiskMonitor.overall);
+  Object.keys(summary.byPostBPRiskMonitor.byShoe).forEach(function(k){ finalizePostBPRiskMonitorBucket(summary.byPostBPRiskMonitor.byShoe[k]); });
+  Object.keys(summary.byPostBPRiskMonitor.byExecutionMode).forEach(function(k){ finalizePostBPRiskMonitorBucket(summary.byPostBPRiskMonitor.byExecutionMode[k]); });
   return summary;
 }
 
@@ -2950,7 +3057,7 @@ const COMPACT_LAB_VERSION = 'bac_compact_lab_v1';
 const COMPACT_STATE_VERSION = 'bac_compact_state_v1';
 const CARD_SLOT_KEYS = ['p1','p2','p3','b1','b2','b3'];
 
-const MIN_HISTORY_SHOE_HANDS = 41; // v80.14：歷史資料一律排除 40 局以下（含 40 局）的鞋靴。
+const MIN_HISTORY_SHOE_HANDS = 41; // v80.21：歷史資料一律排除 40 局以下（含 40 局）的鞋靴。
 
 function getShoeHandCount(shoe){
   if(!shoe || typeof shoe !== 'object') return 0;
@@ -3099,9 +3206,9 @@ function compactPolicySnapshotMini(snap){
 function inflatePolicySnapshotMini(row){
   if(!Array.isArray(row)) return null;
   return {
-    model_id:'tri_brain_v80_14_1',
-    model_id_original:'tri_brain_v80_14_1',
-    snapshot_schema_version:'v80.14',
+    model_id:'tri_brain_v80_21_1',
+    model_id_original:'tri_brain_v80_21_1',
+    snapshot_schema_version:'v80.21',
     tau: normalizeFiniteNumber(Config && Config.tau, 0.005),
     effectiveTau: normalizeFiniteNumber(Config && Config.tau, 0.005),
     s: normalizeFiniteNumber(Config && Config.side, 0.08),
@@ -3176,7 +3283,7 @@ function compactHandForPersistence(hand){
     p: compactPolicySnapshotMini(hand.policy_snapshot),
     a: normalizeFiniteNumber(hand.audit && hand.audit.created_at, 0)
   };
-  // v80.14：匯出檔以 policy snapshot 作為決策一致性來源；不再匯出逐手 current_eval，
+  // v80.21：匯出檔以 policy snapshot 作為決策一致性來源；不再匯出逐手 current_eval，
   // 避免重新匯入時膨脹大量衍生 eval 物件造成延遲或容量風險。
   return out;
 }
@@ -3242,8 +3349,8 @@ function inflateCompactShoe(compactShoe){
       current_eval: inflateCurrentEvalMini(row && row.e),
       audit: {
         created_at: normalizeFiniteNumber(row && row.a, shoe.started_at + idx),
-        spec_version:'v80.14',
-        original_spec_version:'v80.14',
+        spec_version:'v80.21',
+        original_spec_version:'v80.21',
         snapshot_normalized:true
       },
       outcome: inflateCompactOutcome(row && row.o)
@@ -3274,11 +3381,11 @@ function buildCompactPersistedLabStore(labStore, prebuiltSummary){
   return {
     compact_payload:true,
     compact_payload_version:COMPACT_LAB_VERSION,
-    schema_version:'v80.14',
+    schema_version:'v80.21',
     rawShoes:compactShoes,
     currentOpenShoe:compactOpenShoe,
     dataSummary:dataSummary,
-    // v80.14：匯出/儲存只保留可還原決策統計的 compact hand record；大型衍生 audit/log/experiment 不再寫入，避免 quota exceeded；40 局以下鞋靴一律排除。
+    // v80.21：匯出/儲存只保留可還原決策統計的 compact hand record；大型衍生 audit/log/experiment 不再寫入，避免 quota exceeded；40 局以下鞋靴一律排除。
     experiments:[],
     audit_logs:[],
     health_store: null
@@ -3288,7 +3395,7 @@ function buildCompactPersistedLabStore(labStore, prebuiltSummary){
 function inflateCompactPersistedLabStore(raw){
   if(!raw || typeof raw !== 'object') return null;
   return {
-    schema_version:'v80.14',
+    schema_version:'v80.21',
     rawShoes:filterHistoricalShoes(Array.isArray(raw.rawShoes) ? raw.rawShoes.map(inflateCompactShoe).filter(Boolean) : []),
     currentOpenShoe: raw.currentOpenShoe && getShoeHandCount(raw.currentOpenShoe) >= MIN_HISTORY_SHOE_HANDS ? inflateCompactShoe(raw.currentOpenShoe) : null,
     experiments:Array.isArray(raw.experiments) ? raw.experiments : [],
@@ -3368,14 +3475,15 @@ function buildCompactDataSummary(){
   finalizeAuditBucket(replayBucket);
   finalizeAuditBucket(originalBucket);
   return {
-    schema_version:'v80.14-summary-v1',
+    schema_version:'v80.21-summary-v1',
     generated_at:new Date().toISOString(),
-    replayModelId:'tri_brain_v80_14_1',
+    replayModelId:'tri_brain_v80_21_1',
     shoes:shoes,
     min_history_shoe_hands:MIN_HISTORY_SHOE_HANDS,
     short_shoe_filter:'drop_hands_lte_40',
     replay:replayBucket,
-    original:originalBucket
+    original:originalBucket,
+    post_b_p_risk_monitor: UnifiedAudit && UnifiedAudit.byPostBPRiskMonitor ? JSON.parse(JSON.stringify(UnifiedAudit.byPostBPRiskMonitor)) : null
   };
 }
 
@@ -3387,7 +3495,7 @@ function unifiedAuditFromCompactSummary(summary){
   finalizeAuditBucket(original);
   return {
     generated_at: summary.generated_at || null,
-    replayModelId: summary.replayModelId || 'tri_brain_v80_14_1',
+    replayModelId: summary.replayModelId || 'tri_brain_v80_21_1',
     replay: replay,
     original: original,
     byVersion:{},
@@ -3401,7 +3509,7 @@ function unifiedAuditFromCompactSummary(summary){
 function buildCompactExportPayload(){
   const summary = buildCompactDataSummary();
   return {
-    version:'v80.14',
+    version:'v80.21',
     export_format:COMPACT_BUNDLE_VERSION,
     exported_at:new Date().toISOString(),
     compact_policy:'records_only_no_derived_audit_v3_drop_lte40',
@@ -3441,7 +3549,7 @@ function parseImportedBundle(obj){
     }
     return {
       lab: {
-        schema_version:'v80.14',
+        schema_version:'v80.21',
         rawShoes:Array.isArray(obj.labStore.rawShoes) ? obj.labStore.rawShoes : [],
         currentOpenShoe: obj.labStore.currentOpenShoe || null,
         experiments:Array.isArray(obj.labStore.experiments) ? obj.labStore.experiments : [],
@@ -3675,7 +3783,7 @@ function closeCurrentShoe(){
 
 function saveAll(){
   normalizeLabSnapshots();
-  // v80.14：避免 35 薛匯入後把 BigData / 衍生 replay 大物件塞爆 localStorage。
+  // v80.21：避免 35 薛匯入後把 BigData / 衍生 replay 大物件塞爆 localStorage。
   // BigData 會在 loadAll() 由 LabStore.rawShoes 重建，不需要長期儲存完整 patterns。
   safeSetLocalStorage(LAB_K, JSON.stringify(buildCompactPersistedLabStore(LabStore)));
   safeSetLocalStorage(ST_K, JSON.stringify(buildCompactPersistedState(S)));
@@ -3707,7 +3815,7 @@ function loadAll(){
         importedUnifiedAudit = parsedLab.unifiedAudit || null;
       }else if(parsedLab && typeof parsedLab === 'object'){
         LabStore = {
-          schema_version:'v80.14',
+          schema_version:'v80.21',
           rawShoes:Array.isArray(parsedLab.rawShoes) ? parsedLab.rawShoes : [],
           currentOpenShoe: parsedLab.currentOpenShoe || null,
           experiments:Array.isArray(parsedLab.experiments) ? parsedLab.experiments : [],
@@ -3723,7 +3831,7 @@ function loadAll(){
       try{
         const lab = JSON.parse(oldLab);
         LabStore = {
-          schema_version:'v80.14',
+          schema_version:'v80.21',
           rawShoes:Array.isArray(lab.rawShoes) ? lab.rawShoes : [],
           currentOpenShoe: lab.currentOpenShoe || null,
           experiments:Array.isArray(lab.experiments) ? lab.experiments : [],
@@ -3883,9 +3991,9 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     features: JSON.parse(JSON.stringify(features)),
     live_prediction: JSON.parse(JSON.stringify(resolvedPrediction)),
     policy_snapshot: {
-      model_id:'tri_brain_v80_14_1',
-      model_id_original:'tri_brain_v80_14_1',
-      snapshot_schema_version:'v80.14',
+      model_id:'tri_brain_v80_21_1',
+      model_id_original:'tri_brain_v80_21_1',
+      snapshot_schema_version:'v80.21',
       tau: resolvedPrediction.tau,
       effectiveTau: resolvedPrediction.effectiveTau,
       s: Config.side,
@@ -3910,8 +4018,8 @@ function captureObservation(state, features, livePrediction, inputs, sideBetsSna
     input:{ cards: JSON.parse(JSON.stringify(inputs)) },
     audit:{
       created_at: Date.now(),
-      spec_version:'v80.14',
-      original_spec_version:'v80.14',
+      spec_version:'v80.21',
+      original_spec_version:'v80.21',
       snapshot_normalized:true
     }
   };
@@ -5604,7 +5712,7 @@ function executeFirstBrain(features, patternDb, tau){
     true_transition: clamp01(0.5 + normalizeFiniteNumber(statePack.transition_pack.breakout_delta,0) * 0.4)
   };
   return ensureDecisionReasons({
-    model_id:'tri_brain_v80_14_1',
+    model_id:'tri_brain_v80_21_1',
     probs:{ B:Number(pB.toFixed(4)), P:Number(pP.toFixed(4)), T:NAIVE_PRIORS.T },
     ev:calcEVFromProbs({ B:pB, P:pP, T:NAIVE_PRIORS.T }),
     decision:decision,
@@ -9214,7 +9322,7 @@ function v70BuildDirectionArbiter(statePack, trendStagePack, reliabilityPack, si
   if(probe){
     return { tradeable:true, family:probe.family, side:probe.side || null, selected_proto:probe.id, selected_score:Number(normalizeFiniteNumber(probe.trade_score,0).toFixed(4)), continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['Probe Module 勝出：v72.23 維持 Probe/F2 單一 live owner；dead reclaim 已清理，龍腦衝突改為硬契約 + 軟稅制','module=' + (probe.module_name || 'probe_module')] };
   }
-  return { tradeable:false, family:'pass', side:null, selected_proto:null, selected_score:0, continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['v80.14 Win65 Cov50 Precision Guard：Probe/F2 維持唯一成交 owner；邏輯與 v72.37 相同，僅移除介面上的開龍 / 斷龍顯示'] };
+  return { tradeable:false, family:'pass', side:null, selected_proto:null, selected_score:0, continue_score:Number(normalizeFiniteNumber(gate.continue_strength,0).toFixed(4)), reverse_score:Number(normalizeFiniteNumber(gate.reverse_strength,0).toFixed(4)), reasons:['v80.21 Win65 Cov50 Precision Guard：Probe/F2 維持唯一成交 owner；邏輯與 v72.37 相同，僅移除介面上的開龍 / 斷龍顯示'] };
 }
 
 
@@ -9274,9 +9382,9 @@ function v70BuildExecutionPolicy(statePack, trendStagePack, reliabilityPack, sim
   const f3Blockers = [v70MakeBlocker('F3_observe_only','v70.64 仍將 Reverse / Early 維持為觀察模組，不直接搶主交易權','hard')];
 
   const prototypes = {
-    F1: mkState('F1','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f1_evidence,0), normalizeFiniteNumber(candidateB && candidateB.trade_score,0)),!!(candidateB && candidateB.exists),false,f1Blockers,{ base:0.08, edge:normalizeFiniteNumber(candidateB && candidateB.trade_score,0), edgeWeight:0.94, evidenceWeight:0.12, conflictTax:0.08, thinTax:0.02, execution_mode:'formal_filter', execution_tier:'filter', reason:'v80.14 Core Alpha｜維持 filter-only，不持有 live 成交權' }),
-    F2: mkState('F2','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f2_evidence,0), normalizeFiniteNumber(candidateA && candidateA.trade_score,0)),!!(candidateA && candidateA.exists),!!(candidateA && candidateA.viable),f2Blockers,{ base:0.07, edge:normalizeFiniteNumber(candidateA && candidateA.trade_score,0), edgeWeight:1.0, evidenceWeight:0.10, conflictTax:0.08, thinTax:0.01, execution_mode:'probe', execution_tier:'probe', reason:'v80.14 Probe Module｜單一成交 owner；邏輯與 v72.37 相同，僅移除龍燈顯示' }),
-    F3: mkState('F3','reverse',reverseSide,Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)),!!((candidateC && candidateC.exists) || (candidateD && candidateD.exists)),false,f3Blockers,{ base:0.05, edge:Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)), edgeWeight:0.80, evidenceWeight:0.06, conflictTax:0.06, thinTax:0.02, execution_mode:'observe', execution_tier:'observe', reason:'v80.14 Reverse / Early Observe｜維持觀察模組，不直接交易' })
+    F1: mkState('F1','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f1_evidence,0), normalizeFiniteNumber(candidateB && candidateB.trade_score,0)),!!(candidateB && candidateB.exists),false,f1Blockers,{ base:0.08, edge:normalizeFiniteNumber(candidateB && candidateB.trade_score,0), edgeWeight:0.94, evidenceWeight:0.12, conflictTax:0.08, thinTax:0.02, execution_mode:'formal_filter', execution_tier:'filter', reason:'v80.21 Core Alpha｜維持 filter-only，不持有 live 成交權' }),
+    F2: mkState('F2','continue',continueSide,Math.max(normalizeFiniteNumber(baseline.f2_evidence,0), normalizeFiniteNumber(candidateA && candidateA.trade_score,0)),!!(candidateA && candidateA.exists),!!(candidateA && candidateA.viable),f2Blockers,{ base:0.07, edge:normalizeFiniteNumber(candidateA && candidateA.trade_score,0), edgeWeight:1.0, evidenceWeight:0.10, conflictTax:0.08, thinTax:0.01, execution_mode:'probe', execution_tier:'probe', reason:'v80.21 Probe Module｜單一成交 owner；邏輯與 v72.37 相同，僅移除龍燈顯示' }),
+    F3: mkState('F3','reverse',reverseSide,Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)),!!((candidateC && candidateC.exists) || (candidateD && candidateD.exists)),false,f3Blockers,{ base:0.05, edge:Math.max(normalizeFiniteNumber(candidateC && candidateC.trade_score,0), normalizeFiniteNumber(candidateD && candidateD.trade_score,0)), edgeWeight:0.80, evidenceWeight:0.06, conflictTax:0.06, thinTax:0.02, execution_mode:'observe', execution_tier:'observe', reason:'v80.21 Reverse / Early Observe｜維持觀察模組，不直接交易' })
   };
 
   const passBlockers = [candidateB, candidateA, candidateC, candidateD].filter(Boolean).map(function(c){
@@ -9587,7 +9695,7 @@ function analyzeJudgeBrain(features, brain1, dragon, hardGuard, simulation, cont
     promotedPack.market_state_summary.direction_arbiter.side = candidateA.side || null;
     promotedPack.market_state_summary.direction_arbiter.selected_proto = candidateA.id || 'A';
     promotedPack.market_state_summary.direction_arbiter.selected_score = Number(normalizeFiniteNumber(candidateA.trade_score, 0).toFixed(4));
-    promotedPack.market_state_summary.direction_arbiter.reasons = ['v80.14 Probe 優先成交：Probe/F2 維持唯一 live allow owner；邏輯與 v72.37 相同，僅移除龍燈顯示'];
+    promotedPack.market_state_summary.direction_arbiter.reasons = ['v80.21 Probe 優先成交：Probe/F2 維持唯一 live allow owner；邏輯與 v72.37 相同，僅移除龍燈顯示'];
     if(promotedPack.prototypes && promotedPack.prototypes.F2){
       promotedPack.prototypes.F2.exists = true;
       promotedPack.prototypes.F2.actionable = true;
@@ -10213,9 +10321,9 @@ function setV751183DecisionAudit(pred, mode, marketState, candidateId, meta){
   pred.decision_blame.selected_candidate_id = candidateId || pred.decision_blame.selected_candidate_id || null;
 
   if(meta && typeof meta === 'object'){
-    pred.market_state_summary.first_principles_v80_14 = JSON.parse(JSON.stringify(meta));
-    pred.action_proof_pack.first_principles_v80_14 = JSON.parse(JSON.stringify(meta));
-    pred.decision_blame.first_principles_v80_14 = JSON.parse(JSON.stringify(meta));
+    pred.market_state_summary.first_principles_v80_21 = JSON.parse(JSON.stringify(meta));
+    pred.action_proof_pack.first_principles_v80_21 = JSON.parse(JSON.stringify(meta));
+    pred.decision_blame.first_principles_v80_21 = JSON.parse(JSON.stringify(meta));
   }
   return pred;
 }
@@ -10252,7 +10360,7 @@ function applyFirstPrinciplesBreakthroughV751183(features, prediction){
 
   const meta = {
     active:true,
-    version:'v80.14',
+    version:'v80.21',
     route:route,
     original_decision:d,
     revised_decision:reversed,
@@ -10273,9 +10381,9 @@ function applyFirstPrinciplesBreakthroughV751183(features, prediction){
 
   pred.decision = reversed;
   pred.tier = pred.tier || 'MID';
-  pred.first_principles_breakthrough_v80_14 = meta;
+  pred.first_principles_breakthrough_v80_21 = meta;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('FirstPrinciplesBreakthrough v80.14[' + reversed + ']：' + reason + ' 原建議 ' + d + ' 改為 ' + reversed + '。');
+  pred.reasons.unshift('FirstPrinciplesBreakthrough v80.21[' + reversed + ']：' + reason + ' 原建議 ' + d + ' 改為 ' + reversed + '。');
 
   return setV751183DecisionAudit(pred, mode, 'FIRST_PRINCIPLES', route.toUpperCase(), meta);
 }
@@ -10285,15 +10393,15 @@ function applyProbePrecisionGuardV751183(features, prediction){
   const d = normalizeDecision(pred.decision);
   if(d !== 'B' && d !== 'P') return pred;
   const pack = getProbeGuardRuntimePack(pred);
-  if(pack.execution_mode !== 'probe' && !(pred.first_principles_breakthrough_v80_14 && pred.first_principles_breakthrough_v80_14.original_execution_mode === 'probe')) return pred;
+  if(pack.execution_mode !== 'probe' && !(pred.first_principles_breakthrough_v80_21 && pred.first_principles_breakthrough_v80_21.original_execution_mode === 'probe')) return pred;
 
   const sim = pack.sim || {};
   const handIndex = getPredictionHandIndexForGuard(features);
   const gap = normalizeFiniteNumber(pred.gap, 0);
   const pathEdge = normalizeFiniteNumber(sim.path_edge_3step, 0);
   const conflictIndex = normalizeFiniteNumber(pack.tradeGate && pack.tradeGate.conflict_index, normalizeFiniteNumber(pred.conflict_index, 0));
-  const originalThinSubtype = pred.first_principles_breakthrough_v80_14 && pred.first_principles_breakthrough_v80_14.thin_subtype
-    ? pred.first_principles_breakthrough_v80_14.thin_subtype
+  const originalThinSubtype = pred.first_principles_breakthrough_v80_21 && pred.first_principles_breakthrough_v80_21.thin_subtype
+    ? pred.first_principles_breakthrough_v80_21.thin_subtype
     : pack.thin_subtype;
   const reasons = [];
 
@@ -10317,15 +10425,15 @@ function applyProbePrecisionGuardV751183(features, prediction){
     hand_index:handIndex
   };
 
-  const meta = { active:true, blocked:true, version:'v80.14', reasons:reasons.slice(), original:original };
+  const meta = { active:true, blocked:true, version:'v80.21', reasons:reasons.slice(), original:original };
   pred.decision = 'PASS';
   pred.tier = 'PASS';
   pred.recommend_tie = false;
   pred.recommend_bp = false;
   pred.recommend_pp = false;
-  pred.probe_precision_guard_v80_14 = meta;
+  pred.probe_precision_guard_v80_21 = meta;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('ProbePrecisionGuard v80.14：攔截低品質 probe｜' + reasons.join(' + ') + '；原建議 ' + d + ' 改為 PASS。');
+  pred.reasons.unshift('ProbePrecisionGuard v80.21：攔截低品質 probe｜' + reasons.join(' + ') + '；原建議 ' + d + ' 改為 PASS。');
 
   return setV751183DecisionAudit(pred, 'probe_precision_guard', 'PROBE_GUARD', 'PROBE_PRECISION_GUARD_V75_1_18_3', meta);
 }
@@ -10358,7 +10466,7 @@ function applyProbeRecoveryRouterV751183(features, prediction){
 
   const meta = {
     active:true,
-    version:'v80.14',
+    version:'v80.21',
     route:'early_unstructured_continue_antisignal',
     original_candidate_side:candidateSide,
     suggested_action:recoverySide,
@@ -10373,9 +10481,9 @@ function applyProbeRecoveryRouterV751183(features, prediction){
 
   pred.decision = recoverySide;
   pred.tier = 'RECOVERY';
-  pred.probe_recovery_router_v80_14 = meta;
+  pred.probe_recovery_router_v80_21 = meta;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('ProbeRecoveryRouter v80.14[' + recoverySide + ']：早段未結構化 continue 反訊號回收；原 candidate=' + candidateSide + '。');
+  pred.reasons.unshift('ProbeRecoveryRouter v80.21[' + recoverySide + ']：早段未結構化 continue 反訊號回收；原 candidate=' + candidateSide + '。');
 
   return setV751183DecisionAudit(pred, 'probe_recovery_router', 'RECOVERY', 'PROBE_RECOVERY_ROUTER_V75_1_18_3', meta);
 }
@@ -10420,7 +10528,7 @@ function applyCross32BreakthroughGuardV800(features, prediction){
   const meta = {
     active:true,
     blocked:true,
-    version:'v80.14',
+    version:'v80.21',
     reasons:reasons.slice(),
     original_decision:d,
     original_execution_mode:mode,
@@ -10443,9 +10551,9 @@ function applyCross32BreakthroughGuardV800(features, prediction){
   pred.recommend_tie = false;
   pred.recommend_bp = false;
   pred.recommend_pp = false;
-  pred.cross32_breakthrough_guard_v80_14 = meta;
+  pred.cross32_breakthrough_guard_v80_21 = meta;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('Cross32BreakthroughGuard v80.14：攔截 32 薛交叉比對低勝率區｜' + reasons.join(' + ') + '；原建議 ' + d + ' 改為 PASS。');
+  pred.reasons.unshift('Cross32BreakthroughGuard v80.21：攔截 32 薛交叉比對低勝率區｜' + reasons.join(' + ') + '；原建議 ' + d + ' 改為 PASS。');
   return setV751183DecisionAudit(pred, 'cross32_breakthrough_guard', 'CROSS32_GUARD', 'CROSS32_BREAKTHROUGH_GUARD_V80_0', meta);
 }
 
@@ -10461,7 +10569,7 @@ function applyProbeSingleMidChopReverseV800(features, prediction){
   if(reversed !== 'B' && reversed !== 'P') return pred;
   const meta = {
     active:true,
-    version:'v80.14',
+    version:'v80.21',
     route:'probe_single_midchop_reverse',
     original_decision:d,
     revised_decision:reversed,
@@ -10472,9 +10580,9 @@ function applyProbeSingleMidChopReverseV800(features, prediction){
   };
   pred.decision = reversed;
   pred.tier = pred.tier || 'MID';
-  pred.probe_single_midchop_reverse_v80_14 = meta;
+  pred.probe_single_midchop_reverse_v80_21 = meta;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('ProbeSingleMidChopReverse v80.14[' + reversed + ']：probe single / chop_band 3-4 在 32 薛交叉比對中原方向偏弱，改採反向修正。');
+  pred.reasons.unshift('ProbeSingleMidChopReverse v80.21[' + reversed + ']：probe single / chop_band 3-4 在 32 薛交叉比對中原方向偏弱，改採反向修正。');
   return setV751183DecisionAudit(pred, 'v80_probe_single_midchop_reverse', 'CROSS32_REVERSE', 'PROBE_SINGLE_MIDCHOP_REVERSE_V80_0', meta);
 }
 
@@ -10510,7 +10618,7 @@ function applySimulationOppositeRecoveryV800(features, prediction){
 
   const meta = {
     active:true,
-    version:'v80.14',
+    version:'v80.21',
     route:route,
     original_decision:'PASS',
     suggested_action:recoverySide,
@@ -10529,9 +10637,9 @@ function applySimulationOppositeRecoveryV800(features, prediction){
   };
   pred.decision = recoverySide;
   pred.tier = 'RECOVERY';
-  pred.simulation_opposite_recovery_v80_14 = meta;
+  pred.simulation_opposite_recovery_v80_21 = meta;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('SimulationOppositeRecovery v80.14[' + recoverySide + ']：32 薛交叉比對窄門回收｜' + route + '；原 simulation candidate=' + candidateSide + '。');
+  pred.reasons.unshift('SimulationOppositeRecovery v80.21[' + recoverySide + ']：32 薛交叉比對窄門回收｜' + route + '；原 simulation candidate=' + candidateSide + '。');
   return setV751183DecisionAudit(pred, 'v80_sim_alt_recovery', 'CROSS32_RECOVERY', 'SIM_OPPOSITE_RECOVERY_V80_0', meta);
 }
 
@@ -10560,14 +10668,14 @@ function applyV802SinglePAndBDragonGuard(features, prediction){
   if(d !== 'B' && d !== 'P') return pred;
   const recent = getRecentNonTieContextV802(features);
 
-  // v80.14 rollback：35 薛全資料交叉比對證明 v80.2 的 single P 反向與 B 龍硬守屬同資料集過擬合。
+  // v80.21 rollback：35 薛全資料交叉比對證明 v80.2 的 single P 反向與 B 龍硬守屬同資料集過擬合。
   // 這裡不再改寫決策，只留下 rollback trace，避免舊 execution_mode 繼續污染統計。
   if(d === 'P' && recent.last === 'P' && recent.run_len === 1){
-    pred.v80_14_overfit_rollback = { active:true, version:'v80.14', route:'rollback_single_p_false_continuation_reverse', original_decision:d, recent_non_tie:recent, action:'keep_original_decision' };
+    pred.v80_21_overfit_rollback = { active:true, version:'v80.21', route:'rollback_single_p_false_continuation_reverse', original_decision:d, recent_non_tie:recent, action:'keep_original_decision' };
     return pred;
   }
   if(d === 'P' && recent.last === 'B' && recent.run_len >= 5){
-    pred.v80_14_overfit_rollback = { active:true, version:'v80.14', route:'rollback_b_dragon_premature_break_guard', original_decision:d, recent_non_tie:recent, action:'keep_original_decision' };
+    pred.v80_21_overfit_rollback = { active:true, version:'v80.21', route:'rollback_b_dragon_premature_break_guard', original_decision:d, recent_non_tie:recent, action:'keep_original_decision' };
     return pred;
   }
 
@@ -10583,8 +10691,8 @@ function applyV802DragonFatigueAndPRecovery(features, prediction){
   let route = '';
   let revised = null;
   let reason = '';
-  const guardMeta = pred.v80_14_single_p_b_dragon_guard && typeof pred.v80_14_single_p_b_dragon_guard === 'object'
-    ? pred.v80_14_single_p_b_dragon_guard
+  const guardMeta = pred.v80_21_single_p_b_dragon_guard && typeof pred.v80_21_single_p_b_dragon_guard === 'object'
+    ? pred.v80_21_single_p_b_dragon_guard
     : null;
 
   if(d === 'B' && guardMeta && guardMeta.route === 'b_dragon_premature_break_guard' && recent.last === 'B' && recent.run_len >= 7){
@@ -10593,9 +10701,9 @@ function applyV802DragonFatigueAndPRecovery(features, prediction){
     reason = 'B 龍第 7 顆以上進入疲勞區，不再套用過早斷龍修正硬守 B，改回原始斷龍方向 P。';
   }
 
-  // v80.14 rollback：35 薛全資料顯示 v80.2 的 P 龍強制保護偏弱；保留原 first_principles_dragon_reverse，不再改回 P。
+  // v80.21 rollback：35 薛全資料顯示 v80.2 的 P 龍強制保護偏弱；保留原 first_principles_dragon_reverse，不再改回 P。
   if(!route && d === 'B' && pack.execution_mode === 'first_principles_dragon_reverse' && recent.last === 'P' && recent.run_len >= 6){
-    pred.v80_14_overfit_rollback = { active:true, version:'v80.14', route:'rollback_p_dragon_continuation_protect', original_decision:d, recent_non_tie:recent, action:'keep_original_decision' };
+    pred.v80_21_overfit_rollback = { active:true, version:'v80.21', route:'rollback_p_dragon_continuation_protect', original_decision:d, recent_non_tie:recent, action:'keep_original_decision' };
   }
 
   const pDragonRecoveryConflictIndexV804 = normalizeFiniteNumber(pack && pack.tradeGate && pack.tradeGate.conflict_index, normalizeFiniteNumber(pred.conflict_index, normalizeFiniteNumber(ctx.conflict_index, 0)));
@@ -10609,7 +10717,7 @@ function applyV802DragonFatigueAndPRecovery(features, prediction){
 
   const meta = {
     active:true,
-    version:'v80.14',
+    version:'v80.21',
     route:route,
     original_decision:d,
     revised_decision:revised,
@@ -10630,21 +10738,21 @@ function applyV802DragonFatigueAndPRecovery(features, prediction){
 
   pred.decision = revised;
   pred.tier = route.indexOf('pass_p_dragon') === 0 ? 'RECOVERY' : (pred.tier || 'MID');
-  pred.v80_14_overfit_rollback_clean_direction = meta;
+  pred.v80_21_overfit_rollback_clean_direction = meta;
   pred.recommend_tie = false;
   pred.recommend_bp = false;
   pred.recommend_pp = false;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
   pred.reasons.unshift('V80.2 DragonFatiguePRecovery[' + revised + ']：' + reason + ' 原建議 ' + d + ' 改為 ' + revised + '。');
 
-  let mode = 'v80_14_dragon_fatigue_guard';
+  let mode = 'v80_21_dragon_fatigue_guard';
   let market = 'DRAGON_FATIGUE';
   let candidate = route.toUpperCase() + '_V80_2';
   if(route === 'p_dragon_continuation_protect_run6_plus'){
-    mode = 'v80_14_p_dragon_protect';
+    mode = 'v80_21_p_dragon_protect';
     market = 'P_DRAGON_PROTECT';
   }else if(route === 'pass_p_dragon_continue_recovery_run4_5'){
-    mode = 'v80_14_pass_p_dragon_recovery';
+    mode = 'v80_21_pass_p_dragon_recovery';
     market = 'P_DRAGON_RECOVERY';
   }
   return setV751183DecisionAudit(pred, mode, market, candidate, meta);
@@ -10685,7 +10793,7 @@ function applyV804CleanPassPatternRecovery(features, prediction){
 
   const meta = {
     active:true,
-    version:'v80.14',
+    version:'v80.21',
     route:route,
     original_decision:d,
     revised_decision:revised,
@@ -10707,18 +10815,18 @@ function applyV804CleanPassPatternRecovery(features, prediction){
 
   pred.decision = revised;
   pred.tier = 'RECOVERY';
-  pred.v80_14_clean_pass_pattern_recovery = meta;
+  pred.v80_21_clean_pass_pattern_recovery = meta;
   pred.recommend_tie = false;
   pred.recommend_bp = false;
   pred.recommend_pp = false;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
   pred.reasons.unshift('V80.6 CleanPassPatternRecovery[' + revised + ']：' + reason + ' 原建議 PASS 改為 ' + revised + '。');
 
-  let mode = 'v80_14_pass_pattern_recovery';
+  let mode = 'v80_21_pass_pattern_recovery';
   let market = 'V80_4_PASS_PATTERN';
-  if(route === 'pass_bbpp_low_gap_to_p') mode = 'v80_14_pass_BBPP_gap01_P';
-  else if(route === 'pass_bppbp_low_gap_to_b') mode = 'v80_14_pass_BPPBP_gap01_B';
-  else if(route === 'pass_bpbb_mid_gap_to_b') mode = 'v80_14_pass_BPBB_gap35_B';
+  if(route === 'pass_bbpp_low_gap_to_p') mode = 'v80_21_pass_BBPP_gap01_P';
+  else if(route === 'pass_bppbp_low_gap_to_b') mode = 'v80_21_pass_BPPBP_gap01_B';
+  else if(route === 'pass_bpbb_mid_gap_to_b') mode = 'v80_21_pass_BPBB_gap35_B';
 
   return setV751183DecisionAudit(pred, mode, market, route.toUpperCase() + '_V80_4', meta);
 }
@@ -10761,12 +10869,12 @@ function buildV805WeakShoeRegimePack(features, prediction){
     (s12.n >= 8 && s12.return_sum <= -5) ||
     (s6.n >= 6 && s6.losses >= 5)
   );
-  const pack = { active:weak, severe:severe, version:'v80.14', last12:s12, last8:s8, last6:s6, settled_bets:settled.length };
+  const pack = { active:weak, severe:severe, version:'v80.21', last12:s12, last8:s8, last6:s6, settled_bets:settled.length };
   if(prediction && typeof prediction === 'object'){
-    prediction.weak_shoe_regime_v80_14 = pack;
-    if(prediction.market_state_summary && typeof prediction.market_state_summary === 'object') prediction.market_state_summary.weak_shoe_regime_v80_14 = pack;
-    if(prediction.action_proof_pack && typeof prediction.action_proof_pack === 'object') prediction.action_proof_pack.weak_shoe_regime_v80_14 = pack;
-    if(prediction.decision_blame && typeof prediction.decision_blame === 'object') prediction.decision_blame.weak_shoe_regime_v80_14 = pack;
+    prediction.weak_shoe_regime_v80_21 = pack;
+    if(prediction.market_state_summary && typeof prediction.market_state_summary === 'object') prediction.market_state_summary.weak_shoe_regime_v80_21 = pack;
+    if(prediction.action_proof_pack && typeof prediction.action_proof_pack === 'object') prediction.action_proof_pack.weak_shoe_regime_v80_21 = pack;
+    if(prediction.decision_blame && typeof prediction.decision_blame === 'object') prediction.decision_blame.weak_shoe_regime_v80_21 = pack;
   }
   return pack;
 }
@@ -10778,7 +10886,7 @@ function applyV805QuarantinedPassPatternRecovery(features, prediction){
 
   const weakPack = buildV805WeakShoeRegimePack(features, pred);
   if(weakPack && weakPack.active){
-    pred.v80_14_recovery_quarantine = { active:true, version:'v80.14', reason:'weak_shoe_regime_active', weak_shoe_regime:weakPack, action:'hold_pass' };
+    pred.v80_21_recovery_quarantine = { active:true, version:'v80.21', reason:'weak_shoe_regime_active', weak_shoe_regime:weakPack, action:'hold_pass' };
     return pred;
   }
 
@@ -10826,7 +10934,7 @@ function applyV805QuarantinedPassPatternRecovery(features, prediction){
 
   const meta = {
     active:true,
-    version:'v80.14',
+    version:'v80.21',
     route:route,
     original_decision:d,
     revised_decision:revised,
@@ -10850,20 +10958,20 @@ function applyV805QuarantinedPassPatternRecovery(features, prediction){
 
   pred.decision = revised;
   pred.tier = 'RECOVERY';
-  pred.v80_14_quarantined_pass_recovery = meta;
+  pred.v80_21_quarantined_pass_recovery = meta;
   pred.recommend_tie = false;
   pred.recommend_bp = false;
   pred.recommend_pp = false;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
   pred.reasons.unshift('V80.6 QuarantinedPassRecovery[' + revised + ']：' + reason + ' 原建議 PASS 改為 ' + revised + '。');
 
-  let mode = 'v80_14_quarantined_pass_recovery';
-  if(route === 'pass_bbbbbp_low_gap_to_p') mode = 'v80_14_pass_BBBBBP_gap01_P';
-  else if(route === 'pass_bppb_gap12_to_b') mode = 'v80_14_pass_BPPB_gap12_B';
-  else if(route === 'pass_bbbpb_low_gap_to_p') mode = 'v80_14_pass_BBBPB_gap01_P';
-  else if(route === 'pass_pppbpb_gap12_to_p') mode = 'v80_14_pass_PPPBPB_gap12_P';
-  else if(route === 'pass_pbppbb_gap23_to_p') mode = 'v80_14_pass_PBPPBB_gap23_P';
-  else if(route === 'pass_bbpbbp_low_gap_to_p') mode = 'v80_14_pass_BBPBBP_gap01_P';
+  let mode = 'v80_21_quarantined_pass_recovery';
+  if(route === 'pass_bbbbbp_low_gap_to_p') mode = 'v80_21_pass_BBBBBP_gap01_P';
+  else if(route === 'pass_bppb_gap12_to_b') mode = 'v80_21_pass_BPPB_gap12_B';
+  else if(route === 'pass_bbbpb_low_gap_to_p') mode = 'v80_21_pass_BBBPB_gap01_P';
+  else if(route === 'pass_pppbpb_gap12_to_p') mode = 'v80_21_pass_PPPBPB_gap12_P';
+  else if(route === 'pass_pbppbb_gap23_to_p') mode = 'v80_21_pass_PBPPBB_gap23_P';
+  else if(route === 'pass_bbpbbp_low_gap_to_p') mode = 'v80_21_pass_BBPBBP_gap01_P';
   return setV751183DecisionAudit(pred, mode, 'V80_12_RECOVERY_QUARANTINE', route.toUpperCase() + '_V80_12', meta);
 }
 
@@ -10886,7 +10994,7 @@ function applyV808AllShoeFloorGuard(features, prediction){
 
   const meta = {
     active:true,
-    version:'v80.14',
+    version:'v80.21',
     route:'weak_regime_b_conflict_floor_guard',
     original_decision:d,
     revised_decision:'PASS',
@@ -10901,20 +11009,20 @@ function applyV808AllShoeFloorGuard(features, prediction){
 
   pred.decision = 'PASS';
   pred.tier = 'PASS';
-  pred.v80_14_all_shoe_floor_guard = meta;
+  pred.v80_21_all_shoe_floor_guard = meta;
   pred.recommend_tie = false;
   pred.recommend_bp = false;
   pred.recommend_pp = false;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
   pred.reasons.unshift('V80.6 AllShoeFloorGuard：弱鞋狀態下 B 方向且 conflict_index > 0.08，為守住每薛勝率底線改為 PASS。');
 
-  return setV751183DecisionAudit(pred, 'v80_14_weak_b_conflict_floor_guard', 'V80_12_ALL_SHOE_FLOOR', 'WEAK_B_CONFLICT_GT_008_PASS_V80_12', meta);
+  return setV751183DecisionAudit(pred, 'v80_21_weak_b_conflict_floor_guard', 'V80_12_ALL_SHOE_FLOOR', 'WEAK_B_CONFLICT_GT_008_PASS_V80_12', meta);
 }
 
 
 function applyV808SingleBFalseBreakGuard(features, prediction){
   const pred = prediction && typeof prediction === 'object' ? prediction : {};
-  pred.v80_14_single_b_false_break_guard = { active:false, version:'v80.14', route:'formal_rollback_disabled', reason:'v80.14 disables v80.8 single-B false break guard because formal 38-shoe replay showed this route was negative.' };
+  pred.v80_21_single_b_false_break_guard = { active:false, version:'v80.21', route:'formal_rollback_disabled', reason:'v80.21 disables v80.8 single-B false break guard because formal 38-shoe replay showed this route was negative.' };
   return pred;
 }
 
@@ -10927,7 +11035,7 @@ function getV808RecentPatternWindow(features){
 
 function applyV808PFatiguePBBPDirectionGuard(features, prediction){
   const pred = prediction && typeof prediction === 'object' ? prediction : {};
-  pred.v80_14_p_fatigue_pbbp_direction_guard = { active:false, version:'v80.14', route:'formal_rollback_disabled', reason:'v80.14 disables v80.8 P-fatigue/PBBP direction guard because formal 38-shoe replay showed this route was negative.' };
+  pred.v80_21_p_fatigue_pbbp_direction_guard = { active:false, version:'v80.21', route:'formal_rollback_disabled', reason:'v80.21 disables v80.8 P-fatigue/PBBP direction guard because formal 38-shoe replay showed this route was negative.' };
   return pred;
 }
 
@@ -10966,23 +11074,23 @@ function applyV8011PrecisionGuard(features, prediction){
     pass = true; route = 'coverage50_bp_b_pass'; candidate = 'V8011_COVERAGE50_BP_B_PASS'; reason = 'coverage50 early BP 原判 B，在正式列偏弱，改 PASS。';
   }else if(!revised && !pass && d === 'B' && exec === 'v80_sim_alt_recovery' && last4 === 'PP'){
     pass = true; route = 'sim_alt_pp_b_pass'; candidate = 'V8011_SIM_ALT_PP_B_PASS'; reason = 'sim_alt last4=PP 原判 B，在正式列偏弱，改 PASS。';
-  }else if(!revised && !pass && d === 'P' && exec === 'v80_14_guard' && last4 === 'PBBP' && last6 === 'BBPBBP'){
+  }else if(!revised && !pass && d === 'P' && exec === 'v80_21_guard' && last4 === 'PBBP' && last6 === 'BBPBBP'){
     pass = true; route = 'pbbp_bbpbbp_p_pass'; candidate = 'V8011_PBBP_BBPBBP_P_PASS'; reason = 'PBBP/BBPBBP A 方向回補在正式列失真，改 PASS。';
-  }else if(!revised && !pass && d === 'P' && exec === 'v80_14_pass_BBPP_gap01_P' && last6 === 'BPBBPP'){
+  }else if(!revised && !pass && d === 'P' && exec === 'v80_21_pass_BBPP_gap01_P' && last6 === 'BPBBPP'){
     pass = true; route = 'bbpp_bpbbpp_p_pass'; candidate = 'V8011_BBPP_BPBBPP_P_PASS'; reason = 'BBPP 回收中 last6=BPBBPP 子區偏弱，改 PASS。';
-  }else if(!revised && !pass && d === 'P' && exec === 'v80_14_pass_p_dragon_recovery' && last6 === 'BBPPPP'){
+  }else if(!revised && !pass && d === 'P' && exec === 'v80_21_pass_p_dragon_recovery' && last6 === 'BBPPPP'){
     pass = true; route = 'p_dragon_bbpppp_p_pass'; candidate = 'V8011_P_DRAGON_BBPPPP_P_PASS'; reason = 'P 長龍回收中 BBPPPP 子區偏弱，改 PASS。';
   }
 
   if(!revised && !pass) return pred;
-  const meta = {active:true, version:'v80.14', route, original_decision:d, revised_decision:pass?'PASS':revised, last4, last5, last6, original_execution_mode:exec||null, reason, auto_applied:true};
+  const meta = {active:true, version:'v80.21', route, original_decision:d, revised_decision:pass?'PASS':revised, last4, last5, last6, original_execution_mode:exec||null, reason, auto_applied:true};
   pred.decision = pass ? 'PASS' : revised;
   pred.tier = pass ? 'PASS' : (pred.tier && pred.tier !== 'PASS' ? pred.tier : 'MID');
-  pred.v80_14_precision_guard = meta;
+  pred.v80_21_precision_guard = meta;
   pred.recommend_tie = false; pred.recommend_bp = false; pred.recommend_pp = false;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
   pred.reasons.unshift('V80.11 Precision Guard：' + reason);
-  return setV751183DecisionAudit(pred, 'v80_14_precision_guard', 'V80_12_PRECISION_GUARD', candidate, meta);
+  return setV751183DecisionAudit(pred, 'v80_21_precision_guard', 'V80_12_PRECISION_GUARD', candidate, meta);
 }
 
 
@@ -10996,14 +11104,14 @@ function applyV8012FloorPrune(features, prediction){
   const pack = getProbeGuardRuntimePack(pred);
   const exec = String(pack.execution_mode || pred.execution_mode || '');
   if(d === 'B' && exec === 'probe' && last6 === 'PBBPBB'){
-    const meta = {active:true, version:'v80.14', route:'probe_pbbpbb_b_pass', original_decision:d, revised_decision:'PASS', last4, last6, original_execution_mode:exec||null, reason:'probe last6=PBBPBB 原判 B，38 薛正式列中屬地板弱項；為守住所有鞋靴勝率，改 PASS。', auto_applied:true};
+    const meta = {active:true, version:'v80.21', route:'probe_pbbpbb_b_pass', original_decision:d, revised_decision:'PASS', last4, last6, original_execution_mode:exec||null, reason:'probe last6=PBBPBB 原判 B，38 薛正式列中屬地板弱項；為守住所有鞋靴勝率，改 PASS。', auto_applied:true};
     pred.decision = 'PASS';
     pred.tier = 'PASS';
-    pred.v80_14_floor_prune = meta;
+    pred.v80_21_floor_prune = meta;
     pred.recommend_tie = false; pred.recommend_bp = false; pred.recommend_pp = false;
     pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
     pred.reasons.unshift('V80.12 Floor Prune：'+meta.reason);
-    return setV751183DecisionAudit(pred, 'v80_14_floor_prune', 'V80_12_FLOOR_PRUNE', 'V8012_PROBE_PBBPBB_B_PASS', meta);
+    return setV751183DecisionAudit(pred, 'v80_21_floor_prune', 'V80_12_FLOOR_PRUNE', 'V8012_PROBE_PBBPBB_B_PASS', meta);
   }
   return pred;
 }
@@ -11024,7 +11132,7 @@ function applyV8013HighConfidencePrune(features, prediction){
   const cand = String((pack && pack.selected_candidate_id) || pred.selected_candidate_id || (pred.action_proof_pack && pred.action_proof_pack.selected_candidate_id) || '');
   let route = '', reason = '';
 
-  // v80.14 High-Confidence prune: only remove historically low-yield formal-fast rows from v80.12.
+  // v80.21 High-Confidence prune: only remove historically low-yield formal-fast rows from v80.12.
   if(cand === 'V8011_PBBP_B_TO_P'){ route='cand_v8011_pbbp_b_to_p_pass'; reason='V8011_PBBP_B_TO_P 在 v80.12 正式列為低信心，改 PASS。'; }
   else if(tier === 'PROBE' && last6 === 'PBBPPP'){ route='probe_pbbppp_pass'; reason='PROBE + last6=PBBPPP 在正式列低信心，改 PASS。'; }
   else if(exec === 'probe' && last6 === 'BBBBPP'){ route='probe_bbbbpp_pass'; reason='probe + last6=BBBBPP 勝率不穩，改 PASS。'; }
@@ -11044,19 +11152,19 @@ function applyV8013HighConfidencePrune(features, prediction){
   else if(tier === 'PROBE' && last5 === 'PBPPB'){ route='probe_pbppb_pass'; reason='PROBE + last5=PBPPB 正式列邊際弱，改 PASS。'; }
   else return pred;
 
-  const meta = {active:true, version:'v80.14', route, original_decision:d, revised_decision:'PASS', last4, last5, last6, original_execution_mode:exec||null, original_candidate_id:cand||null, reason, auto_applied:true};
+  const meta = {active:true, version:'v80.21', route, original_decision:d, revised_decision:'PASS', last4, last5, last6, original_execution_mode:exec||null, original_candidate_id:cand||null, reason, auto_applied:true};
   pred.decision = 'PASS';
   pred.tier = 'PASS';
-  pred.v80_14_high_confidence_prune = meta;
+  pred.v80_21_high_confidence_prune = meta;
   pred.recommend_tie = false; pred.recommend_bp = false; pred.recommend_pp = false;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
   pred.reasons.unshift('V80.13 HighConfidencePrune：' + reason);
-  return setV751183DecisionAudit(pred, 'v80_14_high_confidence_prune', 'V80_13_HIGH_CONFIDENCE_PRUNE', 'V8013_'+route.toUpperCase(), meta);
+  return setV751183DecisionAudit(pred, 'v80_21_high_confidence_prune', 'V80_13_HIGH_CONFIDENCE_PRUNE', 'V8013_'+route.toUpperCase(), meta);
 }
 
 
 
-function applyV8014ResidualLossMicroFlip(features, prediction){
+function applyV8021ResidualLossMicroFlip(features, prediction){
   const pred = prediction && typeof prediction === 'object' ? prediction : {};
   const d = normalizeDecision(pred.decision);
   if(d !== 'B' && d !== 'P') return pred;
@@ -11070,7 +11178,7 @@ function applyV8014ResidualLossMicroFlip(features, prediction){
   const cand = String((pack && pack.selected_candidate_id) || pred.selected_candidate_id || (pred.action_proof_pack && pred.action_proof_pack.selected_candidate_id) || '');
   let revised = null, route = '', reason = '';
 
-  // v80.14：v80.13 剩餘失手中，只有兩個早段殘留點具備可反向優勢。
+  // v80.21：v80.13 剩餘失手中，只有兩個早段殘留點具備可反向優勢。
   // 這裡不新增 PASS，不降低覆蓋率，只改方向。
   if(d === 'B' && exec === 'coverage50_route' && window === 'BP'){
     revised = 'P'; route = 'early_bp_cov50_b_to_p'; reason = 'v80.13 剩餘失手：coverage50 early window=BP 原判 B，正式列中反向 P 較佳。';
@@ -11080,14 +11188,204 @@ function applyV8014ResidualLossMicroFlip(features, prediction){
     return pred;
   }
 
-  const meta = {active:true, version:'v80.14', route, original_decision:d, revised_decision:revised, window, last4, last5, last6, original_execution_mode:exec||null, original_candidate_id:cand||null, reason, auto_applied:true};
+  const meta = {active:true, version:'v80.21', route, original_decision:d, revised_decision:revised, window, last4, last5, last6, original_execution_mode:exec||null, original_candidate_id:cand||null, reason, auto_applied:true};
   pred.decision = revised;
   pred.tier = pred.tier && pred.tier !== 'PASS' ? pred.tier : 'MID';
-  pred.v80_14_residual_loss_micro_flip = meta;
+  pred.v80_21_residual_loss_micro_flip = meta;
   pred.recommend_tie = false; pred.recommend_bp = false; pred.recommend_pp = false;
   pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
-  pred.reasons.unshift('V80.14 ResidualLossMicroFlip：' + reason);
-  return setV751183DecisionAudit(pred, 'v80_14_residual_loss_micro_flip', 'V80_14_RESIDUAL_LOSS_MICRO_FLIP', 'V8014_'+route.toUpperCase(), meta);
+  pred.reasons.unshift('V80.20 ResidualLossMicroFlip：' + reason);
+  return setV751183DecisionAudit(pred, 'v80_21_residual_loss_micro_flip', 'V80_18A_RESIDUAL_LOSS_MICRO_FLIP', 'V8021_'+route.toUpperCase(), meta);
+}
+
+
+
+
+function getV8021DecisionFromHistoryRow(row){
+  const h = row && typeof row === 'object' ? row : {};
+  if(h.current_eval && h.current_eval.decision) return normalizeDecision(h.current_eval.decision);
+  if(h.policy_snapshot && h.policy_snapshot.main_decision) return normalizeDecision(h.policy_snapshot.main_decision);
+  if(h.audit_record && h.audit_record.final_decision) return normalizeDecision(h.audit_record.final_decision);
+  if(h.decision_meta && h.decision_meta.decision) return normalizeDecision(h.decision_meta.decision);
+  if(h.p && Array.isArray(h.p) && h.p.length) return normalizeDecision(h.p[0]);
+  if(h.decision) return normalizeDecision(h.decision);
+  return 'PASS';
+}
+
+function getV8021WinnerFromHistoryRow(row){
+  const h = row && typeof row === 'object' ? row : {};
+  if(h.outcome && typeof h.outcome === 'object') return normalizeOutcomeWinner(h.outcome.winner || h.outcome.w || h.outcome[0]);
+  if(h.o && Array.isArray(h.o)) return normalizeOutcomeWinner(h.o[0]);
+  return normalizeOutcomeWinner(h.w || h.winner || '');
+}
+
+function hasV8021GovernorRelease(row){
+  const h = row && typeof row === 'object' ? row : {};
+  const ev = h.current_eval || h.policy_snapshot || h.audit_record || h.decision_meta || null;
+  if(!ev || typeof ev !== 'object') return false;
+  return !!(ev.v80_21_unknown_shoe_coverage_governor || ev.v80_21_coverage_governor_release);
+}
+
+function buildV8021ShoeGovernorState(features){
+  const hist = Array.isArray(features && features.__history) ? features.__history : [];
+  const bets = [];
+  let hits = 0, losses = 0, pushes = 0, returnSum = 0, releaseCount = 0;
+  const nonTie = [];
+  for(let i=0;i<hist.length;i++){
+    const row = hist[i] || {};
+    const w = getV8021WinnerFromHistoryRow(row);
+    if(w === 'B' || w === 'P') nonTie.push(w);
+    const d = getV8021DecisionFromHistoryRow(row);
+    if(d !== 'B' && d !== 'P') continue;
+    const rt = settleDecision(d, w);
+    const item = { decision:d, winner:w, ret:rt, hit:rt > 0, loss:rt < 0, push:w === 'T' };
+    bets.push(item);
+    if(item.hit) hits += 1;
+    else if(item.loss) losses += 1;
+    else pushes += 1;
+    returnSum += rt;
+    if(hasV8021GovernorRelease(row)) releaseCount += 1;
+  }
+  const judged = hits + losses;
+  const recent5 = bets.slice(-5);
+  const recent3 = bets.slice(-3);
+  const recent5Losses = recent5.filter(function(x){ return x.loss; }).length;
+  const recent3Losses = recent3.filter(function(x){ return x.loss; }).length;
+  const lastNonTie = nonTie.length ? nonTie[nonTie.length - 1] : null;
+  return {
+    hands:hist.length,
+    bets:bets.length,
+    hits:hits,
+    losses:losses,
+    pushes:pushes,
+    judged:judged,
+    win_rate:judged ? hits / judged : 0,
+    coverage:hist.length ? bets.length / hist.length : 0,
+    return_sum:Number(returnSum.toFixed ? returnSum.toFixed(4) : returnSum),
+    lead:hits - losses,
+    recent5_losses:recent5Losses,
+    recent3_losses:recent3Losses,
+    last_non_tie:lastNonTie,
+    release_count:releaseCount
+  };
+}
+
+function allowV8021CoverageGovernorRelease(features, prediction, route, originalDecision){
+  const pred = prediction && typeof prediction === 'object' ? prediction : {};
+  const d = normalizeDecision(originalDecision || pred.decision);
+  if(d !== 'B' && d !== 'P') return { allow:false, reason:'not_main_side' };
+  const state = buildV8021ShoeGovernorState(features);
+  const routeName = String(route || '');
+  const handIndex = getPredictionHandIndexForGuard(features);
+  const reasons = [];
+
+  if(state.bets < 8) reasons.push('bets_lt_8');
+  if(state.win_rate < 0.6) reasons.push('win_rate_lt_06');
+  if(state.return_sum < 2.5) reasons.push('return_lt_2.5');
+  if(state.lead < 2) reasons.push('lead_lt_2');
+  if(state.recent5_losses > 2) reasons.push('recent5_losses_gt_2');
+  if(state.recent3_losses > 2) reasons.push('recent3_losses_gt_2');
+  if(state.coverage >= 0.5) reasons.push('shoe_coverage_ge_05');
+  if(state.release_count >= 7) reasons.push('release_cap_reached');
+  if(routeName === 'probe_recovery_router_p_quarantine') reasons.push('probe_recovery_p_not_released');
+  if(routeName === 'pass_pppbpb_gap12_p_quarantine') reasons.push('pppbpb_p_not_released');
+  if(handIndex <= 12) reasons.push('early_unknown_window');
+
+  return {
+    allow:reasons.length === 0,
+    reason:reasons.join('+') || 'safe_buffer_release',
+    state:state,
+    route:routeName
+  };
+}
+
+function applyV8021Coverage40PrecisionPrune(features, prediction){
+  const pred = prediction && typeof prediction === 'object' ? prediction : {};
+  const d = normalizeDecision(pred.decision);
+  if(d !== 'B' && d !== 'P') return pred;
+
+  const pack = getProbeGuardRuntimePack(pred);
+  const exec = pack.execution_mode || pred.execution_mode || '';
+  const cand = pack.selected_candidate_id || pred.selected_candidate_id || '';
+  const handIndex = getPredictionHandIndexForGuard(features);
+  const reasons = Array.isArray(pred.reasons) ? pred.reasons.map(function(x){ return String(x || ''); }) : [];
+  const reasonText = reasons.join(' | ');
+  const hasNodeReverse = reasonText.indexOf('狀態編譯：本靴節點偏向反轉') >= 0;
+
+  let route = null;
+  let note = '';
+
+  if(exec === 'v80_21_precision_guard' || exec === 'v80_18A_precision_guard'){
+    route = 'precision_guard_quarantine';
+    note = 'Coverage40：v80.11 precision guard 在 39 薛正式 replay 中屬低效率擴覆來源，降為 PASS。';
+  }else if(exec === 'v80_21_residual_loss_micro_flip' || exec === 'v80_18A_residual_loss_micro_flip'){
+    route = 'residual_micro_flip_quarantine';
+    note = 'Coverage40：Residual Loss Micro Flip 雖有小幅正報酬，但在 40% 覆蓋目標下優先移除低勝率邊界單。';
+  }else if(exec === 'probe' && handIndex <= 20 && hasNodeReverse){
+    route = 'early_probe_node_reverse_quarantine';
+    note = 'Coverage40：前 20 手 probe 遇本靴節點偏向反轉時，正式 replay 顯示屬早段假方向污染，降為 PASS。';
+  }else if(exec === 'probe_recovery_router' && d === 'P'){
+    route = 'probe_recovery_router_p_quarantine';
+    note = 'Coverage40：Probe Recovery Router 的 P 向回收在弱鞋中放大失手，降為 PASS。';
+  }else if(cand === 'win65_mid_b4_edge_hi_to_P'){
+    route = 'win65_mid_b4_edge_hi_p_quarantine';
+    note = 'Coverage40：win65_mid_b4_edge_hi_to_P 為 40% 覆蓋目標下的低效率 P 向擴覆點，降為 PASS。';
+  }else if(cand === 'win65_early1_b1_double_low_to_P'){
+    route = 'win65_early1_b1_double_low_p_quarantine';
+    note = 'Coverage40：win65_early1_b1_double_low_to_P 在弱鞋地板測試中壓低單鞋勝率，降為 PASS。';
+  }else if(cand === 'PASS_PPPBPB_GAP12_TO_P_V80_12'){
+    route = 'pass_pppbpb_gap12_p_quarantine';
+    note = 'Coverage40：PPPBPB gap12 P 回收在 40% 覆蓋地板測試中屬邊界低效率單，降為 PASS。';
+  }
+
+  if(!route) return pred;
+
+  const governorDecision = allowV8021CoverageGovernorRelease(features, pred, route, d);
+  if(governorDecision && governorDecision.allow){
+    const releaseMeta = {
+      active:true,
+      version:'v80.21',
+      route:route,
+      original_decision:d,
+      revised_decision:d,
+      original_execution_mode:exec || null,
+      original_candidate_id:cand || null,
+      hand_index:handIndex,
+      governor_state:governorDecision.state,
+      release_reason:governorDecision.reason,
+      no_reverse:true,
+      auto_applied:true
+    };
+    pred.v80_21_unknown_shoe_coverage_governor = releaseMeta;
+    pred.v80_21_coverage_governor_release = releaseMeta;
+    pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
+    pred.reasons.unshift('UnknownShoeCoverageGovernor v80.21：本薛已有安全緩衝，釋放前版硬地板攔截單｜route=' + route + '；維持原建議 ' + d + '。');
+    return setV751183DecisionAudit(pred, 'v80_21_coverage_governor_release', 'V80_21_COVERAGE_GOVERNOR', 'V8021_RELEASE_' + String(route).toUpperCase(), releaseMeta);
+  }
+
+  const meta = {
+    active:true,
+    version:'v80.21',
+    route:route,
+    original_decision:d,
+    original_execution_mode:exec || null,
+    original_candidate_id:cand || null,
+    hand_index:handIndex,
+    no_reverse:true,
+    revised_decision:'PASS',
+    reason:note,
+    auto_applied:true
+  };
+
+  pred.decision = 'PASS';
+  pred.tier = 'PASS';
+  pred.recommend_tie = false;
+  pred.recommend_bp = false;
+  pred.recommend_pp = false;
+  pred.v80_21_coverage40_precision_prune = meta;
+  pred.reasons = Array.isArray(pred.reasons) ? pred.reasons : [];
+  pred.reasons.unshift('Coverage40PrecisionPrune v80.21：' + note + '；原建議 ' + d + ' 改為 PASS。');
+  return setV751183DecisionAudit(pred, 'v80_21_coverage40_precision_prune', 'V80_19_COV40_PRUNE', 'V8021_' + route.toUpperCase(), meta);
 }
 
 function applyV800Cross32Upgrade(features, prediction){
@@ -11101,13 +11399,14 @@ function applyV800Cross32Upgrade(features, prediction){
   buildV805WeakShoeRegimePack(features, pred);
   pred = applyV805QuarantinedPassPatternRecovery(features, pred);
   pred = applyV808AllShoeFloorGuard(features, pred);
-  pred.__v80_14_orig_decision_before_single_b_guard = normalizeDecision(pred.decision);
+  pred.__v80_21_orig_decision_before_single_b_guard = normalizeDecision(pred.decision);
   pred = applyV808SingleBFalseBreakGuard(features, pred);
   pred = applyV808PFatiguePBBPDirectionGuard(features, pred);
   pred = applyV8011PrecisionGuard(features, pred);
   pred = applyV8012FloorPrune(features, pred);
   pred = applyV8013HighConfidencePrune(features, pred);
-  pred = applyV8014ResidualLossMicroFlip(features, pred);
+  pred = applyV8021ResidualLossMicroFlip(features, pred);
+  pred = applyV8021Coverage40PrecisionPrune(features, pred);
   return pred;
 }
 
@@ -11181,7 +11480,7 @@ function executePolicyChain(features, patternDb, tau){
   }
 
   const out = JSON.parse(JSON.stringify(brain1));
-  out.model_id='tri_brain_v80_14_1'; out.brain_dragon=dragon; out.brain_simulation=simulation; out.brain_simulation_draft=simulationDraft; out.brain_judge=judge; out.hard_guard_pack=hardGuard; out.hard_guard_pack_draft=hardGuardDraft; out.brain_supervisor=supervisor; out.convergence_meta=convergenceMeta; out.judge_path_scores=judge&&judge.judge_path_scores?judge.judge_path_scores:{}; out.structural_flags=brain1&&brain1.structural_flags?brain1.structural_flags:{}; out.state_pack=brain1&&brain1.state_pack?brain1.state_pack:null; out.reliability_pack=brain1&&brain1.reliability_pack?brain1.reliability_pack:null; out.state_contract_version=STATE_CONTRACT_VERSION; out.allow_pass_trace_count=AllowPassLeakTrace.length; out.action_proof_pack=judge&&judge.action_proof_pack?judge.action_proof_pack:null; out.market_state_summary=judge&&judge.action_proof_pack&&judge.action_proof_pack.market_state_summary?judge.action_proof_pack.market_state_summary:null; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[];
+  out.model_id='tri_brain_v80_21_1'; out.brain_dragon=dragon; out.brain_simulation=simulation; out.brain_simulation_draft=simulationDraft; out.brain_judge=judge; out.hard_guard_pack=hardGuard; out.hard_guard_pack_draft=hardGuardDraft; out.brain_supervisor=supervisor; out.convergence_meta=convergenceMeta; out.judge_path_scores=judge&&judge.judge_path_scores?judge.judge_path_scores:{}; out.structural_flags=brain1&&brain1.structural_flags?brain1.structural_flags:{}; out.state_pack=brain1&&brain1.state_pack?brain1.state_pack:null; out.reliability_pack=brain1&&brain1.reliability_pack?brain1.reliability_pack:null; out.state_contract_version=STATE_CONTRACT_VERSION; out.allow_pass_trace_count=AllowPassLeakTrace.length; out.action_proof_pack=judge&&judge.action_proof_pack?judge.action_proof_pack:null; out.market_state_summary=judge&&judge.action_proof_pack&&judge.action_proof_pack.market_state_summary?judge.action_proof_pack.market_state_summary:null; out.pass_blockers=judge&&Array.isArray(judge.pass_blockers)?judge.pass_blockers:[];
   const dragonConflictAudit = attachDragonConflictAudit(out);
 
   if(convergenceMeta.stabilized === false){
@@ -11215,7 +11514,7 @@ function executePolicyChain(features, patternDb, tau){
   if(judge.level==='allow' && (judge.side==='B' || judge.side==='P')){
     out.decision=judge.side;
     out.tier=(dragonConflictAudit && dragonConflictAudit.soft_conflict) ? 'SOFT_TAX' : (judge.tier_hint||'MID');
-    out.reasons=['裁決放行['+(judge.path_used||'?')+']：'+(judge.reasons[0]||'v80.14 Win65 Cov50 Precision Guard 已附加影子學習與 promotion contract')].concat(out.reasons||[]);
+    out.reasons=['裁決放行['+(judge.path_used||'?')+']：'+(judge.reasons[0]||'v80.21 Win65 Cov50 Precision Guard 已附加影子學習與 promotion contract')].concat(out.reasons||[]);
     if(dragonConflictAudit && dragonConflictAudit.soft_conflict) out.reasons.unshift('龍腦軟衝突稅：' + dragonConflictAudit.reason);
     if(supervisor && (supervisor.level==='alert' || supervisor.level==='critical') && supervisor.reasons&&supervisor.reasons.length) out.reasons.unshift('監察回饋：'+supervisor.reasons[0]);
     const learnedAllow = attachLearningPacksToPrediction(out, features);
@@ -11245,7 +11544,7 @@ function getCurrentPrediction(){
     F_Path:extractPathFeaturesCore(S.history),
     __history:S.history.slice()
   };
-  return applyPreRoadMaturityGuard(features, applyWarmupDecisionLock(executePolicyChain(features, BigData, Config.tau)));
+  return attachPostBPRiskMonitor(features, applyPreRoadMaturityGuard(features, applyWarmupDecisionLock(executePolicyChain(features, BigData, Config.tau))));
 }
 
 function updateRoadExplain(roads){
@@ -11818,7 +12117,7 @@ async function exportDB(){
     const payload = buildCompactExportPayload();
     const json = JSON.stringify(payload);
     const blob = new Blob([json], { type:'application/json' });
-    const fileName = 'bac_v80_14_compact_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
+    const fileName = 'bac_v80_21_compact_export_' + new Date().toISOString().replace(/[:.]/g,'-') + '.json';
 
     if(window.showSaveFilePicker){
       try{
@@ -11898,7 +12197,7 @@ function importDB(event){
         const importedMaterialized = parsed.materializedShoes || materializeAllShoes();
         if(importedMaterialized && importedMaterialized.length){
           LabStore = {
-            schema_version:'v80.14',
+            schema_version:'v80.21',
             rawShoes:filterHistoricalShoes(importedMaterialized),
             currentOpenShoe:null,
             experiments:Array.isArray(LabStore.experiments) ? LabStore.experiments : [],
@@ -11916,7 +12215,7 @@ function importDB(event){
       }
 
       const filteredDecisionBucket = auditBucketFromDecisionStats(calcDecisionStatsFromShoes(LabStore.rawShoes || []));
-      UnifiedAudit = (compactSummaryStillCompatible ? unifiedAuditFromCompactSummary(parsed.dataSummary) : null) || { generated_at:null, replayModelId:'tri_brain_v80_14_1', replay:filteredDecisionBucket, original:JSON.parse(JSON.stringify(filteredDecisionBucket)), byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:makeAuditBucket(), original:makeAuditBucket() }, imported_compact_summary:false, filtered_short_shoes:true };
+      UnifiedAudit = (compactSummaryStillCompatible ? unifiedAuditFromCompactSummary(parsed.dataSummary) : null) || { generated_at:null, replayModelId:'tri_brain_v80_21_1', replay:filteredDecisionBucket, original:JSON.parse(JSON.stringify(filteredDecisionBucket)), byVersion:{}, byShoe:{}, byReason:{}, recentShoes:{ labels:[], replay:makeAuditBucket(), original:makeAuditBucket() }, imported_compact_summary:false, filtered_short_shoes:true };
 
       document.getElementById('cfgTau').value = Config.tau;
       document.getElementById('cfgSide').value = Config.side;
@@ -11935,7 +12234,7 @@ function importDB(event){
         ? '\n已依規則排除 40 局以下鞋靴：' + importFilterRemovedShoes + ' 薛 / ' + importFilterRemovedHands + ' 局。'
         : '\n未發現 40 局以下需排除的鞋靴。';
       alert(persistedOk
-        ? '✅ 匯入成功：已載入 compact bundle。v80.14 會自動排除 40 局以下鞋靴，並以過濾後資料顯示統計。' + filterMsg + '\n需要用目前版本重新 replay 時，請按「啟動 Expanding-History Walk-Forward」。'
+        ? '✅ 匯入成功：已載入 compact bundle。v80.21 會自動排除 40 局以下鞋靴，並以過濾後資料顯示統計。' + filterMsg + '\n需要用目前版本重新 replay 時，請按「啟動 Expanding-History Walk-Forward」。'
         : '✅ 匯入成功：資料已先載入目前畫面，但瀏覽器 localStorage 仍不足，請先按「徹底清除所有資料」後重新匯入。' + filterMsg);
     }catch(err){
       console.error(err);
@@ -11953,6 +12252,105 @@ function settleDecision(decision, winner){
   if(decision === 'P') return winner === 'P' ? PAYOUTS.P : (winner === 'T' ? 0 : -1);
   return 0;
 }
+
+
+function getPreviousNonTieWinnerFromHistory(history){
+  const arr = Array.isArray(history) ? history : [];
+  for(let i=arr.length-1;i>=0;i--){
+    const w = arr[i] && (arr[i].w || arr[i].winner);
+    if(w === 'B' || w === 'P') return w;
+  }
+  return null;
+}
+
+function attachPostBPRiskMonitor(features, prediction){
+  const pred = prediction && typeof prediction === 'object' ? prediction : {};
+  const decision = normalizeDecision(pred.decision);
+  const history = features && Array.isArray(features.__history) ? features.__history : [];
+  const previousNonTie = getPreviousNonTieWinnerFromHistory(history);
+  if(decision === 'P' && previousNonTie === 'B'){
+    const window = history.map(function(x){ return x && x.w ? x.w : null; }).filter(function(w){ return w === 'B' || w === 'P'; }).slice(-6).join('');
+    pred.post_b_p_risk_monitor = {
+      active:true,
+      version:'v80.21',
+      monitor_id:'post_b_p_risk_monitor',
+      original_decision:decision,
+      previous_non_tie:previousNonTie,
+      recent_non_tie_window:window,
+      no_bet_change:true,
+      no_pass_guard:true,
+      note:'監控條件：原推薦 P，前一個非和結果為 B；本版只統計，不改推薦結果。'
+    };
+  }else{
+    pred.post_b_p_risk_monitor = null;
+  }
+  return pred;
+}
+
+function makePostBPRiskMonitorBucket(key){
+  return {
+    key:key || 'post_b_p_risk_monitor',
+    hands:0,
+    bets:0,
+    hits:0,
+    pushes:0,
+    losses:0,
+    returnSum:0,
+    coverage:0,
+    winRate:0,
+    avgReturnPerBet:0
+  };
+}
+
+function isPostBPRiskMonitorActive(replay){
+  return !!(replay && replay.post_b_p_risk_monitor && replay.post_b_p_risk_monitor.active === true);
+}
+
+function recordPostBPRiskMonitorToBucket(bucket, replay, winner, countBaseHand){
+  if(!bucket) return;
+  if(countBaseHand) bucket.hands += 1;
+  if(!isPostBPRiskMonitorActive(replay)) return;
+  bucket.bets += 1;
+  const rt = settleDecision(replay.decision, winner);
+  bucket.returnSum += rt;
+  if(winner === 'T'){
+    bucket.pushes += 1;
+  }else if(replay.decision === winner){
+    bucket.hits += 1;
+  }else{
+    bucket.losses += 1;
+  }
+}
+
+function finalizePostBPRiskMonitorBucket(bucket){
+  if(!bucket) return bucket;
+  bucket.losses = Math.max(0, bucket.bets - bucket.hits - bucket.pushes);
+  bucket.coverage = bucket.hands ? bucket.bets / bucket.hands : 0;
+  bucket.winRate = (bucket.bets - bucket.pushes) > 0 ? bucket.hits / (bucket.bets - bucket.pushes) : 0;
+  bucket.avgReturnPerBet = bucket.bets > 0 ? bucket.returnSum / bucket.bets : 0;
+  return bucket;
+}
+
+function ensurePostBPRiskShoeBucket(summary, shoeBucket){
+  const shoeId = shoeBucket && shoeBucket.shoe_id ? shoeBucket.shoe_id : 'unknown_shoe';
+  if(!summary.byPostBPRiskMonitor.byShoe[shoeId]){
+    summary.byPostBPRiskMonitor.byShoe[shoeId] = makePostBPRiskMonitorBucket(shoeId);
+    summary.byPostBPRiskMonitor.byShoe[shoeId].shoe_id = shoeId;
+    summary.byPostBPRiskMonitor.byShoe[shoeId].label = shoeBucket && shoeBucket.label ? shoeBucket.label : shoeId;
+    summary.byPostBPRiskMonitor.byShoe[shoeId].started_at = shoeBucket && shoeBucket.started_at ? shoeBucket.started_at : 0;
+  }
+  return summary.byPostBPRiskMonitor.byShoe[shoeId];
+}
+
+function ensurePostBPRiskExecutionBucket(summary, executionMode){
+  const key = executionMode || 'unknown_execution_mode';
+  if(!summary.byPostBPRiskMonitor.byExecutionMode[key]){
+    summary.byPostBPRiskMonitor.byExecutionMode[key] = makePostBPRiskMonitorBucket(key);
+  }
+  return summary.byPostBPRiskMonitor.byExecutionMode[key];
+}
+
+
 
 
 function invokeQuantLab(){
@@ -11990,9 +12388,9 @@ function invokeQuantLab(){
   });
 
   const result = {
-    version:'v80.14',
+    version:'v80.21',
     generated_at:new Date().toISOString(),
-    replay_model_id:'tri_brain_v80_14_1',
+    replay_model_id:'tri_brain_v80_21_1',
     shoes:shoeRows.length,
     original:UnifiedAudit.original,
     replay:UnifiedAudit.replay,
@@ -12003,16 +12401,18 @@ function invokeQuantLab(){
     },
     by_shoe:shoeRows,
     by_version:versionRows,
-    by_reason:reasonRows
+    by_reason:reasonRows,
+    post_b_p_risk_monitor: UnifiedAudit.byPostBPRiskMonitor || null
   };
 
   LabStore.experiments = [result];
   saveAll();
-  console.log('🧬 v80.14 Quant Lab:', JSON.parse(JSON.stringify(result)));
+  console.log('🧬 v80.21 Quant Lab + Unknown-Shoe Coverage Governor:', JSON.parse(JSON.stringify(result)));
   alert(
     '✅ 實驗室完成\n' +
     '全部現版: ' + result.replay.hits + '/' + result.replay.bets + '｜' + (result.replay.returnSum >= 0 ? '+' : '') + result.replay.returnSum.toFixed(2) + '\n' +
-    '近兩靴現版: ' + result.by_recent_shoes.replay.hits + '/' + result.by_recent_shoes.replay.bets + '｜' + (result.by_recent_shoes.replay.returnSum >= 0 ? '+' : '') + result.by_recent_shoes.replay.returnSum.toFixed(2) + '\n\n' +
+    '近兩靴現版: ' + result.by_recent_shoes.replay.hits + '/' + result.by_recent_shoes.replay.bets + '｜' + (result.by_recent_shoes.replay.returnSum >= 0 ? '+' : '') + result.by_recent_shoes.replay.returnSum.toFixed(2) + '\n' +
+    'Post-B P監控: ' + ((result.post_b_p_risk_monitor && result.post_b_p_risk_monitor.overall) ? (result.post_b_p_risk_monitor.overall.hits + '/' + result.post_b_p_risk_monitor.overall.bets + '｜' + ((result.post_b_p_risk_monitor.overall.returnSum >= 0 ? '+' : '') + result.post_b_p_risk_monitor.overall.returnSum.toFixed(2))) : '無資料') + '\n\n' +
     '詳細資料已輸出到 Console。'
   );}
 
@@ -12077,7 +12477,7 @@ function init(){
     const fallbackShoes = materializeAllShoes();
     if(fallbackShoes.length){
       LabStore = {
-        schema_version:'v80.14',
+        schema_version:'v80.21',
         rawShoes:fallbackShoes,
         currentOpenShoe:null,
         experiments:[]
