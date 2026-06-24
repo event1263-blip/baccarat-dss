@@ -1,1033 +1,719 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>會員點數媒合商城 Human UX v1.6</title>
-<style>
-:root{
-  --bg:#f3f6fb;--card:#fff;--text:#172033;--muted:#6b7280;--line:#e6eaf0;
-  --blue:#2563eb;--blue2:#e8f0ff;--green:#16a34a;--green2:#e7f8ee;
-  --red:#dc2626;--red2:#fee2e2;--amber:#d97706;--amber2:#fff3d6;
-  --dark:#111827;--shadow:0 18px 40px rgba(15,23,42,.08);--radius:22px;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",Arial,sans-serif;background:radial-gradient(circle at top left,rgba(37,99,235,.08),transparent 35%),radial-gradient(circle at bottom right,rgba(22,163,74,.08),transparent 35%),var(--bg);color:var(--text)}
-button,input,select,textarea{font-family:inherit}
-button{border:0;cursor:pointer;border-radius:14px;padding:11px 16px;background:var(--blue);color:#fff;font-weight:800}
-button.light{background:var(--blue2);color:#1d4ed8}
-button.success{background:var(--green)}
-button.warning{background:var(--amber)}
-button.danger{background:var(--red)}
-button.ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
-button:disabled{opacity:.45;cursor:not-allowed}
-input,select,textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff;font-size:14px;outline:none}
-textarea{min-height:90px;resize:vertical}
-label{display:block;font-weight:800;font-size:13px;margin-bottom:6px;color:#374151}
-hr{border:0;border-top:1px solid var(--line);margin:18px 0}
-.login{min-height:100vh;display:grid;place-items:center;padding:24px}
-.login-shell{width:min(1120px,100%);display:grid;grid-template-columns:1.1fr .9fr;gap:22px}
-.hero,.panel,.card{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
-.hero{padding:36px}.hero h1{font-size:36px;line-height:1.2;margin:0 0 14px;letter-spacing:-.6px}.hero p{line-height:1.8;color:var(--muted);font-size:16px}
-.hero-badge{display:inline-flex;background:var(--blue2);color:#1d4ed8;padding:8px 13px;border-radius:999px;font-weight:900;font-size:13px;margin-bottom:18px}
-.role-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px}
-.role-card{padding:16px;border-radius:18px;background:#f8fafc;border:1px solid var(--line)}.role-card .icon{font-size:30px;margin-bottom:8px}.role-card b{display:block;margin-bottom:5px}.role-card span{font-size:13px;color:var(--muted);line-height:1.6}
-.panel{padding:24px}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.tab{padding:11px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--muted);text-align:center;font-weight:900;cursor:pointer}.tab.active{background:var(--dark);color:#fff}
-.app{min-height:100vh;display:grid;grid-template-columns:280px 1fr}
-aside{background:linear-gradient(180deg,#111827,#0f172a);color:#fff;padding:20px;height:100vh;position:sticky;top:0;overflow:auto}
-.brand{display:flex;align-items:center;gap:12px;margin-bottom:20px}.logo{width:44px;height:44px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,#60a5fa,#22c55e);font-weight:900}.brand h2{font-size:16px;margin:0}.brand small{color:#cbd5e1}
-.me{padding:16px;border-radius:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);margin-bottom:18px}.me b{display:block;margin-bottom:4px}.me span{font-size:13px;color:#cbd5e1;line-height:1.5}
-.nav button{width:100%;background:transparent;color:#cbd5e1;text-align:left;border:1px solid transparent;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}.nav button.active{background:#fff;color:#111827}
-main{padding:26px;max-width:1360px;width:100%;margin:0 auto}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:20px}.top h1{margin:0 0 6px;font-size:28px}.top p{margin:0;color:var(--muted);line-height:1.65}
-.card{padding:22px;margin-bottom:18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:var(--shadow)}.stat small{display:block;color:var(--muted);font-weight:800;margin-bottom:8px}.stat strong{font-size:27px}.stat em{display:block;color:var(--muted);font-size:12px;font-style:normal;margin-top:6px}
-.task{display:grid;grid-template-columns:46px 1fr auto;gap:14px;align-items:center;padding:15px;border-radius:18px;background:#f8fafc;border:1px solid var(--line);margin-bottom:12px}.task .ico{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;background:var(--blue2);font-size:24px}.task b{display:block;margin-bottom:4px}.task span{font-size:13px;color:var(--muted)}
-.shop{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.product{background:#fff;border:1px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}.cover{height:140px;display:grid;place-items:center;font-size:46px;background:linear-gradient(135deg,rgba(37,99,235,.16),rgba(22,163,74,.12)),#f8fafc}.body{padding:18px;display:flex;flex-direction:column;gap:11px;flex:1}.price{font-size:24px;font-weight:950;color:#1d4ed8}
-.badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900;background:#eef2f7;color:#475569;white-space:nowrap}.badge.green{background:var(--green2);color:#166534}.badge.amber{background:var(--amber2);color:#92400e}.badge.red{background:var(--red2);color:#991b1b}.badge.blue{background:var(--blue2);color:#1d4ed8}
-.mini{padding:12px;border-radius:16px;border:1px solid var(--line);background:#fff}.mini b{display:block;margin-bottom:4px}.mini span{font-size:13px;color:var(--muted);line-height:1.6;white-space:pre-wrap}.kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line)}.kv:last-child{border-bottom:0}
-.table-wrap{width:100%;overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px;min-width:980px}th{background:#f8fafc;text-align:left;padding:12px;border-bottom:1px solid var(--line);color:#374151}td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
-.empty{padding:34px;border:1px dashed #cbd5e1;border-radius:22px;background:#fff;color:var(--muted);text-align:center}.alert{padding:14px;border-radius:18px;background:var(--amber2);color:#92400e;border:1px solid #fde68a;line-height:1.7;margin-bottom:16px}.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.proof-img{max-width:180px;max-height:180px;border-radius:14px;border:1px solid var(--line);display:block;margin-top:8px}
-.perm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.perm label{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;margin:0}.perm input{width:auto}
-@media(max-width:1050px){.login-shell,.app{grid-template-columns:1fr}aside{height:auto;position:static}.shop,.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){main{padding:14px}.role-cards,.grid,.grid3,.grid4,.shop{grid-template-columns:1fr}.top{flex-direction:column}.task{grid-template-columns:46px 1fr}.task .actions{grid-column:1/-1}.perm{grid-template-columns:1fr}}
-</style>
-</head>
-
-<body>
-<div id="root"></div>
-
-<script>
-const KEY="point_mall_human_v1_6";
-const SESSION="point_mall_human_session_v1_6";
-
-const ADMIN={DEV:"system_developer",OWNER:"owner",MANAGER:"manager"};
-const ROLE={customer:"顧客會員",supplier:"廠商主帳號",supplier_staff:"廠商員工",admin:"後台管理員",system_developer:"程式開發者",owner:"負責人",manager:"主管"};
-const STATUS={
-  active:"啟用",disabled:"停用",pending_review:"待審核",approved:"審核通過",rejected:"審核退回",
-  product_pending:"商品待審核",product_active:"已上架",product_rejected:"商品退回",product_disabled:"已下架",
-  product_order_reserved:"已保留庫存，待付款",product_order_reviewing:"付款證明審核中",product_order_done:"訂單完成",product_order_rejected:"付款退回，庫存已釋放",
-  cashout_company_pending:"公司付款待審核",cashout_company_paid:"公司已付款",cashout_market_listed:"媒合中",cashout_market_accepted:"已被承接，待付款",cashout_market_reviewing:"媒合付款審核中",cashout_market_paid:"媒合付款完成",cashout_rejected:"退回"
-};
-const PERMS=[
-  ["editMembers","編輯會員/廠商"],
-  ["reviewProducts","審核商品上架"],
-  ["setSupplierFeeRate","設定廠商上架費%"],
-  ["reviewProductPayments","審核商品付款"],
-  ["reviewPointPayments","審核點數付款"],
-  ["reviewCashouts","審核回饋金提領"],
-  ["viewReports","查看報表"],
-  ["systemSettings","系統設定"],
-  ["manageAdmins","管理後台帳號"]
-];
-const SUP_PERMS=[
-  ["productCreate","上架商品"],
-  ["productManage","商品管理"],
-  ["orderView","訂單管理"],
-  ["staffManage","員工管理"],
-  ["profileEdit","結算資料"]
-];
-
-let db=loadDB();
-let session=JSON.parse(sessionStorage.getItem(SESSION)||"null");
-let page="home";
-let loginMode="customer";
-
-function uid(p){return p+"_"+Date.now()+"_"+Math.random().toString(16).slice(2)}
-function now(){return new Date().toLocaleString("zh-TW",{hour12:false})}
-function n(v){return Number(v||0).toLocaleString("zh-TW")}
-function money(v){return "NT$ "+n(v)}
-function save(){localStorage.setItem(KEY,JSON.stringify(db))}
-function defaultPerm(level){
-  if(level===ADMIN.DEV) return Object.fromEntries(PERMS.map(p=>[p[0],true]));
-  if(level===ADMIN.OWNER) return {editMembers:true,reviewProducts:true,setSupplierFeeRate:true,reviewProductPayments:true,reviewPointPayments:true,reviewCashouts:true,viewReports:true,systemSettings:true,manageAdmins:false};
-  return {editMembers:false,reviewProducts:true,setSupplierFeeRate:true,reviewProductPayments:true,reviewPointPayments:true,reviewCashouts:true,viewReports:true,systemSettings:false,manageAdmins:false};
-}
-function defaultSupplierPerm(role){
-  if(role==="supervisor") return {productCreate:true,productManage:true,orderView:true,staffManage:true,profileEdit:false};
-  return {productCreate:false,productManage:false,orderView:true,staffManage:false,profileEdit:false};
-}
-function loadDB(){
-  const raw=localStorage.getItem(KEY);
-  if(raw) return JSON.parse(raw);
-
-  const c1=uid("cus"), c2=uid("cus"), a=uid("sup"), b=uid("sup");
-  const data={
-    settings:{platformFeeRate:8,defaultBonusRate:10,bonusName:"加成回饋金",customerRewardName:"可提領回饋金"},
-    customers:[
-      {id:c1,username:"customer01",password:"123456",name:"測試顧客A",phone:"0900000000",points:0,bonusCredit:0,customerRewardCredit:0,lockedRewardCredit:0,status:"active",receiveBank:"台灣銀行",receiveName:"測試顧客A",receiveAccount:"001-111-222",createdAt:now()},
-      {id:c2,username:"customer02",password:"123456",name:"測試顧客B",phone:"0900000001",points:0,bonusCredit:0,customerRewardCredit:0,lockedRewardCredit:0,status:"active",receiveBank:"玉山銀行",receiveName:"測試顧客B",receiveAccount:"002-333-444",createdAt:now()}
-    ],
-    suppliers:[
-      {id:a,username:"supplier01",password:"123456",companyName:"A 廠商",contactName:"王小姐",phone:"0911111111",bankName:"平台結算銀行A",bankAccountName:"A 廠商有限公司",bankAccount:"111-222-333",listingFeeRate:5,settlementNote:"平台結算用，不給顧客看。",status:"active",createdAt:now()},
-      {id:b,username:"supplier02",password:"123456",companyName:"B 廠商",contactName:"李先生",phone:"0922222222",bankName:"平台結算銀行B",bankAccountName:"B 廠商有限公司",bankAccount:"444-555-666",listingFeeRate:8,settlementNote:"平台結算用，不給顧客看。",status:"active",createdAt:now()}
-    ],
-    supplierUsers:[
-      {id:uid("suser"),supplierId:a,username:"a_manager",password:"123456",name:"A 廠商主管",role:"supervisor",permissions:defaultSupplierPerm("supervisor"),status:"active",createdAt:now()},
-      {id:uid("suser"),supplierId:a,username:"a_staff",password:"123456",name:"A 廠商員工",role:"employee",permissions:defaultSupplierPerm("employee"),status:"active",createdAt:now()}
-    ],
-    admins:[
-      {id:uid("adm"),username:"admin_dev",password:"123456",name:"程式開發者",adminLevel:ADMIN.DEV,permissions:defaultPerm(ADMIN.DEV),status:"active",createdAt:now()},
-      {id:uid("adm"),username:"admin_owner",password:"123456",name:"負責人",adminLevel:ADMIN.OWNER,permissions:defaultPerm(ADMIN.OWNER),status:"active",createdAt:now()},
-      {id:uid("adm"),username:"admin_manager",password:"123456",name:"主管",adminLevel:ADMIN.MANAGER,permissions:defaultPerm(ADMIN.MANAGER),status:"active",createdAt:now()}
-    ],
-    packages:[
-      {id:uid("pkg"),name:"60,000 點數方案",cash:60000,basePoints:60000,bonusRate:10,status:"active"},
-      {id:uid("pkg"),name:"30,000 點數方案",cash:30000,basePoints:30000,bonusRate:5,status:"active"}
-    ],
-    products:[
-      {
-        id:uid("prd"),supplierId:a,name:"限量生活選品",emoji:"🛍️",category:"生活用品",price:3600,stock:1,
-        desc:"A 廠商限量商品。顧客確認購買後才會看到付款資訊。",
-        payBank:"A 商品指定銀行",payee:"A 商品指定收款戶",payAccount:"123-456-789",payNote:"付款完成後請上傳付款證明。",
-        note:"此商品只有 1 件，用來測試鎖庫存。",status:"product_active",createdAt:now()
-      },
-      {
-        id:uid("prd"),supplierId:b,name:"B 廠商保健組合",emoji:"🎁",category:"保健用品",price:5000,stock:3,
-        desc:"B 廠商商品，顧客確認購買後才會看到付款資訊。",
-        payBank:"B 商品指定銀行",payee:"B 商品指定收款戶",payAccount:"987-654-321",payNote:"付款後請上傳截圖。",
-        note:"B 廠商商品。",status:"product_active",createdAt:now()
-      }
-    ],
-    pointOrders:[],productOrders:[],pointProofs:[],productProofs:[],
-    pointLedger:[],bonusLedger:[],rewardLedger:[],
-    cashoutRequests:[],cashoutProofs:[],
-    logs:[]
-  };
-  localStorage.setItem(KEY,JSON.stringify(data));
-  return data;
-}
-
-function me(){
-  if(!session) return null;
-  if(session.role==="customer") return db.customers.find(x=>x.id===session.id);
-  if(session.role==="supplier") return db.suppliers.find(x=>x.id===session.supplierId);
-  if(session.role==="supplier_staff") return db.supplierUsers.find(x=>x.id===session.staffId);
-  if(session.role==="admin") return db.admins.find(x=>x.id===session.id);
-  return null;
-}
-function currentSupplier(){
-  if(!session) return null;
-  if(session.role==="supplier") return db.suppliers.find(x=>x.id===session.supplierId);
-  if(session.role==="supplier_staff"){
-    const u=db.supplierUsers.find(x=>x.id===session.staffId);
-    return u?db.suppliers.find(s=>s.id===u.supplierId):null;
-  }
-  return null;
-}
-function roleName(){
-  const m=me();
-  if(!m)return"";
-  if(session.role==="admin")return ROLE[m.adminLevel];
-  if(session.role==="supplier")return "廠商主帳號";
-  if(session.role==="supplier_staff")return m.role==="supervisor"?"廠商主管":"廠商員工";
-  return ROLE[session.role];
-}
-function hasPerm(k){const m=me();if(!session||session.role!=="admin"||!m)return false;if(m.adminLevel===ADMIN.DEV)return true;return !!(m.permissions&&m.permissions[k])}
-function canEditAdmin(target){const m=me();if(!m||session.role!=="admin")return false;if(m.adminLevel===ADMIN.DEV)return target.adminLevel!==ADMIN.DEV;if(m.adminLevel===ADMIN.OWNER)return target.adminLevel===ADMIN.MANAGER;return false}
-function hasSupplierPerm(k){if(session.role==="supplier")return true;if(session.role==="supplier_staff"){const u=me();return !!(u&&u.permissions&&u.permissions[k])}return false}
-function supplierScopeId(){const s=currentSupplier();return s?s.id:null}
-function log(action,detail){const m=me();db.logs.unshift({id:uid("log"),actor:m?(m.name||m.companyName||m.username):"未登入",role:session?session.role:"guest",action,detail,createdAt:now()});save()}
-function badge(s){let cls="";if(["active","approved","product_active","product_order_done","cashout_company_paid","cashout_market_paid"].includes(s))cls="green";if(["pending_review","product_pending","product_order_reserved","product_order_reviewing","cashout_company_pending","cashout_market_listed","cashout_market_accepted","cashout_market_reviewing"].includes(s))cls="amber";if(["disabled","rejected","product_rejected","product_disabled","product_order_rejected","cashout_rejected"].includes(s))cls="red";return `<span class="badge ${cls}">${STATUS[s]||s}</span>`}
-function bonus(pkg){return Math.round(Number(pkg.basePoints||0)*Number(pkg.bonusRate||0)/100)}
-function listingFeeFor(supplierId,amount){const s=db.suppliers.find(x=>x.id===supplierId);return Math.round(Number(amount||0)*Number(s?s.listingFeeRate||0:0)/100)}
-function availableReward(c){return Number(c.customerRewardCredit||0)}
-function render(){
-  const root=document.getElementById("root");
-  if(!session||!me()){root.innerHTML=loginView();return}
-  const m=me();
-  const supplier=currentSupplier();
-  root.innerHTML=`
-    <div class="app">
-      <aside>
-        <div class="brand"><div class="logo">點</div><div><h2>會員點數媒合商城</h2><small>Human UX v1.6</small></div></div>
-        <div class="me"><b>${m.name||m.companyName}</b><span>${roleName()}${supplier&&session.role==="supplier_staff"?`<br>${supplier.companyName}`:""}</span></div>
-        <div class="nav">${navView()}</div>
-        <button class="ghost" style="width:100%;margin-top:14px;background:transparent;color:#cbd5e1;" onclick="logout()">登出</button>
-      </aside>
-      <main>${pageView()}</main>
-    </div>`;
-}
-
-function loginView(){
-  return `
-    <div class="login">
-      <div class="login-shell">
-        <section class="hero">
-          <div class="hero-badge">v1.6｜廠商隔離、員工權限、上架費%、回饋金提領媒合</div>
-          <h1>廠商資料不互通，回饋金可申請提領，並支援顧客間媒合付款。</h1>
-          <p>後台可設定每個廠商的上架費百分比；廠商可建立主管與員工；顧客購買商品後取得等值可提領回饋金，提領可由公司付款或由其他顧客媒合付款。</p>
-          <div class="role-cards">
-            <div class="role-card"><div class="icon">👤</div><b>顧客</b><span>購買商品、取得等值回饋金、申請公司付款或顧客媒合提領。</span></div>
-            <div class="role-card"><div class="icon">🏭</div><b>廠商</b><span>A 廠商只能看 A 的資料；可建立主管與員工權限。</span></div>
-            <div class="role-card"><div class="icon">🛡️</div><b>後台</b><span>設定廠商上架費%、審核付款照片、審核回饋提領。</span></div>
-          </div>
-        </section>
-        <section class="panel">
-          <h2>登入系統</h2>
-          <div class="tabs">
-            <div class="tab ${loginMode==="customer"?"active":""}" onclick="setLogin('customer')">顧客</div>
-            <div class="tab ${loginMode==="supplier"?"active":""}" onclick="setLogin('supplier')">廠商</div>
-            <div class="tab ${loginMode==="admin"?"active":""}" onclick="setLogin('admin')">後台</div>
-          </div>
-          <div class="grid">
-            <div><label>帳號</label><input id="loginUser" placeholder="customer01"></div>
-            <div><label>密碼</label><input id="loginPass" type="password" placeholder="123456"></div>
-          </div>
-          <br><button style="width:100%;" onclick="login()">登入</button>
-          <div class="alert" style="margin-top:18px;">
-            測試帳號：<br>
-            顧客 customer01 / 123456、customer02 / 123456<br>
-            廠商主帳號 supplier01 / 123456、supplier02 / 123456<br>
-            A 廠商主管 a_manager / 123456，A 廠商員工 a_staff / 123456<br>
-            後台 admin_dev / 123456、admin_owner / 123456、admin_manager / 123456
-          </div>
-        </section>
-      </div>
-    </div>`;
-}
-
-function navView(){
-  const items=[["home","首頁","→"]];
-  if(session.role==="customer") items.push(["mall","商城","購"],["orders","我的訂單","單"],["buy_points","購買點數","點"],["cashout","回饋金提領","提"],["cashout_market","提領媒合商城","媒"],["ledger","帳戶流水","帳"]);
-  if(session.role==="supplier"||session.role==="supplier_staff"){
-    items.push(["supplier_home","工作台","→"]);
-    if(hasSupplierPerm("productCreate"))items.push(["product_new","上架商品","＋"]);
-    if(hasSupplierPerm("productManage"))items.push(["supplier_products","商品管理","品"]);
-    if(hasSupplierPerm("orderView"))items.push(["supplier_orders","訂單管理","單"]);
-    if(hasSupplierPerm("staffManage"))items.push(["supplier_staff","主管/員工","人"]);
-    if(hasSupplierPerm("profileEdit"))items.push(["supplier_profile","結算資料","設"]);
-  }
-  if(session.role==="admin"){
-    items.push(["admin_home","審核中心","審"]);
-    if(hasPerm("reviewProductPayments")) items.push(["admin_product_pay","商品付款審核","款"]);
-    if(hasPerm("reviewPointPayments")) items.push(["admin_point_pay","點數付款審核","點"]);
-    if(hasPerm("reviewCashouts")) items.push(["admin_cashouts","回饋提領審核","提"]);
-    if(hasPerm("reviewProducts")) items.push(["admin_products","商品審核","品"]);
-    if(hasPerm("editMembers")) items.push(["admin_members","會員/廠商","員"]);
-    if(hasPerm("viewReports")) items.push(["admin_report","報表","財"]);
-    items.push(["admin_logs","紀錄","錄"]);
-    if(hasPerm("systemSettings")) items.push(["admin_settings","設定","設"]);
-    if(hasPerm("manageAdmins")||me().adminLevel===ADMIN.OWNER) items.push(["admin_accounts","後台權限","權"]);
-  }
-  return items.map(x=>`<button class="${page===x[0]?"active":""}" onclick="go('${x[0]}')"><span>${x[1]}</span><small>${x[2]}</small></button>`).join("");
-}
-function title(t,d){return `<div class="top"><div><h1>${t}</h1><p>${d}</p></div></div>`}
-function pageView(){
-  if(page==="home"){if(session.role==="customer")return customerHome();if(session.role==="supplier"||session.role==="supplier_staff")return supplierHome();return adminHome()}
-  const map={
-    mall:mall,orders:orders,buy_points:buyPoints,cashout:cashoutPage,cashout_market:cashoutMarket,ledger:ledger,
-    supplier_home:supplierHome,product_new:productNew,supplier_products:supplierProducts,supplier_orders:supplierOrders,supplier_staff:supplierStaffPage,supplier_profile:supplierProfile,
-    admin_home:adminHome,admin_product_pay:adminProductPay,admin_point_pay:adminPointPay,admin_cashouts:adminCashouts,admin_products:adminProducts,admin_members:adminMembers,admin_report:adminReport,admin_logs:adminLogs,admin_settings:adminSettings,admin_accounts:adminAccounts
-  };
-  return map[page]?map[page]():`<div class="empty">找不到頁面</div>`;
-}
-
-function customerHome(){
-  const m=me();
-  const pending=db.productOrders.filter(x=>x.customerId===m.id&&["product_order_reserved","product_order_reviewing"].includes(x.status)).length;
-  const cashoutPending=db.cashoutRequests.filter(x=>x.customerId===m.id&&!["cashout_company_paid","cashout_market_paid","cashout_rejected"].includes(x.status)).length;
-  return `
-    ${title("顧客首頁","購買廠商商品後，我司給予等值可提領回饋金；提領可由公司付款或顧客媒合付款。")}
-    <div class="grid4">
-      <div class="stat"><small>等值點數</small><strong>${n(m.points)}</strong><em>點數方案主帳戶</em></div>
-      <div class="stat"><small>${db.settings.bonusName}</small><strong>${n(m.bonusCredit)}</strong><em>點數方案加成</em></div>
-      <div class="stat"><small>${db.settings.customerRewardName}</small><strong>${n(m.customerRewardCredit)}</strong><em>可申請提領</em></div>
-      <div class="stat"><small>提領進行中</small><strong>${cashoutPending}</strong><em>公司付款或媒合中</em></div>
-    </div>
-    <div class="card">
-      <div class="task"><div class="ico">🛒</div><div><b>購買商品取得等值回饋</b><span>商品付款審核通過後，會入帳與商品總價等值的回饋金。</span></div><div><button onclick="go('mall')">去商城</button></div></div>
-      <div class="task"><div class="ico">💸</div><div><b>申請回饋金提領</b><span>可選公司付款，或上架到媒合商城由其他顧客付款給你。</span></div><div><button class="light" onclick="go('cashout')">申請提領</button></div></div>
-    </div>`;
-}
-
-function mall(){
-  const products=db.products.filter(x=>x.status==="product_active");
-  return `
-    ${title("商城","顧客看到商品總價與等值回饋金；確認購買後才顯示付款資訊並鎖庫存。")}
-    <div class="shop">
-      ${products.map(p=>{
-        const s=db.suppliers.find(x=>x.id===p.supplierId);
-        return `
-          <div class="product">
-            <div class="cover">${p.emoji||"📦"}</div>
-            <div class="body">
-              <div class="actions"><span class="badge blue">${p.category||"商品"}</span>${p.stock>0?`<span class="badge green">剩 ${n(p.stock)} 件</span>`:`<span class="badge red">已售完</span>`}</div>
-              <h3 style="margin:0;">${p.name}</h3>
-              <span class="muted">${p.desc||""}</span>
-              <div class="price">總價 ${money(p.price)}</div>
-              <div class="mini"><b>等值回饋金</b><span>商品付款審核通過後，取得 ${n(p.price)} 可提領回饋金。</span></div>
-              <div class="mini"><b>供應商</b><span>${s?s.companyName:"未知廠商"}</span></div>
-              <button ${p.stock>0?"":"disabled"} onclick="confirmProduct('${p.id}')">${p.stock>0?"確認購買並鎖庫存":"無庫存"}</button>
-            </div>
-          </div>`;
-      }).join("")||`<div class="empty">目前沒有商品。</div>`}
-    </div>`;
-}
-
-function orders(){
-  const m=me();
-  const po=db.pointOrders.filter(x=>x.customerId===m.id);
-  const oo=db.productOrders.filter(x=>x.customerId===m.id);
-  return `
-    ${title("我的訂單","只有你建立成功的訂單才會顯示商品付款資訊。")}
-    <div class="card"><h2>廠商商品訂單</h2>
-      ${oo.length?`
-        <div class="table-wrap"><table>
-          <thead><tr><th>時間</th><th>商品</th><th>總價</th><th>等值回饋</th><th>付款資訊</th><th>付款證明</th><th>狀態</th><th>操作</th></tr></thead>
-          <tbody>${oo.map(o=>{
-            const proof=db.productProofs.find(x=>x.orderId===o.id);
-            return `<tr>
-              <td>${o.createdAt}</td><td>${o.productName}</td><td>${money(o.amount)}</td><td>${n(o.customerRewardAmount)} 回饋金</td>
-              <td style="white-space:pre-wrap;">銀行：${o.payBank}\n收款人：${o.payee}\n帳號：${o.payAccount}\n備註：${o.payNote}</td>
-              <td>${proof?`${proof.fileName}<br>${badge(proof.status)}${proof.imageData?`<img class="proof-img" src="${proof.imageData}">`:""}`:"尚未上傳"}</td>
-              <td>${badge(o.status)}</td>
-              <td>${["product_order_reserved","product_order_rejected"].includes(o.status)?`<input type="file" accept="image/*" id="productProof_${o.id}"><button onclick="uploadProductProof('${o.id}')">上傳照片</button>`:""}</td>
-            </tr>`;
-          }).join("")}</tbody>
-        </table></div>`:`<div class="empty">目前沒有商品訂單。</div>`}
-    </div>
-    <div class="card"><h2>點數方案訂單</h2>
-      ${po.length?`
-        <div class="table-wrap"><table>
-          <thead><tr><th>時間</th><th>方案</th><th>金額</th><th>等值點數</th><th>加成</th><th>證明</th><th>狀態</th><th>操作</th></tr></thead>
-          <tbody>${po.map(o=>{
-            const proof=db.pointProofs.find(x=>x.orderId===o.id);
-            return `<tr>
-              <td>${o.createdAt}</td><td>${o.title}</td><td>${money(o.cash)}</td><td>${n(o.basePoints)}</td><td>${n(o.bonusCredit)}</td>
-              <td>${proof?`${proof.fileName}<br>${badge(proof.status)}${proof.imageData?`<img class="proof-img" src="${proof.imageData}">`:""}`:"尚未上傳"}</td>
-              <td>${badge(o.status)}</td><td>${o.status!=="approved"?`<input type="file" accept="image/*" id="pointProof_${o.id}"><button onclick="uploadPointProof('${o.id}')">上傳照片</button>`:""}</td>
-            </tr>`;
-          }).join("")}</tbody>
-        </table></div>`:`<div class="empty">目前沒有點數方案訂單。</div>`}
-    </div>`;
-}
-
-function buyPoints(){
-  return `
-    ${title("購買點數","購買金額進入等值點數，額外加成進入加成回饋金。")}
-    <div class="shop">${db.packages.filter(x=>x.status==="active").map(p=>`
-      <div class="product"><div class="cover">💎</div><div class="body">
-        <h3 style="margin:0;">${p.name}</h3>
-        <div class="kv"><span>付款金額</span><b>${money(p.cash)}</b></div>
-        <div class="kv"><span>等值點數</span><b>${n(p.basePoints)}</b></div>
-        <div class="kv"><span>加成</span><b>${n(bonus(p))}</b></div>
-        <button onclick="createPointOrder('${p.id}')">建立付款訂單</button>
-      </div></div>`).join("")}</div>`;
-}
-
-function cashoutPage(){
-  const c=me();
-  const mine=db.cashoutRequests.filter(x=>x.customerId===c.id);
-  return `
-    ${title("回饋金提領","可選公司端付款，或由公司端上架成媒合單，讓其他顧客付款給你。")}
-    <div class="grid4">
-      <div class="stat"><small>可提領回饋金</small><strong>${n(c.customerRewardCredit)}</strong><em>可申請</em></div>
-      <div class="stat"><small>鎖定中</small><strong>${n(c.lockedRewardCredit)}</strong><em>已送出提領</em></div>
-      <div class="stat"><small>收款銀行</small><strong style="font-size:18px;">${c.receiveBank||"未填"}</strong><em>${c.receiveAccount||""}</em></div>
-      <div class="stat"><small>收款人</small><strong style="font-size:18px;">${c.receiveName||c.name}</strong><em>顧客收款資料</em></div>
-    </div>
-
-    <div class="card">
-      <h2>設定我的收款資料</h2>
-      <div class="grid">
-        <div><label>收款銀行</label><input id="rcvBank" value="${c.receiveBank||""}"></div>
-        <div><label>收款人</label><input id="rcvName" value="${c.receiveName||c.name||""}"></div>
-        <div><label>收款帳號</label><input id="rcvAccount" value="${c.receiveAccount||""}"></div>
-      </div>
-      <br><button onclick="saveReceiveInfo()">儲存收款資料</button>
-    </div>
-
-    <div class="card">
-      <h2>新增提領申請</h2>
-      <div class="grid">
-        <div><label>提領金額</label><input id="cashoutAmount" type="number" placeholder="輸入金額"></div>
-        <div>
-          <label>提領方式</label>
-          <select id="cashoutMethod">
-            <option value="company">公司端付款</option>
-            <option value="market">媒合商城，由其他顧客付款</option>
-          </select>
-        </div>
-        <div style="grid-column:1/-1;"><label>備註</label><textarea id="cashoutNote" placeholder="可填寫提領原因或備註"></textarea></div>
-      </div>
-      <br><button onclick="createCashout()">送出提領申請</button>
-    </div>
-
-    <div class="card">
-      <h2>我的提領紀錄</h2>
-      ${mine.length?`
-        <div class="table-wrap"><table><thead><tr><th>時間</th><th>方式</th><th>金額</th><th>收款資料</th><th>承接顧客</th><th>付款證明</th><th>狀態</th></tr></thead><tbody>
-        ${mine.map(r=>{
-          const taker=r.takerCustomerId?db.customers.find(c=>c.id===r.takerCustomerId):null;
-          const proof=db.cashoutProofs.find(p=>p.requestId===r.id);
-          return `<tr>
-            <td>${r.createdAt}</td><td>${r.method==="company"?"公司付款":"顧客媒合"}</td><td>${money(r.amount)}</td>
-            <td>銀行：${r.receiveBank}<br>收款人：${r.receiveName}<br>帳號：${r.receiveAccount}</td>
-            <td>${taker?taker.name:"-"}</td>
-            <td>${proof?`${proof.fileName}<br>${badge(proof.status)}${proof.imageData?`<img class="proof-img" src="${proof.imageData}">`:""}`:"-"}</td>
-            <td>${badge(r.status)}</td>
-          </tr>`;
-        }).join("")}</tbody></table></div>`:`<div class="empty">尚無提領紀錄。</div>`}
-    </div>`;
-}
-
-function cashoutMarket(){
-  const c=me();
-  const list=db.cashoutRequests.filter(r=>r.method==="market"&&r.status==="cashout_market_listed"&&r.customerId!==c.id);
-  const accepted=db.cashoutRequests.filter(r=>r.method==="market"&&r.takerCustomerId===c.id);
-  return `
-    ${title("提領媒合商城","其他顧客申請提領後，可由你付款給對方；你付款後上傳證明，等待後台審核。")}
-    <div class="alert">此為原型流程：B 顧客付款給提出提領的 A 顧客。正式上線需加入合約、風控、KYC、金流紀錄與法務審核。</div>
-    <div class="card">
-      <h2>可承接的提領單</h2>
-      ${list.length?`
-        <div class="table-wrap"><table><thead><tr><th>提出顧客</th><th>金額</th><th>收款資料</th><th>備註</th><th>操作</th></tr></thead><tbody>
-        ${list.map(r=>{
-          const owner=db.customers.find(c=>c.id===r.customerId);
-          return `<tr>
-            <td>${owner?owner.name:""}</td><td>${money(r.amount)}</td>
-            <td>銀行：${r.receiveBank}<br>收款人：${r.receiveName}<br>帳號：${r.receiveAccount}</td>
-            <td>${r.note||""}</td>
-            <td><button onclick="acceptCashout('${r.id}')">我要承接付款</button></td>
-          </tr>`;
-        }).join("")}</tbody></table></div>`:`<div class="empty">目前沒有可承接的提領單。</div>`}
-    </div>
-
-    <div class="card">
-      <h2>我承接的提領單</h2>
-      ${accepted.length?`
-        <div class="table-wrap"><table><thead><tr><th>提出顧客</th><th>金額</th><th>收款資料</th><th>付款證明</th><th>狀態</th><th>操作</th></tr></thead><tbody>
-        ${accepted.map(r=>{
-          const owner=db.customers.find(c=>c.id===r.customerId);
-          const proof=db.cashoutProofs.find(p=>p.requestId===r.id);
-          return `<tr>
-            <td>${owner?owner.name:""}</td><td>${money(r.amount)}</td>
-            <td>銀行：${r.receiveBank}<br>收款人：${r.receiveName}<br>帳號：${r.receiveAccount}</td>
-            <td>${proof?`${proof.fileName}<br>${badge(proof.status)}${proof.imageData?`<img class="proof-img" src="${proof.imageData}">`:""}`:"尚未上傳"}</td>
-            <td>${badge(r.status)}</td>
-            <td>${["cashout_market_accepted","cashout_rejected"].includes(r.status)?`<input type="file" accept="image/*" id="cashoutProof_${r.id}"><button onclick="uploadCashoutProof('${r.id}')">上傳付款證明</button>`:""}</td>
-          </tr>`;
-        }).join("")}</tbody></table></div>`:`<div class="empty">你尚未承接任何提領單。</div>`}
-    </div>`;
-}
-
-function ledger(){
-  const m=me();
-  return `
-    ${title("帳戶流水","等值點數、加成回饋金、可提領回饋金分開記錄。")}
-    <div class="card"><h2>等值點數</h2>${ledgerTable(db.pointLedger.filter(x=>x.customerId===m.id),"尚無等值點數流水")}</div>
-    <div class="card"><h2>${db.settings.bonusName}</h2>${ledgerTable(db.bonusLedger.filter(x=>x.customerId===m.id),"尚無加成流水")}</div>
-    <div class="card"><h2>${db.settings.customerRewardName}</h2>${ledgerTable(db.rewardLedger.filter(x=>x.customerId===m.id),"尚無回饋金流水")}</div>`;
-}
-function ledgerTable(rows,empty){if(!rows.length)return`<div class="empty">${empty}</div>`;return`<div class="table-wrap"><table><thead><tr><th>時間</th><th>類型</th><th>異動</th><th>異動前</th><th>異動後</th><th>備註</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.createdAt}</td><td>${r.type}</td><td>${n(r.amount)}</td><td>${n(r.before)}</td><td>${n(r.after)}</td><td>${r.note}</td></tr>`).join("")}</tbody></table></div>`}
-
-function supplierHome(){
-  const s=currentSupplier(), products=db.products.filter(x=>x.supplierId===s.id), orders=db.productOrders.filter(x=>x.supplierId===s.id);
-  return `
-    ${title("廠商工作台","廠商資料完全隔離：你只能看到與修改自己廠商的商品、訂單與員工。")}
-    <div class="grid4">
-      <div class="stat"><small>商品數</small><strong>${products.length}</strong><em>僅本廠商</em></div>
-      <div class="stat"><small>訂單數</small><strong>${orders.length}</strong><em>僅本廠商</em></div>
-      <div class="stat"><small>後台設定上架費</small><strong>${n(s.listingFeeRate)}%</strong><em>商品總金額百分比</em></div>
-      <div class="stat"><small>完成訂單</small><strong>${orders.filter(x=>x.status==="product_order_done").length}</strong><em>審核通過</em></div>
-    </div>
-    <div class="card">
-      ${hasSupplierPerm("productCreate")?`<div class="task"><div class="ico">📦</div><div><b>上架商品</b><span>廠商只填售價、庫存與付款資料；上架費%由後台設定。</span></div><div><button onclick="go('product_new')">上架商品</button></div></div>`:""}
-      ${hasSupplierPerm("staffManage")?`<div class="task"><div class="ico">👥</div><div><b>管理主管與員工</b><span>可新增、設定權限、剔除員工。</span></div><div><button class="light" onclick="go('supplier_staff')">員工管理</button></div></div>`:""}
-    </div>`;
-}
-function productNew(){
-  if(!hasSupplierPerm("productCreate"))return`<div class="empty">權限不足</div>`;
-  return `
-    ${title("上架商品","廠商只填商品資料與付款資料；上架費%由後台依廠商設定自動計算。")}
-    <div class="card"><div class="grid">
-      <div><label>商品名稱</label><input id="pName"></div>
-      <div><label>分類</label><input id="pCat"></div>
-      <div><label>圖示</label><input id="pEmoji" placeholder="🛍️"></div>
-      <div><label>庫存</label><input id="pStock" type="number" value="1"></div>
-      <div><label>售價</label><input id="pPrice" type="number"></div>
-      <div style="grid-column:1/-1;"><label>商品摘要｜商城會顯示</label><textarea id="pDesc"></textarea></div>
-      <div><label>商品收款銀行｜顧客確認後顯示</label><input id="pPayBank"></div>
-      <div><label>收款人｜後台審核會看到</label><input id="pPayee"></div>
-      <div><label>收款帳號｜後台審核會看到</label><input id="pPayAccount"></div>
-      <div style="grid-column:1/-1;"><label>付款備註</label><textarea id="pPayNote"></textarea></div>
-      <div style="grid-column:1/-1;"><label>廠商備註｜平台審核用</label><textarea id="pNote"></textarea></div>
-    </div><br><button onclick="createProduct()">送出商品審核</button></div>`;
-}
-function supplierProducts(){
-  if(!hasSupplierPerm("productManage"))return`<div class="empty">權限不足</div>`;
-  const sid=supplierScopeId();
-  const rows=db.products.filter(x=>x.supplierId===sid);
-  return `
-    ${title("商品管理","只顯示本廠商商品；A 廠商不能看到或修改 B 廠商商品。")}
-    <div class="shop">${rows.map(p=>`
-      <div class="product"><div class="cover">${p.emoji||"📦"}</div><div class="body">
-        <div class="actions">${badge(p.status)}<span class="badge blue">庫存 ${n(p.stock)}</span></div>
-        <h3 style="margin:0;">${p.name}</h3><span class="muted">${p.desc}</span>
-        <div class="kv"><span>售價</span><b>${money(p.price)}</b></div>
-      </div></div>`).join("")||`<div class="empty">尚無商品。</div>`}</div>`;
-}
-function supplierOrders(){
-  if(!hasSupplierPerm("orderView"))return`<div class="empty">權限不足</div>`;
-  const sid=supplierScopeId();
-  const rows=db.productOrders.filter(x=>x.supplierId===sid);
-  return `
-    ${title("訂單管理","只看自己廠商商品的訂單。")}
-    <div class="card">${rows.length?`
-      <div class="table-wrap"><table><thead><tr><th>時間</th><th>商品</th><th>售價</th><th>狀態</th><th>出貨備註</th></tr></thead><tbody>
-      ${rows.map(o=>`<tr><td>${o.createdAt}</td><td>${o.productName}</td><td>${money(o.amount)}</td><td>${badge(o.status)}</td><td><textarea id="ship_${o.id}">${o.shipNote||""}</textarea><button onclick="saveShip('${o.id}')">儲存</button></td></tr>`).join("")}
-      </tbody></table></div>`:`<div class="empty">目前沒有訂單。</div>`}</div>`;
-}
-function supplierStaffPage(){
-  if(!hasSupplierPerm("staffManage"))return`<div class="empty">權限不足</div>`;
-  const sid=supplierScopeId();
-  const rows=db.supplierUsers.filter(x=>x.supplierId===sid);
-  return `
-    ${title("主管 / 員工管理","廠商主帳號或有權限的主管可新增、設定權限與剔除員工。")}
-    <div class="card">
-      <h2>新增員工</h2>
-      <div class="grid">
-        <div><label>帳號</label><input id="newStaffUser"></div>
-        <div><label>密碼</label><input id="newStaffPass" type="password"></div>
-        <div><label>姓名</label><input id="newStaffName"></div>
-        <div><label>角色</label><select id="newStaffRole"><option value="employee">員工</option><option value="supervisor">主管</option></select></div>
-      </div>
-      <br><button onclick="createSupplierStaff()">新增員工</button>
-    </div>
-    <div class="card">
-      <h2>員工總覽</h2>
-      ${rows.length?`
-      <div class="table-wrap"><table><thead><tr><th>姓名</th><th>帳號</th><th>角色</th><th>狀態</th><th>權限</th><th>操作</th></tr></thead><tbody>
-      ${rows.map(u=>`
-        <tr>
-          <td><input id="staff_name_${u.id}" value="${u.name||""}"></td>
-          <td>${u.username}</td>
-          <td><select id="staff_role_${u.id}"><option value="employee" ${u.role==="employee"?"selected":""}>員工</option><option value="supervisor" ${u.role==="supervisor"?"selected":""}>主管</option></select></td>
-          <td><select id="staff_status_${u.id}"><option value="active" ${u.status==="active"?"selected":""}>啟用</option><option value="disabled" ${u.status==="disabled"?"selected":""}>停用</option></select></td>
-          <td>
-            <div class="perm">
-              ${SUP_PERMS.map(p=>`<label><input type="checkbox" id="sperm_${u.id}_${p[0]}" ${u.permissions&&u.permissions[p[0]]?"checked":""}>${p[1]}</label>`).join("")}
-            </div>
-          </td>
-          <td><button onclick="saveSupplierStaff('${u.id}')">儲存</button><button class="danger" onclick="removeSupplierStaff('${u.id}')">剔除</button></td>
-        </tr>`).join("")}
-      </tbody></table></div>`:`<div class="empty">尚未建立員工。</div>`}
-    </div>`;
-}
-function supplierProfile(){
-  if(!hasSupplierPerm("profileEdit"))return`<div class="empty">權限不足</div>`;
-  const s=currentSupplier();
-  return `
-    ${title("平台結算資料","此區只供平台結算使用，不直接顯示給顧客。")}
-    <div class="card"><div class="grid">
-      <div><label>公司名稱</label><input id="sCompany" value="${s.companyName}"></div>
-      <div><label>聯絡人</label><input id="sContact" value="${s.contactName||""}"></div>
-      <div><label>平台結算銀行</label><input id="sBank" value="${s.bankName||""}"></div>
-      <div><label>平台結算戶名</label><input id="sBankName" value="${s.bankAccountName||""}"></div>
-      <div><label>平台結算帳號</label><input id="sBankAcc" value="${s.bankAccount||""}"></div>
-      <div style="grid-column:1/-1;"><label>平台結算備註</label><textarea id="sNote">${s.settlementNote||""}</textarea></div>
-    </div><br><button onclick="saveSupplier()">儲存</button></div>`;
-}
-
-function adminHome(){
-  const productProofs=db.productProofs.filter(x=>x.status==="pending_review").length;
-  const pointProofs=db.pointProofs.filter(x=>x.status==="pending_review").length;
-  const cashouts=db.cashoutRequests.filter(x=>["cashout_company_pending","cashout_market_reviewing"].includes(x.status)).length;
-  const productPending=db.products.filter(x=>x.status==="product_pending").length;
-  return `
-    ${title("後台審核中心","審核付款、設定廠商上架費%、審核回饋金提領。")}
-    <div class="grid4">
-      <div class="stat"><small>商品付款待審</small><strong>${productProofs}</strong><em>顧客商品付款</em></div>
-      <div class="stat"><small>回饋提領待審</small><strong>${cashouts}</strong><em>公司付款/媒合付款</em></div>
-      <div class="stat"><small>商品上架待審</small><strong>${productPending}</strong><em>廠商送審</em></div>
-      <div class="stat"><small>點數付款待審</small><strong>${pointProofs}</strong><em>點數方案付款</em></div>
-    </div>`;
-}
-function adminProductPay(){
-  if(!hasPerm("reviewProductPayments"))return`<div class="empty">權限不足</div>`;
-  const rows=db.productProofs;
-  return `
-    ${title("商品付款審核","審核時顯示：付款證明照片、商品收款銀行、收款人、收款帳號。")}
-    <div class="card">${rows.length?`
-      <div class="table-wrap"><table><thead><tr><th>時間</th><th>顧客</th><th>商品</th><th>金額</th><th>收款資料</th><th>顧客上傳資料</th><th>照片</th><th>狀態</th><th>操作</th></tr></thead><tbody>
-      ${rows.map(p=>{
-        const o=db.productOrders.find(x=>x.id===p.orderId), c=o?db.customers.find(x=>x.id===o.customerId):null;
-        return `<tr>
-          <td>${p.createdAt}</td><td>${c?c.name:""}</td><td>${o?o.productName:""}</td><td>${o?money(o.amount):""}</td>
-          <td>銀行：${o?o.payBank:""}<br>收款人：${o?o.payee:""}<br>帳號：${o?o.payAccount:""}<br>備註：${o?o.payNote:""}</td>
-          <td>付款人：${p.payer}<br>金額：${money(p.amount)}<br>後五碼：${p.last5}</td>
-          <td>${p.imageData?`<img class="proof-img" src="${p.imageData}">`:"未附圖"}</td>
-          <td>${badge(p.status)}</td>
-          <td>${p.status==="pending_review"?`<button class="success" onclick="approveProductProof('${p.id}')">通過</button><button class="danger" onclick="rejectProductProof('${p.id}')">退回</button>`:""}</td>
-        </tr>`;
-      }).join("")}</tbody></table></div>`:`<div class="empty">目前沒有商品付款證明。</div>`}</div>`;
-}
-function adminPointPay(){
-  if(!hasPerm("reviewPointPayments"))return`<div class="empty">權限不足</div>`;
-  const rows=db.pointProofs;
-  return `
-    ${title("點數付款審核","審核時可以看到顧客上傳的照片證明。")}
-    <div class="card">${rows.length?`
-      <div class="table-wrap"><table><thead><tr><th>時間</th><th>顧客</th><th>方案</th><th>金額</th><th>顧客上傳資料</th><th>照片</th><th>狀態</th><th>操作</th></tr></thead><tbody>
-      ${rows.map(p=>{
-        const o=db.pointOrders.find(x=>x.id===p.orderId), c=o?db.customers.find(x=>x.id===o.customerId):null;
-        return `<tr><td>${p.createdAt}</td><td>${c?c.name:""}</td><td>${o?o.title:""}</td><td>${o?money(o.cash):""}</td><td>付款人：${p.payer}<br>金額：${money(p.amount)}<br>後五碼：${p.last5}</td><td>${p.imageData?`<img class="proof-img" src="${p.imageData}">`:"未附圖"}</td><td>${badge(p.status)}</td><td>${p.status==="pending_review"?`<button class="success" onclick="approvePointProof('${p.id}')">通過</button><button class="danger" onclick="rejectPointProof('${p.id}')">退回</button>`:""}</td></tr>`;
-      }).join("")}</tbody></table></div>`:`<div class="empty">目前沒有點數付款證明。</div>`}</div>`;
-}
-function adminCashouts(){
-  if(!hasPerm("reviewCashouts"))return`<div class="empty">權限不足</div>`;
-  const rows=db.cashoutRequests;
-  return `
-    ${title("回饋金提領審核","公司付款可直接核准；顧客媒合付款需審核 B 顧客上傳的付款證明。")}
-    <div class="card">${rows.length?`
-      <div class="table-wrap"><table><thead><tr><th>時間</th><th>提出顧客</th><th>方式</th><th>金額</th><th>收款資料</th><th>承接顧客</th><th>付款證明</th><th>狀態</th><th>操作</th></tr></thead><tbody>
-      ${rows.map(r=>{
-        const owner=db.customers.find(c=>c.id===r.customerId);
-        const taker=r.takerCustomerId?db.customers.find(c=>c.id===r.takerCustomerId):null;
-        const proof=db.cashoutProofs.find(p=>p.requestId===r.id);
-        return `<tr>
-          <td>${r.createdAt}</td><td>${owner?owner.name:""}</td><td>${r.method==="company"?"公司付款":"顧客媒合"}</td><td>${money(r.amount)}</td>
-          <td>銀行：${r.receiveBank}<br>收款人：${r.receiveName}<br>帳號：${r.receiveAccount}</td>
-          <td>${taker?taker.name:"-"}</td>
-          <td>${proof?`付款人：${proof.payer}<br>金額：${money(proof.amount)}<br>${proof.imageData?`<img class="proof-img" src="${proof.imageData}">`:"未附圖"}`:"-"}</td>
-          <td>${badge(r.status)}</td>
-          <td>
-            ${r.status==="cashout_company_pending"?`<button class="success" onclick="approveCompanyCashout('${r.id}')">公司已付款</button><button class="danger" onclick="rejectCashout('${r.id}')">退回</button>`:""}
-            ${r.status==="cashout_market_reviewing"?`<button class="success" onclick="approveMarketCashout('${r.id}')">媒合付款通過</button><button class="danger" onclick="rejectCashout('${r.id}')">退回</button>`:""}
-          </td>
-        </tr>`;
-      }).join("")}</tbody></table></div>`:`<div class="empty">目前沒有提領紀錄。</div>`}</div>`;
-}
-function adminProducts(){
-  if(!hasPerm("reviewProducts"))return`<div class="empty">權限不足</div>`;
-  const rows=db.products;
-  return `
-    ${title("商品審核","廠商上架費由廠商級百分比計算：商品總金額 × 廠商上架費%。")}
-    <div class="card">${rows.length?`
-      <div class="table-wrap"><table><thead><tr><th>廠商</th><th>商品</th><th>售價/庫存</th><th>上架費%</th><th>預估上架費</th><th>顧客等值回饋</th><th>收款資料</th><th>狀態</th><th>操作</th></tr></thead><tbody>
-      ${rows.map(p=>{
-        const s=db.suppliers.find(x=>x.id===p.supplierId);
-        return `<tr>
-          <td>${s?s.companyName:""}</td><td>${p.emoji||"📦"} ${p.name}<br><span class="muted">${p.desc||""}</span></td>
-          <td>${money(p.price)}<br>庫存 ${n(p.stock)}</td>
-          <td>${n(s?s.listingFeeRate:0)}%</td>
-          <td>${money(listingFeeFor(p.supplierId,p.price))}</td>
-          <td>${money(p.price)}</td>
-          <td>銀行：${p.payBank||""}<br>收款人：${p.payee||""}<br>帳號：${p.payAccount||""}</td>
-          <td>${badge(p.status)}</td>
-          <td>
-            ${p.status==="product_pending"?`<button class="success" onclick="approveProduct('${p.id}')">通過上架</button><button class="danger" onclick="rejectProduct('${p.id}')">退回</button>`:""}
-            ${p.status==="product_active"?`<button class="warning" onclick="disableProduct('${p.id}')">下架</button>`:""}
-          </td>
-        </tr>`;
-      }).join("")}</tbody></table></div>`:`<div class="empty">目前沒有商品。</div>`}</div>`;
-}
-function adminMembers(){
-  if(!hasPerm("editMembers"))return`<div class="empty">權限不足</div>`;
-  return `
-    ${title("會員 / 廠商總覽式管理","後台可總覽修改顧客與廠商；廠商級上架費%在此設定。")}
-    <div class="card">
-      <h2>顧客會員總覽</h2>
-      <div class="table-wrap"><table><thead><tr><th>姓名</th><th>帳號</th><th>手機</th><th>回饋金</th><th>鎖定中</th><th>收款銀行</th><th>收款人</th><th>收款帳號</th><th>狀態</th><th>操作</th></tr></thead><tbody>
-      ${db.customers.map(c=>`
-        <tr>
-          <td><input id="cus_name_${c.id}" value="${c.name||""}"></td>
-          <td>${c.username}</td>
-          <td><input id="cus_phone_${c.id}" value="${c.phone||""}"></td>
-          <td><input id="cus_reward_${c.id}" type="number" value="${Number(c.customerRewardCredit||0)}"></td>
-          <td>${n(c.lockedRewardCredit||0)}</td>
-          <td><input id="cus_rbank_${c.id}" value="${c.receiveBank||""}"></td>
-          <td><input id="cus_rname_${c.id}" value="${c.receiveName||""}"></td>
-          <td><input id="cus_racc_${c.id}" value="${c.receiveAccount||""}"></td>
-          <td><select id="cus_status_${c.id}"><option value="active" ${c.status==="active"?"selected":""}>啟用</option><option value="disabled" ${c.status==="disabled"?"selected":""}>停用</option></select></td>
-          <td><button onclick="saveCustomerInline('${c.id}')">儲存</button></td>
-        </tr>`).join("")}
-      </tbody></table></div>
-    </div>
-    <div class="card">
-      <h2>廠商會員總覽</h2>
-      <p class="muted">上架費設定方式：商品總金額 × 廠商上架費%。只要設定廠商，該廠商所有商品都依此比例收費。</p>
-      <div class="table-wrap"><table><thead><tr><th>公司名稱</th><th>帳號</th><th>聯絡人</th><th>電話</th><th>上架費%</th><th>結算銀行</th><th>結算戶名</th><th>結算帳號</th><th>狀態</th><th>操作</th></tr></thead><tbody>
-      ${db.suppliers.map(s=>`
-        <tr>
-          <td><input id="sup_company_${s.id}" value="${s.companyName||""}"></td>
-          <td>${s.username}</td>
-          <td><input id="sup_contact_${s.id}" value="${s.contactName||""}"></td>
-          <td><input id="sup_phone_${s.id}" value="${s.phone||""}"></td>
-          <td><input id="sup_fee_${s.id}" type="number" value="${Number(s.listingFeeRate||0)}"></td>
-          <td><input id="sup_bank_${s.id}" value="${s.bankName||""}"></td>
-          <td><input id="sup_bank_name_${s.id}" value="${s.bankAccountName||""}"></td>
-          <td><input id="sup_bank_acc_${s.id}" value="${s.bankAccount||""}"></td>
-          <td><select id="sup_status_${s.id}"><option value="active" ${s.status==="active"?"selected":""}>啟用</option><option value="disabled" ${s.status==="disabled"?"selected":""}>停用</option></select></td>
-          <td><button onclick="saveSupplierInline('${s.id}')">儲存</button></td>
-        </tr>`).join("")}
-      </tbody></table></div>
-    </div>`;
-}
-function adminReport(){
-  if(!hasPerm("viewReports"))return`<div class="empty">權限不足</div>`;
-  const done=db.productOrders.filter(x=>x.status==="product_order_done");
-  const sales=done.reduce((a,b)=>a+Number(b.amount||0),0);
-  const fee=done.reduce((a,b)=>a+Number(b.platformFee||0),0);
-  const listing=done.reduce((a,b)=>a+Number(b.listingFee||0),0);
-  const reward=db.rewardLedger.filter(r=>r.type==="商品等值回饋金發放").reduce((a,b)=>a+Number(b.amount||0),0);
-  const cashoutPaid=db.rewardLedger.filter(r=>r.type.includes("提領完成")).reduce((a,b)=>a+Math.abs(Number(b.amount||0)),0);
-  return `
-    ${title("報表","只以審核通過資料計算；上架費依廠商百分比快照計算。")}
-    <div class="grid4">
-      <div class="stat"><small>完成商品金額</small><strong>${money(sales)}</strong><em>商品付款通過</em></div>
-      <div class="stat"><small>平台手續費</small><strong>${money(fee)}</strong><em>系統設定比例</em></div>
-      <div class="stat"><small>上架費</small><strong>${money(listing)}</strong><em>廠商級%計算</em></div>
-      <div class="stat"><small>已發等值回饋</small><strong>${money(reward)}</strong><em>商品等值回饋</em></div>
-      <div class="stat"><small>已完成提領</small><strong>${money(cashoutPaid)}</strong><em>公司付款 + 媒合付款</em></div>
-    </div>`;
-}
-function adminLogs(){return`${title("操作紀錄","所有關鍵操作保留紀錄。")}<div class="card">${db.logs.length?`<div class="table-wrap"><table><thead><tr><th>時間</th><th>操作者</th><th>身份</th><th>動作</th><th>內容</th></tr></thead><tbody>${db.logs.map(l=>`<tr><td>${l.createdAt}</td><td>${l.actor}</td><td>${l.role}</td><td>${l.action}</td><td>${l.detail}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">尚無紀錄。</div>`}</div>`}
-function adminSettings(){
-  if(!hasPerm("systemSettings"))return`<div class="empty">權限不足</div>`;
-  return`${title("系統設定","負責人或程式開發者可修改。")}<div class="card"><div class="grid">
-    <div><label>平台手續費 %</label><input id="setFee" type="number" value="${db.settings.platformFeeRate}"></div>
-    <div><label>點數加成 %</label><input id="setBonus" type="number" value="${db.settings.defaultBonusRate}"></div>
-    <div><label>加成帳戶名稱</label><input id="setBonusName" value="${db.settings.bonusName}"></div>
-    <div><label>可提領回饋金名稱</label><input id="setRewardName" value="${db.settings.customerRewardName}"></div>
-  </div><br><button onclick="saveSettings()">儲存設定</button></div>`;
-}
-function adminAccounts(){
-  const editable=db.admins.filter(a=>canEditAdmin(a));
-  return`${title("後台權限","程式開發者可設定負責人與主管權限；負責人可設定主管權限。")}
-  <div class="card">${editable.length?editable.map(a=>`
-    <div class="mini" style="margin-bottom:14px;">
-      <b>${a.name}｜${ROLE[a.adminLevel]}｜${a.username}</b>
-      <div class="perm" style="margin-top:10px;">
-        ${PERMS.map(p=>`<label><input type="checkbox" id="perm_${a.id}_${p[0]}" ${a.permissions&&a.permissions[p[0]]?"checked":""} ${a.adminLevel===ADMIN.OWNER&&p[0]==="manageAdmins"?"disabled":""}>${p[1]}</label>`).join("")}
-      </div>
-      <br><button onclick="saveAdminPerms('${a.id}')">儲存權限</button>
-    </div>`).join(""):`<div class="empty">沒有可編輯的後台帳號。</div>`}</div>`;
-}
-
-function setLogin(x){loginMode=x;render()}
-function go(x){page=x;render()}
-function login(){
-  const u=document.getElementById("loginUser").value.trim(), p=document.getElementById("loginPass").value.trim();
-  let acc=null;
-  if(loginMode==="customer"){
-    acc=db.customers.find(x=>x.username===u&&x.password===p);
-    if(acc){session={role:"customer",id:acc.id};}
-  }
-  if(loginMode==="supplier"){
-    acc=db.suppliers.find(x=>x.username===u&&x.password===p);
-    if(acc){session={role:"supplier",supplierId:acc.id};}
-    if(!acc){
-      const staff=db.supplierUsers.find(x=>x.username===u&&x.password===p);
-      if(staff){acc=staff;session={role:"supplier_staff",staffId:staff.id,supplierId:staff.supplierId};}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#eaf9f7" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="帳戶Demo" />
+  <title>會員帳戶 Demo iPhone 單檔版</title>
+  <style>
+    :root{
+      --teal:#079b92;
+      --teal-dark:#057d77;
+      --mint:#e7f8f5;
+      --mint-2:#d9f4f1;
+      --text:#17212b;
+      --muted:#66727c;
+      --line:#dfe7ea;
+      --card:#fff;
+      --brown:#a66b3e;
+      --shadow:0 16px 34px rgba(37,68,73,.10);
+      --radius:24px;
+      font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;
     }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;min-height:100%;background:#eef8f7;color:var(--text)}
+    body{display:flex;justify-content:center}
+    button,input{font:inherit}
+    .phone{width:100%;max-width:430px;min-height:100vh;position:relative;background:linear-gradient(145deg,#fff 0%,#effafa 28%,#fff7f7 58%,#eaf7f5 100%);overflow:hidden}
+    .phone:before{content:"";position:absolute;right:-145px;top:78px;width:430px;height:430px;border-radius:50%;background:radial-gradient(circle at 40% 30%,rgba(126,220,214,.45),rgba(255,255,255,.2) 55%,rgba(255,255,255,0) 72%);border:1px solid rgba(255,255,255,.8)}
+    .phone:after{content:"";position:absolute;left:-150px;top:300px;width:330px;height:330px;border-radius:50%;background:radial-gradient(circle,rgba(255,212,212,.38),rgba(255,255,255,0) 70%)}
+    .screen{position:relative;z-index:1;min-height:100vh;display:none;padding:0 0 calc(86px + env(safe-area-inset-bottom))}
+    .screen.active{display:block}
+    .status{display:none}
+    .status-right{display:flex;gap:7px;align-items:center;font-size:13px}
+    .sig{width:22px;height:16px;display:grid;grid-template-columns:repeat(4,4px);gap:2px;align-items:end}
+    .sig i{display:block;background:#000;border-radius:3px}.sig i:nth-child(1){height:6px}.sig i:nth-child(2){height:9px}.sig i:nth-child(3){height:12px}.sig i:nth-child(4){height:15px}
+    .wifi{width:18px;height:14px;position:relative}.wifi:before,.wifi:after{content:"";position:absolute;left:50%;transform:translateX(-50%);border:3px solid #000;border-color:#000 transparent transparent transparent;border-radius:50%}.wifi:before{width:18px;height:18px;top:1px}.wifi:after{width:9px;height:9px;top:7px}.battery{background:#000;color:#fff;border-radius:6px;padding:2px 7px;font-weight:800;font-size:13px;line-height:1}
+    .icon-btn{border:0;background:transparent;color:var(--teal);padding:0;display:inline-flex;align-items:center;justify-content:center}.top-actions{display:flex;justify-content:space-between;align-items:center;padding:34px 24px 0}.right-actions{display:flex;gap:26px}.bell{position:relative;width:42px;height:37px;display:inline-flex;align-items:center;justify-content:center}.bell img{display:block;width:42px;height:37px;object-fit:contain}.x{font-size:36px;line-height:1;color:var(--teal)}
+    .login-hero{position:relative;min-height:340px;padding:32px 24px 0}.brand{padding:56px 0 0;display:flex;gap:14px;align-items:center}.brand-logo{width:54px;height:54px;border-radius:50%;background:linear-gradient(145deg,#f45050,#b91121);box-shadow:inset 0 2px 5px rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px;text-align:center;line-height:1.05}.brand-text{color:var(--teal-dark);font-weight:900;font-size:22px;line-height:1.1}.brand-text small{display:block;font-size:14px;letter-spacing:.3px;margin-top:4px}.login-bird{position:absolute;right:36px;top:208px;width:86px;height:64px}.login-bird .face{position:absolute;right:0;bottom:0;width:72px;height:59px;border-radius:50% 50% 38% 38%;background:#f7f7f5;border:1px solid #ededed}.login-bird .wing{position:absolute;left:0;bottom:0;width:30px;height:28px;background:#9ca0a1;border-radius:28px 28px 8px 22px}.login-bird .eye{position:absolute;top:21px;width:8px;height:8px;border-radius:50%;background:#111}.login-bird .e1{left:22px}.login-bird .e2{right:18px}.login-bird .beak{position:absolute;left:37px;top:32px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #f2a51c}.login-bird .hair{position:absolute;left:34px;top:-10px;width:20px;height:20px;border-top:3px solid #999;border-radius:50%;transform:rotate(28deg)}
+    .login-card{margin-top:-6px;background:#fff;border-radius:24px 24px 0 0;padding:30px 24px 34px;min-height:560px;box-shadow:0 -12px 34px rgba(39,67,71,.08)}
+    .login-card h1{margin:0 0 28px;font-size:24px;letter-spacing:.5px}.field{height:50px;border:1px solid #d8dde0;background:#fafafa;border-radius:6px;display:flex;align-items:center;padding:0 12px;margin-bottom:18px;color:#4e5962}.field label{min-width:106px;font-size:18px;color:#5f6870}.field input{border:0;outline:0;background:transparent;width:100%;font-size:18px;font-weight:600;color:#182029}.field input::placeholder{font-weight:500;color:#6a737b}.field .eye{margin-left:auto;color:var(--teal);font-size:26px}.remember{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-size:18px;margin:-4px 0 22px;color:#3e474e}.check{width:30px;height:30px;background:var(--teal);border-radius:9px;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center}.forgot{text-align:right;color:var(--teal);font-weight:800;font-size:17px;margin-top:-6px;margin-bottom:24px}.login-button{width:100%;height:58px;border:0;border-radius:6px;background:var(--teal);color:#fff;font-weight:900;font-size:20px}.login-button:active{transform:scale(.995)}.sep{border:0;border-top:1px dashed #d9dfe2;margin:26px 0 26px}.login-methods{display:grid;grid-template-columns:1fr 1fr;text-align:center;color:var(--teal);font-weight:900;font-size:18px}.method{border:0;background:transparent;color:inherit}.method-circle{width:62px;height:62px;border-radius:50%;background:#d9f3f0;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:27px}
+    .home-header{padding:16px 24px 0}.home-icons{display:flex;align-items:center;justify-content:space-between}.home-icons .right-actions{gap:24px}.greeting{margin-top:40px;font-size:20px;font-weight:800;color:#37424b}.asset{font-size:48px;line-height:1.05;font-weight:900;margin:18px 0 14px;letter-spacing:.5px}.asset-label{font-size:19px;color:#424c55;display:flex;gap:8px;align-items:center}.home-bird{display:none!important}.home-bird img{display:none!important}
+    .account-card{margin:28px 16px 0;background:#fff;border-radius:10px;box-shadow:var(--shadow);padding:24px 20px 20px}.account-row{display:flex;justify-content:space-between;gap:10px}.account-title{font-size:25px;font-weight:900}.account-sub{font-size:20px;color:#59646d;margin-top:20px}.account-balance{font-size:23px;font-weight:900;text-align:right}.play{display:inline-block;width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-left:12px solid var(--teal);margin-left:7px}.account-actions{text-align:right;margin-top:34px;color:var(--teal);font-weight:900;font-size:18px}.account-actions span{color:#aab2b7;margin:0 20px}.adjust{text-align:center;margin:28px 0;color:var(--teal);font-size:18px;font-weight:900}.promo{margin:0 16px 24px;background:#fff;border-radius:22px;box-shadow:var(--shadow);padding:20px 16px}.promo-row{display:grid;grid-template-columns:58px 1fr auto 18px;align-items:center;gap:10px;padding:16px 0;border-bottom:1px dashed #d8e0e3}.promo-row:last-child{border-bottom:0}.promo-ico{width:50px;height:50px;border-radius:50%;background:#dff5f2;color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:26px}.promo-title{font-weight:900;font-size:21px}.promo-sub{font-size:15px;color:#5d6870;margin-top:6px}.outline{border:1.5px solid var(--teal);background:#fff;color:var(--teal);border-radius:6px;padding:9px 13px;font-weight:900;font-size:17px}.chev{font-size:30px;color:#606a72}.products{margin:0 16px 24px;background:#fff;border-radius:20px;box-shadow:var(--shadow);display:grid;grid-template-columns:1fr 1fr;padding:18px}.product{min-height:110px;padding:8px 8px 12px;position:relative}.product:nth-child(1),.product:nth-child(2){border-bottom:1px dashed #d8e0e3}.product:nth-child(1),.product:nth-child(3){border-right:1px dashed #d8e0e3}.product h3{margin:0;font-size:20px}.product p{margin:8px 0 0;color:#647079;font-size:15px;line-height:1.35}.prod-ico{position:absolute;right:14px;bottom:12px;color:#7bcfc8;font-size:32px}.rates{margin:0 0 28px;background:#fff;border-radius:20px;box-shadow:var(--shadow);padding:20px 12px 18px}.rates-head{display:flex;justify-content:space-between;align-items:center;padding:0 10px 18px}.rates h2{font-size:24px;margin:0}.more{color:var(--teal);font-weight:900;font-size:18px}.rate-grid{display:grid;grid-template-columns:52px repeat(4,1fr);align-items:center}.rate-labels{font-size:15px;font-weight:800;color:#47515a;display:flex;flex-direction:column;gap:25px}.rate-labels .sell{color:var(--brown)}.rate{min-height:148px;border:1px solid #e0e5e8;border-radius:7px;text-align:center;margin-left:4px;padding:0 2px 8px}.flag{width:27px;height:22px;margin:-12px auto 6px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:18px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}.rate-title{font-weight:900;font-size:19px;margin-bottom:14px}.rate-num{font-size:16px;line-height:1.55}.rate-num.sell{color:var(--brown)}.spark{height:22px;margin:8px auto 0;width:44px}.updated{font-size:13px;color:#7b858c;margin:18px 10px 0}.notice{margin:0 12px;background:#e9fbf8;border:1px solid #d7f1ee;border-radius:15px;padding:18px 16px;display:flex;gap:12px;line-height:1.55;color:#2d3942;font-size:16px}.notice .promo-ico{width:42px;height:42px;font-size:22px;flex:none}.note{margin:0 16px 24px;background:#e9fbf8;border-radius:16px;padding:18px 18px;font-size:20px;font-weight:800;display:flex;justify-content:space-between;color:#24313a}.tabbar{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(255,255,255,.96);height:82px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr);box-shadow:0 -8px 20px rgba(34,57,60,.08);z-index:10}.tab{border:0;background:transparent;color:#606c75;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:14px}.tab .ti{font-size:26px;line-height:1}.tab.active{color:var(--teal);font-weight:900}.tab.active .pill{background:#dff5f2;border-radius:18px;padding:6px 10px 3px}.lower-spacer{height:12px}.home-ind{position:fixed;left:50%;transform:translateX(-50%);bottom:5px;width:140px;height:5px;border-radius:5px;background:#000;z-index:11;max-width:33vw}.demo-badge{position:fixed;right:10px;top:58px;z-index:20;background:rgba(255,255,255,.9);border:1px solid rgba(7,155,146,.35);color:var(--teal);border-radius:99px;padding:4px 9px;font-size:12px;font-weight:800}.hidden{display:none!important}@media (min-width:700px){body{background:#d7e6e5}.phone{box-shadow:0 0 0 1px #ccd,0 20px 80px rgba(0,0,0,.18)}}
+  .home-bird{display:none!important}.home-bird *{display:none!important}
+  .sub-balance{font-size:18px;font-weight:700;color:#59646d;white-space:nowrap}
+  
+.account-balance{cursor:pointer}
+.detail-screen{background:#e9f5f4}
+.detail-hero{
+  background:linear-gradient(180deg,#079b92 0%,#078d86 100%);
+  color:#fff;
+  padding:22px 12px 0;
+  min-height:374px;
+  position:relative;
+}
+.detail-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:2px 2px 22px;
+}
+.detail-back{
+  border:0;
+  background:transparent;
+  color:#fff;
+  font-size:34px;
+  line-height:1;
+  padding:0;
+}
+.detail-title{
+  font-size:30px;
+  font-weight:900;
+  letter-spacing:.5px;
+  margin:18px 0 14px;
+}
+.detail-title.compact{
+  text-align:center;
+  font-size:22px;
+  margin:2px 0 24px;
+}
+.detail-intro{
+  font-size:18px;
+  color:rgba(255,255,255,.9);
+}
+.detail-intro b{
+  font-size:20px;
+  margin-left:12px;
+}
+.detail-intro-link{
+  color:#fff;
+  font-weight:800;
+  font-size:18px;
+}
+.deposit-tabs{
+  margin:28px 0 22px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  background:#04706b;
+  border-radius:999px;
+  overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.deposit-tab{
+  border:0;
+  padding:16px 10px;
+  font-size:20px;
+  font-weight:900;
+  color:#fff;
+  background:transparent;
+}
+.deposit-tab.active{
+  background:linear-gradient(135deg,#f7b266,#d97b3f);
+  box-shadow:0 6px 12px rgba(0,0,0,.12);
+  border-radius:999px;
+}
+.detail-total{
+  margin:34px auto 0;
+  text-align:center;
+  font-size:20px;
+  font-weight:500;
+  position:relative;
+  z-index:1;
+}
+.detail-total .eye-mark{
+  font-size:28px;
+  vertical-align:-3px;
+  margin-left:6px;
+}
+.detail-total strong{
+  display:block;
+  font-size:36px;
+  line-height:1.1;
+  margin-top:8px;
+}
+.detail-illustration{
+  position:absolute;
+  left:36px;
+  right:18px;
+  bottom:38px;
+  height:120px;
+  opacity:.18;
+  border-radius:28px;
+  background:
+    radial-gradient(circle at 86% 68%,rgba(255,255,255,.34) 0 24%,transparent 25%),
+    linear-gradient(90deg,transparent 0 10%,rgba(255,255,255,.38) 10% 18%,transparent 18% 100%);
+}
+.detail-actions{
+  position:absolute;
+  left:72px;
+  right:72px;
+  bottom:-23px;
+  height:58px;
+  background:#fff;
+  border-radius:13px;
+  display:grid;
+  grid-template-columns:1fr 1px 1fr;
+  align-items:center;
+  box-shadow:0 10px 22px rgba(0,0,0,.10);
+  color:var(--teal);
+  font-size:22px;
+  font-weight:900;
+  z-index:3;
+}
+.detail-actions .divider{height:34px;background:#d7dfe2}
+.detail-action{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  align-items:center;
+}
+.detail-content{
+  background:#e9f5f4;
+  padding:54px 12px calc(96px + env(safe-area-inset-bottom));
+}
+.info-title{
+  text-align:right;
+  color:var(--teal);
+  font-weight:900;
+  font-size:20px;
+  margin:0 0 16px;
+}
+.deposit-card{
+  background:#fff;
+  border-radius:0 0 12px 0;
+  padding:20px 16px;
+  box-shadow:0 8px 18px rgba(20,60,64,.06);
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+}
+.deposit-card h2{
+  margin:0 0 10px;
+  font-size:24px;
+  font-weight:900;
+}
+.deposit-card .acct{
+  color:#727b82;
+  font-size:18px;
+}
+.deposit-card .copy{
+  color:#9aa2a8;
+  font-size:18px;
+  margin-left:4px;
+}
+.deposit-card .amount{
+  font-size:26px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.detail-updated{
+  color:#727b82;
+  font-size:18px;
+  margin:20px 0 28px;
+}
+.service-section{
+  background:#fff;
+  border-radius:0 0 18px 18px;
+  padding:22px 12px 24px;
+  margin:0 -12px 24px;
+}
+.section-heading{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:24px;
+  font-weight:900;
+  margin:0 0 22px;
+}
+.section-heading:before{
+  content:"";
+  width:6px;
+  height:28px;
+  border-radius:4px;
+  background:var(--teal);
+}
+.limit-row{
+  height:50px;
+  border:1px solid #b9e6e2;
+  background:#eefdfb;
+  border-radius:6px;
+  display:grid;
+  grid-template-columns:42px 1fr auto;
+  align-items:center;
+  padding:0 12px;
+  color:#26343d;
+  font-size:18px;
+  font-weight:800;
+  margin-bottom:12px;
+}
+.service-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+}
+.service-item{
+  border:1px solid #e1e8ea;
+  background:#fff;
+  min-height:88px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  color:#26343d;
+  font-size:16px;
+}
+.service-item .sicon{
+  color:var(--teal);
+  font-size:28px;
+}
+.message-card{
+  margin:0 0 18px;
+  border:1px solid #b9e6e2;
+  background:#ecfffd;
+  border-radius:12px;
+  padding:18px 16px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+}
+.message-card h3{
+  margin:0 0 8px;
+  font-size:22px;
+}
+.message-card p{
+  margin:0;
+  font-size:18px;
+  color:#4e5962;
+}
+.message-card .close{
+  color:var(--teal);
+  font-size:26px;
+  line-height:1;
+}
+.disclaimer{
+  background:#ecfffd;
+  border-radius:12px;
+  padding:16px 18px;
+  color:#3f4b54;
+  font-size:18px;
+  line-height:1.7;
+}
+@media (max-width:380px){
+  .service-grid{grid-template-columns:repeat(2,1fr)}
+  .detail-actions{left:36px;right:36px}
+  .deposit-card .amount{font-size:22px}
+}
+
+  
+.bell{
+  width:42px!important;
+  height:37px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:visible!important;
+}
+.bell-svg{
+  width:42px;
+  height:37px;
+  display:block;
+}
+.bell img{display:none!important}
+
+  
+.login-bird{
+  position:absolute!important;
+  right:34px!important;
+  top:210px!important;
+  width:92px!important;
+  height:auto!important;
+  display:block!important;
+}
+.login-bird img{
+  width:92px!important;
+  height:auto!important;
+  display:block!important;
+  object-fit:contain!important;
+}
+.login-bird .face,
+.login-bird .wing,
+.login-bird .eye,
+.login-bird .beak,
+.login-bird .hair{
+  display:none!important;
+}
+
+  
+.settings-modal{
+  position:fixed;
+  inset:0;
+  z-index:99;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  background:rgba(16,31,35,.38);
+  backdrop-filter:blur(8px);
+}
+.settings-modal.active{
+  display:flex;
+}
+.settings-panel{
+  width:100%;
+  max-width:390px;
+  background:#fff;
+  border-radius:24px;
+  padding:24px 20px 20px;
+  box-shadow:0 18px 48px rgba(0,0,0,.22);
+}
+.settings-panel h2{
+  margin:0 0 8px;
+  font-size:24px;
+  font-weight:900;
+  color:#17212b;
+}
+.settings-panel p{
+  margin:0 0 20px;
+  color:#66727c;
+  font-size:15px;
+  line-height:1.5;
+}
+.settings-field{
+  margin-bottom:16px;
+}
+.settings-field label{
+  display:block;
+  font-weight:900;
+  margin-bottom:8px;
+  color:#24313a;
+  font-size:17px;
+}
+.settings-field input{
+  width:100%;
+  height:52px;
+  border:1px solid #d8dde0;
+  background:#fafafa;
+  border-radius:10px;
+  padding:0 14px;
+  outline:none;
+  font-size:20px;
+  font-weight:800;
+  color:#17212b;
+}
+.settings-field input:focus{
+  border-color:var(--teal);
+  box-shadow:0 0 0 3px rgba(7,155,146,.12);
+}
+.settings-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:20px;
+}
+.settings-btn{
+  height:52px;
+  border-radius:10px;
+  font-weight:900;
+  font-size:18px;
+  border:1.5px solid var(--teal);
+}
+.settings-btn.secondary{
+  color:var(--teal);
+  background:#fff;
+}
+.settings-btn.primary{
+  color:#fff;
+  background:var(--teal);
+}
+.settings-note{
+  margin-top:14px;
+  font-size:13px;
+  color:#7b858c;
+  line-height:1.45;
+}
+
+  </style>
+</head>
+<body>
+  <div class="phone">
+
+    <div id="settingsModal" class="settings-modal active" role="dialog" aria-modal="true" aria-label="啟動設定">
+      <div class="settings-panel">
+        <h2>啟動設定</h2>
+        <p>請設定登入後顯示的使用者名字，以及首頁與明細頁連動的臺幣存款金額。</p>
+
+        <div class="settings-field">
+          <label for="settingsName">使用者名字</label>
+          <input id="settingsName" type="text" value="貴賓" placeholder="例如：冠佑" autocomplete="off" />
+        </div>
+
+        <div class="settings-field">
+          <label for="settingsAmount">臺幣存款金額</label>
+          <input id="settingsAmount" type="text" value="2,580,320" inputmode="numeric" placeholder="例如：2580320" autocomplete="off" />
+        </div>
+
+        <div class="settings-actions">
+          <button id="settingsDefaultBtn" class="settings-btn secondary" type="button">恢復預設</button>
+          <button id="settingsSaveBtn" class="settings-btn primary" type="button">套用</button>
+        </div>
+
+        <div class="settings-note">按「套用」後，資產總額、臺幣存款、活期存款與我的臺幣頁面金額會同步更新。</div>
+      </div>
+    </div>
+
+    
+    <section id="loginScreen" class="screen active" aria-label="登入畫面">
+      <div class="status"><div id="loginTime">8:52</div><div class="status-right"><div class="sig"><i></i><i></i><i></i><i></i></div><span>5G</span><div class="battery">69</div></div></div>
+      <button class="icon-btn" style="position:absolute;right:22px;top:36px;z-index:2" aria-label="關閉"><span class="x">×</span></button>
+      <div class="login-hero">
+        <div class="brand">
+          <div class="brand-logo">Account<br>Demo</div>
+          <div class="brand-text">會員帳戶中心<small>LOGIN DEMO</small></div>
+        </div>
+        <div class="login-bird" aria-hidden="true"><img src="data:image/png;base64,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" alt="" /></div>
+      </div>
+      <div class="login-card">
+        <h1>歡迎回來，請登入</h1>
+        <div class="field"><label>身分證字號</label><input value="R12408****" aria-label="身分證字號" /></div>
+        <div class="remember"><span class="check">✓</span><span>記住我</span></div>
+        <div class="field"><input id="userCode" placeholder="使用者代號" aria-label="使用者代號" /><span class="eye">◡</span></div>
+        <div class="field"><input id="password" placeholder="網銀密碼" aria-label="網銀密碼" type="password" /><span class="eye">◡</span></div>
+        <div class="forgot">忘記使用者代號/密碼</div>
+        <button id="loginBtn" class="login-button" type="button">登入</button>
+        <hr class="sep" />
+        <div class="login-methods">
+          <button id="bioBtn" class="method" type="button"><div class="method-circle">◎</div><div>指紋/臉部登入</div></button>
+          <button id="patternBtn" class="method" type="button"><div class="method-circle">∿</div><div>圖形登入</div></button>
+        </div>
+      </div>
+    </section>
+
+    <section id="homeScreen" class="screen" aria-label="登入後畫面">
+      <div class="status"><div id="homeTime">8:52</div><div class="status-right"><div class="sig"><i></i><i></i><i></i><i></i></div><span>5G</span><div class="battery">69</div></div></div>
+      <div class="home-header">
+        <div class="home-icons">
+          <button class="icon-btn bell" aria-label="通知"><svg class="bell-svg" viewBox="0 0 42 37" aria-hidden="true">
+  <path d="M20.5 30.8c2.6 0 4.6-1.4 5.1-3.4H15.4c.5 2 2.5 3.4 5.1 3.4Z" fill="#079b92"/>
+  <path d="M9.8 25.8h21.4c1.5 0 2.2-1.8 1.1-2.8l-1.6-1.5c-.8-.8-1.2-1.8-1.2-2.9v-5.2c0-4.6-3.3-8.5-7.8-9.3V2.9c0-.7-.6-1.3-1.3-1.3s-1.3.6-1.3 1.3v1.2c-4.5.8-7.8 4.7-7.8 9.3v5.2c0 1.1-.4 2.1-1.2 2.9L8.7 23c-1.1 1-.4 2.8 1.1 2.8Z" fill="none" stroke="#079b92" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="31.6" cy="5.4" r="4.2" fill="#ff5a4f"/>
+</svg></button>
+          <div class="right-actions"><button class="icon-btn" aria-label="搜尋">⌕</button><button class="icon-btn" aria-label="客服">☏</button><button class="icon-btn" aria-label="服務">▣</button></div>
+        </div>
+        <div class="greeting">您好，<span id="displayName">貴賓</span></div>
+        <div class="asset linked-amount">2,580,320</div>
+        <div class="asset-label">資產總額 <span style="color:var(--teal);font-size:23px">◉</span></div>
+      </div>
+      <div class="home-bird hidden" aria-hidden="true"></div>
+      <div class="account-card">
+        <div class="account-row"><div><div class="account-title">臺幣存款</div><div class="account-sub">活期存款</div></div><div><div class="account-balance linked-amount">2,580,320 <span class="play"></span></div><div class="account-sub linked-amount sub-balance" style="text-align:right">2,580,320</div></div></div>
+        <div class="account-actions">看明細 <span>|</span> 轉帳</div>
+      </div>
+      <div class="adjust">☷ 調整顯示內容</div>
+      <div class="promo">
+        <div class="promo-row"><div class="promo-ico">🎁</div><div><div class="promo-title">權益優惠</div><div class="promo-sub">精選優惠與專屬活動</div></div><button class="outline">領次數</button><div class="chev">›</div></div>
+        <div class="promo-row"><div class="promo-ico">▣</div><div><div class="promo-title">立即擁有會員卡</div><div class="promo-sub">多樣卡片任你選</div></div><button class="outline">申辦去</button><div class="chev">›</div></div>
+        <div class="promo-row"><div class="promo-ico">＄</div><div><div class="promo-title">【信貸專區】</div><div class="promo-sub">最高可貸 <b style="font-size:24px;color:#1d2932">800</b> 萬</div></div><button class="outline">去申貸</button><div class="chev">›</div></div>
+      </div>
+      <div class="products">
+        <div class="product"><h3>證券帳戶</h3><p>線上開戶・投資台股</p><span class="prod-ico">💰</span></div>
+        <div class="product"><h3>貸款</h3><p>信貸房貸・優惠懶人包</p><span class="prod-ico">🏠</span></div>
+        <div class="product"><h3>信用卡</h3><p>立享更多優惠</p><span class="prod-ico">💳</span></div>
+        <div class="product"><h3>外幣優惠定存</h3><p>7天年息最高8%</p><span class="prod-ico">🌐</span></div>
+      </div>
+      <div class="rates">
+        <div class="rates-head"><h2>銀行匯率</h2><div class="more">看更多</div></div>
+        <div class="rate-grid">
+          <div class="rate-labels"><span>買進</span><span class="sell">賣出</span></div>
+          <div class="rate"><div class="flag">🇺🇸</div><div class="rate-title">美元</div><div class="rate-num">31.6860</div><div class="rate-num sell">31.8860</div><svg class="spark" viewBox="0 0 50 24"><path d="M2 20 L8 18 L13 21 L19 13 L25 9 L31 4 L36 10 L42 8 L48 9" fill="none" stroke="#8aa0a8" stroke-width="2"/></svg></div>
+          <div class="rate"><div class="flag">🇯🇵</div><div class="rate-title">日圓</div><div class="rate-num">0.1938</div><div class="rate-num sell">0.1993</div><svg class="spark" viewBox="0 0 50 24"><path d="M2 8 L8 12 L14 10 L21 11 L27 8 L34 14 L42 15 L48 20" fill="none" stroke="#8aa0a8" stroke-width="2"/></svg></div>
+          <div class="rate"><div class="flag">🇨🇳</div><div class="rate-title">人民幣</div><div class="rate-num">4.6281</div><div class="rate-num sell">4.6992</div><svg class="spark" viewBox="0 0 50 24"><path d="M2 20 L9 17 L16 19 L22 12 L28 9 L35 4 L42 6 L48 11" fill="none" stroke="#8aa0a8" stroke-width="2"/></svg></div>
+          <div class="rate"><div class="flag">🇦🇺</div><div class="rate-title">澳幣</div><div class="rate-num">21.7230</div><div class="rate-num sell">22.0610</div><svg class="spark" viewBox="0 0 50 24"><path d="M2 6 L8 10 L15 8 L20 13 L27 14 L34 16 L41 17 L48 22" fill="none" stroke="#8aa0a8" stroke-width="2"/></svg></div>
+        </div>
+        <div class="updated">更新 2026/06/24 18:14:04</div>
+      </div>
+      <div class="notice"><div class="promo-ico">📣</div><div>信用卡服務每日 23:00–06:00 進行例行維護，部分功能內容將暫時無法使用，如作業順利完成，將提前開放服務，造成不便，尚祈見諒。</div></div>
+      <div class="lower-spacer"></div>
+      <div class="note">備註 <span style="color:var(--teal)">⌄</span></div>
+    </section>
+
+
+    <section id="detailScreen" class="screen detail-screen" aria-label="臺幣帳戶明細">
+      <div class="detail-hero">
+        <div class="detail-top">
+          <button id="detailBackBtn" class="detail-back" type="button" aria-label="返回">‹</button>
+          <div class="detail-intro-link">臺幣介紹 <span class="play"></span></div>
+        </div>
+        <div class="detail-title">我的臺幣</div>
+        <div class="detail-intro">臺幣總額 <b class="linked-amount">2,580,320</b></div>
+        <div class="deposit-tabs">
+          <button class="deposit-tab active" type="button">活期存款</button>
+          <button class="deposit-tab" type="button">定期存款</button>
+        </div>
+        <div class="detail-illustration" aria-hidden="true"></div>
+        <div class="detail-total">
+          活期存款總額 <span class="eye-mark">◉</span>
+          <strong class="linked-amount">2,580,320</strong>
+        </div>
+        <div class="detail-actions">
+          <div class="detail-action">↻ 轉帳</div>
+          <div class="divider"></div>
+          <div class="detail-action">⌁ 換匯</div>
+        </div>
+      </div>
+      <div class="detail-content">
+        <div class="info-title">帳戶資訊</div>
+        <div class="deposit-card">
+          <div>
+            <h2>活期存款</h2>
+            <div class="acct">090540148063 <span class="copy">▣</span></div>
+          </div>
+          <div class="amount"><span class="linked-amount">2,580,320</span> <span class="play"></span></div>
+        </div>
+        <div class="detail-updated">更新時間：2026/06/24 22:46:12</div>
+
+        <div class="service-section">
+          <div class="section-heading">其他服務</div>
+          <div class="limit-row"><span style="color:var(--teal);font-size:26px">▣</span><span>金融卡片管理/限額設定</span><span class="play"></span></div>
+          <div class="service-grid">
+            <div class="service-item"><div class="sicon">▤</div><div>存摺封面</div></div>
+            <div class="service-item"><div class="sicon">⇩</div><div>帳務下載</div></div>
+            <div class="service-item"><div class="sicon">▥</div><div>收支管理</div></div>
+            <div class="service-item"><div class="sicon">⌕</div><div>開戶進度</div></div>
+            <div class="service-item"><div class="sicon">▧</div><div>生活繳費</div></div>
+          </div>
+        </div>
+
+        <div class="message-card">
+          <div>
+            <h3>無所事事</h3>
+            <p>來換小海豹</p>
+          </div>
+          <div class="close">×</div>
+        </div>
+        <div class="disclaimer">
+          <div>1. 本頁資料，不得做為「存款餘額證明」或往來憑證之用。</div>
+          <div style="margin-top:14px">2. 餘額項目，不含當日本交票與次交票金額。</div>
+        </div>
+      </div>
+    </section>
+
+
+    <nav class="tabbar" aria-label="底部選單">
+      <button class="tab active" type="button"><span class="pill"><span class="ti">●</span><br>我的</span></button>
+      <button class="tab" type="button"><span class="ti">▭</span><span>信用卡</span></button>
+      <button class="tab" type="button"><span class="ti">☆</span><span>常用</span></button>
+      <button class="tab" type="button"><span class="ti">⌂</span><span>理財</span></button>
+      <button class="tab" type="button"><span class="ti">☰</span><span>更多</span></button>
+    </nav>
+    <div class="home-ind"></div>
+  </div>
+<script>
+(function(){
+const login = document.getElementById('loginScreen');
+  const home = document.getElementById('homeScreen');
+  const loginBtn = document.getElementById('loginBtn');
+  const bioBtn = document.getElementById('bioBtn');
+  const patternBtn = document.getElementById('patternBtn');
+
+  const settingsModal = document.getElementById('settingsModal');
+  const settingsName = document.getElementById('settingsName');
+  const settingsAmount = document.getElementById('settingsAmount');
+  const settingsSaveBtn = document.getElementById('settingsSaveBtn');
+  const settingsDefaultBtn = document.getElementById('settingsDefaultBtn');
+  const displayName = document.getElementById('displayName');
+
+  function formatMoney(raw){
+    const digits = String(raw || '').replace(/[^\d]/g, '');
+    if (!digits) return '0';
+    return Number(digits).toLocaleString('en-US');
   }
-  if(loginMode==="admin"){
-    acc=db.admins.find(x=>x.username===u&&x.password===p);
-    if(acc){session={role:"admin",id:acc.id};}
+
+  function applySettings(){
+    const name = (settingsName.value || '貴賓').trim() || '貴賓';
+    const amount = formatMoney(settingsAmount.value);
+
+    if (displayName) displayName.textContent = name;
+
+    document.querySelectorAll('.linked-amount').forEach(el => {
+      if (el.classList.contains('account-balance')) {
+        el.innerHTML = amount + ' <span class="play"></span>';
+        el.addEventListener('click', goDetail);
+      } else {
+        el.textContent = amount;
+      }
+    });
+
+    try {
+      localStorage.setItem('demoDisplayName', name);
+      localStorage.setItem('demoTwdAmount', amount);
+    } catch(e) {}
+
+    settingsModal.classList.remove('active');
   }
-  if(!acc)return alert("帳號或密碼錯誤");
-  if(acc.status==="disabled")return alert("此帳號已停用");
-  sessionStorage.setItem(SESSION,JSON.stringify(session));page="home";log("登入",`${acc.name||acc.companyName||acc.username} 登入`);render();
-}
-function logout(){session=null;sessionStorage.removeItem(SESSION);page="home";render()}
-function exists(username){return db.customers.some(x=>x.username===username)||db.suppliers.some(x=>x.username===username)||db.supplierUsers.some(x=>x.username===username)||db.admins.some(x=>x.username===username)}
 
-function confirmProduct(productId){
-  const p=db.products.find(x=>x.id===productId);if(!p)return;if(p.stock<=0)return alert("商品已無庫存");
-  const ok=confirm(`確認購買：${p.name}\n總價：${money(p.price)}\n等值回饋金：${money(p.price)}\n\n確認後會立即鎖住庫存，付款資訊才會出現在你的訂單裡。`);
-  if(!ok)return;if(p.stock<=0)return alert("商品已無庫存");
-  p.stock-=1;
-  const fee=Math.round(Number(p.price)*Number(db.settings.platformFeeRate||0)/100);
-  const listing=listingFeeFor(p.supplierId,p.price);
-  db.productOrders.unshift({
-    id:uid("ord"),customerId:me().id,supplierId:p.supplierId,productId:p.id,productName:p.name,
-    amount:Number(p.price),platformFee:fee,supplierAmount:Number(p.price)-fee,listingFee:listing,
-    customerRewardAmount:Number(p.price),payBank:p.payBank,payee:p.payee,payAccount:p.payAccount,payNote:p.payNote,
-    status:"product_order_reserved",createdAt:now()
-  });
-  log("建立商品訂單並鎖庫存",`${me().name} 建立 ${p.name}`);save();alert("已鎖住庫存。請到我的訂單查看付款資訊並上傳付款證明。");page="orders";render();
-}
-function readImage(file,cb){const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(file)}
-function uploadProductProof(orderId){
-  const o=db.productOrders.find(x=>x.id===orderId);if(!o)return;
-  const input=document.getElementById("productProof_"+orderId), file=input&&input.files?input.files[0]:null;if(!file)return alert("請選擇照片檔案");
-  const payer=prompt("付款人姓名：")||"", amount=Number(prompt("付款金額：")||0), last5=prompt("銀行帳號後五碼：")||"";
-  readImage(file,(imageData)=>{
-    let proof=db.productProofs.find(x=>x.orderId===orderId);
-    if(!proof){proof={id:uid("ppf"),orderId,fileName:file.name,payer,amount,last5,imageData,status:"pending_review",createdAt:now()};db.productProofs.unshift(proof)}
-    else{proof.fileName=file.name;proof.payer=payer;proof.amount=amount;proof.last5=last5;proof.imageData=imageData;proof.status="pending_review";proof.updatedAt=now()}
-    o.status="product_order_reviewing";log("上傳商品付款證明",`${me().name} 上傳 ${o.productName}`);save();alert("已上傳，等待後台審核");render();
-  });
-}
-function uploadPointProof(orderId){
-  const o=db.pointOrders.find(x=>x.id===orderId);if(!o)return;
-  const input=document.getElementById("pointProof_"+orderId), file=input&&input.files?input.files[0]:null;if(!file)return alert("請選擇照片檔案");
-  const payer=prompt("付款人姓名：")||"", amount=Number(prompt("付款金額：")||0), last5=prompt("銀行帳號後五碼：")||"";
-  readImage(file,(imageData)=>{
-    let proof=db.pointProofs.find(x=>x.orderId===orderId);
-    if(!proof){proof={id:uid("pf"),orderId,fileName:file.name,payer,amount,last5,imageData,status:"pending_review",createdAt:now()};db.pointProofs.unshift(proof)}
-    else{proof.fileName=file.name;proof.payer=payer;proof.amount=amount;proof.last5=last5;proof.imageData=imageData;proof.status="pending_review"}
-    o.status="pending_review";save();alert("已上傳，等待審核");render();
-  });
-}
-function approveProductProof(proofId){
-  if(!hasPerm("reviewProductPayments"))return alert("權限不足");
-  const proof=db.productProofs.find(x=>x.id===proofId), o=proof?db.productOrders.find(x=>x.id===proof.orderId):null;if(!o)return;
-  if(o.status==="product_order_done")return alert("已完成");
-  const c=db.customers.find(x=>x.id===o.customerId), before=Number(c.customerRewardCredit||0), add=Number(o.customerRewardAmount||0);
-  c.customerRewardCredit=before+add;o.status="product_order_done";o.approvedAt=now();proof.status="approved";proof.approvedAt=now();
-  db.rewardLedger.unshift({id:uid("rl"),customerId:c.id,type:"商品等值回饋金發放",amount:add,before,after:before+add,note:o.productName,createdAt:now()});
-  log("商品付款審核通過",`${c.name} ${o.productName} 等值回饋 ${add}`);save();alert("已通過，訂單完成並發放等值回饋金");render();
-}
-function rejectProductProof(proofId){
-  if(!hasPerm("reviewProductPayments"))return alert("權限不足");
-  const reason=prompt("退回原因：")||"未填寫", proof=db.productProofs.find(x=>x.id===proofId);if(!proof)return;
-  const o=db.productOrders.find(x=>x.id===proof.orderId);
-  if(o){o.status="product_order_rejected";o.rejectReason=reason;const p=db.products.find(x=>x.id===o.productId);if(p)p.stock+=1}
-  proof.status="rejected";proof.reason=reason;log("商品付款審核退回",reason);save();alert("已退回，庫存已釋放");render();
-}
-function createPointOrder(pkgId){
-  const p=db.packages.find(x=>x.id===pkgId);if(!p)return;
-  db.pointOrders.unshift({id:uid("po"),customerId:me().id,title:p.name,cash:p.cash,basePoints:p.basePoints,bonusCredit:bonus(p),status:"pending_review",createdAt:now()});
-  save();alert("已建立付款訂單，請到我的訂單上傳付款證明");page="orders";render();
-}
-function approvePointProof(proofId){
-  if(!hasPerm("reviewPointPayments"))return alert("權限不足");
-  const proof=db.pointProofs.find(x=>x.id===proofId), o=proof?db.pointOrders.find(x=>x.id===proof.orderId):null;if(!o)return;if(o.status==="approved")return alert("已審核");
-  const c=db.customers.find(x=>x.id===o.customerId), pb=Number(c.points||0), pa=Number(o.basePoints||0), bb=Number(c.bonusCredit||0), ba=Number(o.bonusCredit||0);
-  c.points=pb+pa;c.bonusCredit=bb+ba;o.status="approved";proof.status="approved";
-  db.pointLedger.unshift({id:uid("pl"),customerId:c.id,type:"等值點數發放",amount:pa,before:pb,after:pb+pa,note:o.title,createdAt:now()});
-  db.bonusLedger.unshift({id:uid("bl"),customerId:c.id,type:"加成回饋金發放",amount:ba,before:bb,after:bb+ba,note:o.title,createdAt:now()});
-  save();alert("已通過並入帳");render();
-}
-function rejectPointProof(proofId){if(!hasPerm("reviewPointPayments"))return alert("權限不足");const proof=db.pointProofs.find(x=>x.id===proofId);if(!proof)return;proof.status="rejected";const o=db.pointOrders.find(x=>x.id===proof.orderId);if(o)o.status="rejected";save();alert("已退回");render()}
+  function openStartupSettings(){
+    try {
+      const savedName = localStorage.getItem('demoDisplayName');
+      const savedAmount = localStorage.getItem('demoTwdAmount');
+      if (savedName) settingsName.value = savedName;
+      if (savedAmount) settingsAmount.value = savedAmount;
+    } catch(e) {}
 
-function saveReceiveInfo(){
-  const c=me();
-  c.receiveBank=document.getElementById("rcvBank").value.trim();
-  c.receiveName=document.getElementById("rcvName").value.trim();
-  c.receiveAccount=document.getElementById("rcvAccount").value.trim();
-  save();alert("收款資料已儲存");render();
-}
-function createCashout(){
-  const c=me();
-  const amount=Number(document.getElementById("cashoutAmount").value||0);
-  const method=document.getElementById("cashoutMethod").value;
-  const note=document.getElementById("cashoutNote").value.trim();
-  if(amount<=0)return alert("請輸入提領金額");
-  if(amount>Number(c.customerRewardCredit||0))return alert("可提領回饋金不足");
-  if(!c.receiveBank||!c.receiveName||!c.receiveAccount)return alert("請先設定完整收款資料");
-  c.customerRewardCredit-=amount;
-  c.lockedRewardCredit=Number(c.lockedRewardCredit||0)+amount;
-  const status=method==="company"?"cashout_company_pending":"cashout_market_listed";
-  db.cashoutRequests.unshift({id:uid("cashout"),customerId:c.id,method,amount,receiveBank:c.receiveBank,receiveName:c.receiveName,receiveAccount:c.receiveAccount,note,status,createdAt:now()});
-  db.rewardLedger.unshift({id:uid("rl"),customerId:c.id,type:"回饋金提領鎖定",amount:-amount,before:c.customerRewardCredit+amount,after:c.customerRewardCredit,note:method==="company"?"公司付款提領":"媒合提領上架",createdAt:now()});
-  save();alert("提領申請已建立");render();
-}
-function acceptCashout(idv){
-  const r=db.cashoutRequests.find(x=>x.id===idv), c=me();if(!r)return;
-  if(r.customerId===c.id)return alert("不能承接自己的提領單");
-  if(r.status!=="cashout_market_listed")return alert("此提領單已被承接或不可承接");
-  r.status="cashout_market_accepted";
-  r.takerCustomerId=c.id;
-  r.acceptedAt=now();
-  save();alert("已承接。請依收款資料付款後上傳付款證明。");render();
-}
-function uploadCashoutProof(idv){
-  const r=db.cashoutRequests.find(x=>x.id===idv), c=me();if(!r)return;
-  if(r.takerCustomerId!==c.id)return alert("你不是此提領單的承接顧客");
-  const input=document.getElementById("cashoutProof_"+idv), file=input&&input.files?input.files[0]:null;if(!file)return alert("請選擇付款證明照片");
-  const payer=prompt("付款人姓名：")||c.name, amount=Number(prompt("付款金額：")||0), last5=prompt("銀行帳號後五碼：")||"";
-  readImage(file,(imageData)=>{
-    let proof=db.cashoutProofs.find(x=>x.requestId===idv);
-    if(!proof){proof={id:uid("cproof"),requestId:idv,fileName:file.name,payer,amount,last5,imageData,status:"pending_review",createdAt:now()};db.cashoutProofs.unshift(proof)}
-    else{proof.fileName=file.name;proof.payer=payer;proof.amount=amount;proof.last5=last5;proof.imageData=imageData;proof.status="pending_review"}
-    r.status="cashout_market_reviewing";
-    save();alert("已上傳媒合付款證明，等待後台審核");render();
+    settingsModal.classList.add('active');
+    setTimeout(() => settingsName.focus(), 120);
+  }
+
+  settingsAmount.addEventListener('input', () => {
+    const cursorAtEnd = document.activeElement === settingsAmount;
+    settingsAmount.value = formatMoney(settingsAmount.value);
+    if (cursorAtEnd) settingsAmount.setSelectionRange(settingsAmount.value.length, settingsAmount.value.length);
   });
-}
-function approveCompanyCashout(idv){
-  if(!hasPerm("reviewCashouts"))return alert("權限不足");
-  const r=db.cashoutRequests.find(x=>x.id===idv);if(!r)return;
-  const c=db.customers.find(x=>x.id===r.customerId);if(!c)return;
-  c.lockedRewardCredit=Number(c.lockedRewardCredit||0)-Number(r.amount||0);
-  r.status="cashout_company_paid";r.paidAt=now();
-  db.rewardLedger.unshift({id:uid("rl"),customerId:c.id,type:"公司付款提領完成",amount:-Number(r.amount||0),before:Number(c.customerRewardCredit||0),after:Number(c.customerRewardCredit||0),note:"公司端付款完成",createdAt:now()});
-  save();alert("已標記公司付款完成");render();
-}
-function approveMarketCashout(idv){
-  if(!hasPerm("reviewCashouts"))return alert("權限不足");
-  const r=db.cashoutRequests.find(x=>x.id===idv);if(!r)return;
-  const c=db.customers.find(x=>x.id===r.customerId);if(!c)return;
-  const proof=db.cashoutProofs.find(x=>x.requestId===idv);
-  if(proof)proof.status="approved";
-  c.lockedRewardCredit=Number(c.lockedRewardCredit||0)-Number(r.amount||0);
-  r.status="cashout_market_paid";r.paidAt=now();
-  db.rewardLedger.unshift({id:uid("rl"),customerId:c.id,type:"媒合付款提領完成",amount:-Number(r.amount||0),before:Number(c.customerRewardCredit||0),after:Number(c.customerRewardCredit||0),note:"由其他顧客媒合付款完成",createdAt:now()});
-  save();alert("媒合付款已通過，提領完成");render();
-}
-function rejectCashout(idv){
-  if(!hasPerm("reviewCashouts"))return alert("權限不足");
-  const reason=prompt("退回原因：")||"未填寫";
-  const r=db.cashoutRequests.find(x=>x.id===idv);if(!r)return;
-  const c=db.customers.find(x=>x.id===r.customerId);if(!c)return;
-  c.customerRewardCredit=Number(c.customerRewardCredit||0)+Number(r.amount||0);
-  c.lockedRewardCredit=Number(c.lockedRewardCredit||0)-Number(r.amount||0);
-  r.status="cashout_rejected";r.rejectReason=reason;
-  const proof=db.cashoutProofs.find(x=>x.requestId===idv);if(proof)proof.status="rejected";
-  db.rewardLedger.unshift({id:uid("rl"),customerId:c.id,type:"提領退回解除鎖定",amount:Number(r.amount||0),before:Number(c.customerRewardCredit||0)-Number(r.amount||0),after:Number(c.customerRewardCredit||0),note:reason,createdAt:now()});
-  save();alert("已退回並解除鎖定");render();
-}
 
-function createProduct(){
-  if(!hasSupplierPerm("productCreate"))return alert("權限不足");
-  const sid=supplierScopeId();
-  const name=document.getElementById("pName").value.trim(), price=Number(document.getElementById("pPrice").value||0), stock=Number(document.getElementById("pStock").value||0);
-  const payBank=document.getElementById("pPayBank").value.trim(), payee=document.getElementById("pPayee").value.trim(), payAccount=document.getElementById("pPayAccount").value.trim();
-  if(!name||price<=0||stock<=0)return alert("商品名稱、售價、庫存必填");
-  if(!payBank||!payee||!payAccount)return alert("請填寫商品收款銀行、收款人、收款帳號");
-  db.products.unshift({
-    id:uid("prd"),supplierId:sid,name,category:document.getElementById("pCat").value.trim(),emoji:document.getElementById("pEmoji").value.trim()||"📦",
-    stock,price,desc:document.getElementById("pDesc").value.trim(),payBank,payee,payAccount,payNote:document.getElementById("pPayNote").value.trim(),
-    note:document.getElementById("pNote").value.trim(),status:"product_pending",createdAt:now()
+  settingsSaveBtn.addEventListener('click', applySettings);
+  settingsDefaultBtn.addEventListener('click', () => {
+    settingsName.value = '貴賓';
+    settingsAmount.value = '2,580,320';
+    applySettings();
   });
-  save();alert("已送出商品審核");page="supplier_products";render();
-}
-function approveProduct(idv){const p=db.products.find(x=>x.id===idv);if(!p)return;if(!hasPerm("reviewProducts"))return alert("權限不足");p.status="product_active";log("商品上架通過",p.name);save();render()}
-function rejectProduct(idv){const p=db.products.find(x=>x.id===idv);if(!p)return;p.status="product_rejected";save();render()}
-function disableProduct(idv){const p=db.products.find(x=>x.id===idv);if(!p)return;p.status="product_disabled";save();render()}
-function saveShip(orderId){const o=db.productOrders.find(x=>x.id===orderId);if(!o)return;if(o.supplierId!==supplierScopeId())return alert("不能修改其他廠商訂單");o.shipNote=document.getElementById("ship_"+orderId).value;save();alert("已儲存")}
-function saveSupplier(){
-  const s=currentSupplier();if(!s)return;
-  s.companyName=document.getElementById("sCompany").value.trim();
-  s.contactName=document.getElementById("sContact").value.trim();
-  s.bankName=document.getElementById("sBank").value.trim();
-  s.bankAccountName=document.getElementById("sBankName").value.trim();
-  s.bankAccount=document.getElementById("sBankAcc").value.trim();
-  s.settlementNote=document.getElementById("sNote").value.trim();
-  save();alert("已儲存");render();
-}
-function createSupplierStaff(){
-  if(!hasSupplierPerm("staffManage"))return alert("權限不足");
-  const sid=supplierScopeId();
-  const username=document.getElementById("newStaffUser").value.trim();
-  const password=document.getElementById("newStaffPass").value.trim();
-  const name=document.getElementById("newStaffName").value.trim();
-  const role=document.getElementById("newStaffRole").value;
-  if(!username||!password||!name)return alert("帳號、密碼、姓名必填");
-  if(exists(username))return alert("帳號已存在");
-  db.supplierUsers.push({id:uid("suser"),supplierId:sid,username,password,name,role,permissions:defaultSupplierPerm(role),status:"active",createdAt:now()});
-  save();alert("已新增員工");render();
-}
-function saveSupplierStaff(idv){
-  if(!hasSupplierPerm("staffManage"))return alert("權限不足");
-  const u=db.supplierUsers.find(x=>x.id===idv);if(!u)return;
-  if(u.supplierId!==supplierScopeId())return alert("不能修改其他廠商員工");
-  u.name=document.getElementById("staff_name_"+idv).value.trim();
-  u.role=document.getElementById("staff_role_"+idv).value;
-  u.status=document.getElementById("staff_status_"+idv).value;
-  u.permissions=u.permissions||{};
-  SUP_PERMS.forEach(p=>{const el=document.getElementById(`sperm_${idv}_${p[0]}`);if(el)u.permissions[p[0]]=!!el.checked});
-  save();alert("員工權限已儲存");render();
-}
-function removeSupplierStaff(idv){
-  if(!hasSupplierPerm("staffManage"))return alert("權限不足");
-  const u=db.supplierUsers.find(x=>x.id===idv);if(!u)return;
-  if(u.supplierId!==supplierScopeId())return alert("不能剔除其他廠商員工");
-  if(!confirm("確定剔除此員工？"))return;
-  db.supplierUsers=db.supplierUsers.filter(x=>x.id!==idv);
-  save();alert("已剔除員工");render();
-}
 
-function saveCustomerInline(idv){
-  const c=db.customers.find(x=>x.id===idv);if(!c)return alert("找不到顧客資料");
-  c.name=document.getElementById("cus_name_"+idv).value.trim();
-  c.phone=document.getElementById("cus_phone_"+idv).value.trim();
-  c.customerRewardCredit=Number(document.getElementById("cus_reward_"+idv).value||0);
-  c.receiveBank=document.getElementById("cus_rbank_"+idv).value.trim();
-  c.receiveName=document.getElementById("cus_rname_"+idv).value.trim();
-  c.receiveAccount=document.getElementById("cus_racc_"+idv).value.trim();
-  c.status=document.getElementById("cus_status_"+idv).value;
-  c.updatedAt=now();log("總覽式編輯顧客",`${c.username}｜${c.name}`);save();alert("顧客資料已儲存");render();
-}
-function saveSupplierInline(idv){
-  const s=db.suppliers.find(x=>x.id===idv);if(!s)return alert("找不到廠商資料");
-  s.companyName=document.getElementById("sup_company_"+idv).value.trim();
-  s.contactName=document.getElementById("sup_contact_"+idv).value.trim();
-  s.phone=document.getElementById("sup_phone_"+idv).value.trim();
-  s.listingFeeRate=Number(document.getElementById("sup_fee_"+idv).value||0);
-  s.bankName=document.getElementById("sup_bank_"+idv).value.trim();
-  s.bankAccountName=document.getElementById("sup_bank_name_"+idv).value.trim();
-  s.bankAccount=document.getElementById("sup_bank_acc_"+idv).value.trim();
-  s.status=document.getElementById("sup_status_"+idv).value;
-  s.updatedAt=now();log("總覽式編輯廠商",`${s.username}｜${s.companyName}｜上架費 ${s.listingFeeRate}%`);save();alert("廠商資料已儲存");render();
-}
-function saveSettings(){db.settings.platformFeeRate=Number(document.getElementById("setFee").value||0);db.settings.defaultBonusRate=Number(document.getElementById("setBonus").value||0);db.settings.bonusName=document.getElementById("setBonusName").value.trim()||"加成回饋金";db.settings.customerRewardName=document.getElementById("setRewardName").value.trim()||"可提領回饋金";save();alert("已儲存");render()}
-function saveAdminPerms(idv){const a=db.admins.find(x=>x.id===idv);if(!a||!canEditAdmin(a))return alert("權限不足");a.permissions=a.permissions||{};PERMS.forEach(p=>{const el=document.getElementById(`perm_${idv}_${p[0]}`);if(el)a.permissions[p[0]]=!!el.checked});if(a.adminLevel===ADMIN.OWNER)a.permissions.manageAdmins=false;save();alert("已儲存權限");render()}
+  settingsAmount.addEventListener('keydown', e => {
+    if (e.key === 'Enter') applySettings();
+  });
+  settingsName.addEventListener('keydown', e => {
+    if (e.key === 'Enter') settingsAmount.focus();
+  });
 
-window.addEventListener("keydown",e=>{if(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==="r"){if(confirm("確定重置所有 Demo 資料？")){localStorage.removeItem(KEY);sessionStorage.removeItem(SESSION);db=loadDB();session=null;page="home";render();}}});
-render();
+  const detail = document.getElementById('detailScreen');
+  const detailBackBtn = document.getElementById('detailBackBtn');
+  function goHome(){
+    login.classList.remove('active');
+    detail.classList.remove('active');
+    home.classList.add('active');
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+  function goDetail(){
+    login.classList.remove('active');
+    home.classList.remove('active');
+    detail.classList.add('active');
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+  loginBtn.addEventListener('click', goHome);
+  bioBtn.addEventListener('click', goHome);
+  patternBtn.addEventListener('click', goHome);
+
+  document.querySelectorAll('.account-balance, .account-balance .play').forEach(el => {
+    el.addEventListener('click', goDetail);
+  });
+  detailBackBtn.addEventListener('click', goHome);
+
+  document.getElementById('password').addEventListener('keydown', function(e){ if(e.key === 'Enter') goHome(); });
+  document.getElementById('userCode').addEventListener('keydown', function(e){ if(e.key === 'Enter') document.getElementById('password').focus(); });
+  openStartupSettings();
+})();
 </script>
 </body>
 </html>
